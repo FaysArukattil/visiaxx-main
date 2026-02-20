@@ -12,6 +12,8 @@ enum DoctorSpecialty {
 
 class DoctorModel {
   final String id; // Matches UserModel.id
+  final String firstName;
+  final String lastName;
   final String specialty;
   final String degree;
   final String registrationNumber;
@@ -26,6 +28,8 @@ class DoctorModel {
 
   DoctorModel({
     required this.id,
+    required this.firstName,
+    required this.lastName,
     required this.specialty,
     required this.degree,
     this.registrationNumber = '',
@@ -39,10 +43,14 @@ class DoctorModel {
     this.metadata,
   });
 
+  String get fullName => '$firstName $lastName';
+
   factory DoctorModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return DoctorModel(
       id: doc.id,
+      firstName: data['firstName'] ?? '',
+      lastName: data['lastName'] ?? '',
       specialty: data['specialty'] ?? '',
       degree: data['degree'] ?? '',
       registrationNumber: data['registrationNumber'] ?? '',
@@ -61,6 +69,8 @@ class DoctorModel {
 
   Map<String, dynamic> toFirestore() {
     return {
+      'firstName': firstName,
+      'lastName': lastName,
       'specialty': specialty,
       'degree': degree,
       'registrationNumber': registrationNumber,

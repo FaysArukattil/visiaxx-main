@@ -6,6 +6,7 @@ import '../../../core/services/auth_service.dart';
 import '../../../core/services/consultation_service.dart';
 import '../../../data/models/consultation_booking_model.dart';
 import '../../home/widgets/app_bar_widget.dart';
+import 'patient_video_call_screen.dart';
 
 class MyBookingsScreen extends StatefulWidget {
   const MyBookingsScreen({super.key});
@@ -202,19 +203,39 @@ class _BookingListTile extends StatelessWidget {
             if (booking.status == BookingStatus.confirmed) ...[
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {
-                  // TODO: Start Call
-                },
+                onPressed: _isSlotActive(booking)
+                    ? () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              PatientVideoCallScreen(booking: booking),
+                        ),
+                      )
+                    : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: context.primary,
-                  minimumSize: const Size(double.infinity, 44),
+                  backgroundColor: _isSlotActive(booking)
+                      ? context.primary
+                      : AppColors.textTertiary.withValues(alpha: 0.1),
+                  minimumSize: const Size(double.infinity, 52),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                child: const Text(
-                  'Join Consultation',
-                  style: TextStyle(color: AppColors.white),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.videocam, color: AppColors.white),
+                    const SizedBox(width: 12),
+                    Text(
+                      _isSlotActive(booking)
+                          ? 'Join Video Call'
+                          : 'Starts at ${booking.timeSlot}',
+                      style: const TextStyle(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -222,6 +243,45 @@ class _BookingListTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  bool _isSlotActive(ConsultationBookingModel booking) {
+    // Basic implementation: Allow joining 5 mins before and during the 20-min slot
+    final now = DateTime.now();
+    final slotDate = booking.dateTime;
+
+    // Parse timeSlot string "10:00 AM"
+    try {
+      final timeParts = booking.timeSlot.split(' ');
+      final hms = timeParts[0].split(':');
+      int hour = int.parse(hms[0]);
+      int minute = int.parse(hms[1]);
+
+      if (timeParts.length > 1 &&
+          timeParts[1].toUpperCase() == 'PM' &&
+          hour < 12) {
+        hour += 12;
+      } else if (timeParts.length > 1 &&
+          timeParts[1].toUpperCase() == 'AM' &&
+          hour == 12) {
+        hour = 0;
+      }
+
+      final slotStartTime = DateTime(
+        slotDate.year,
+        slotDate.month,
+        slotDate.day,
+        hour,
+        minute,
+      );
+
+      final slotEndTime = slotStartTime.add(const Duration(minutes: 20));
+      final earlyJoinTime = slotStartTime.subtract(const Duration(minutes: 5));
+
+      return now.isAfter(earlyJoinTime) && now.isBefore(slotEndTime);
+    } catch (e) {
+      return false;
+    }
   }
 
   Color _getStatusColor(BookingStatus status) {

@@ -39,6 +39,8 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   }
 
   Future<void> _finalizeBooking() async {
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     if (_doctor == null || _slot == null || _date == null) return;
 
     setState(() => _isSubmitting = true);
@@ -51,11 +53,13 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
         id: '', // Will be generated
         patientId: user.uid,
         doctorId: _doctor!.id,
-        doctorName: 'Dr. ${_doctor!.id.substring(0, 5)}', // Placeholder
+        doctorName: _doctor!.fullName,
         patientName: '${userProfile.firstName} ${userProfile.lastName}',
         dateTime: _date!,
         timeSlot: _slot!.startTime,
-        type: ConsultationType.online, // TODO: Pass this through args
+        type: args?['type'] == 'inPerson'
+            ? ConsultationType.inPerson
+            : ConsultationType.online,
         status: BookingStatus.requested,
         attachedResultIds: _attachedResultIds,
         createdAt: DateTime.now(),
@@ -165,7 +169,12 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
             const SizedBox(height: 24),
             _buildSummaryRow('Date', DateFormat('dd MMM yyyy').format(_date!)),
             _buildSummaryRow('Time', _slot!.startTime),
-            _buildSummaryRow('Type', 'Online Consultation'), // Placeholder
+            _buildSummaryRow(
+              'Type',
+              _slot!.status == SlotStatus.booked
+                  ? 'Online Consultation'
+                  : 'In-Person Visit',
+            ),
             _buildSummaryRow(
               'Results',
               '${_attachedResultIds.length} attached',
@@ -246,7 +255,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Dr. ${_doctor!.id.substring(0, 5)}',
+                'Dr. ${_doctor!.fullName}',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

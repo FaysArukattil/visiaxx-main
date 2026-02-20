@@ -55,8 +55,7 @@ class _DoctorBrowseScreenState extends State<DoctorBrowseScreen> {
   void _filterDoctors(String query) {
     setState(() {
       _filteredDoctors = _allDoctors.where((doctor) {
-        final name = '${doctor.id}'
-            .toLowerCase(); // TODO: Add name to DoctorModel or fetch from User
+        final name = doctor.fullName.toLowerCase();
         final specialty = doctor.specialty.toLowerCase();
         return name.contains(query.toLowerCase()) ||
             specialty.contains(query.toLowerCase());
@@ -226,7 +225,7 @@ class _FeaturedDoctorCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Dr. ${doctor.id.substring(0, 5)}', // Placeholder name
+                        'Dr. ${doctor.fullName}',
                         style: const TextStyle(
                           color: AppColors.white,
                           fontSize: 18,
@@ -312,7 +311,7 @@ class _DoctorListTile extends StatelessWidget {
           child: const Icon(Icons.person),
         ),
         title: Text(
-          'Dr. ${doctor.id.substring(0, 5)}',
+          'Dr. ${doctor.fullName}',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(

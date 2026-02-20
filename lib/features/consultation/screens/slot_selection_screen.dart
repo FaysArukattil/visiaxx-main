@@ -35,7 +35,8 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
 
   Future<void> _loadSlots() async {
     setState(() => _isLoading = true);
-    final slots = await _consultationService.getAvailableSlots(
+    // Fetch ALL slots for the date to show booked vs available
+    final slots = await _consultationService.getAllSlotsForDate(
       _doctor!.id,
       _selectedDate,
     );
@@ -147,30 +148,61 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
       itemBuilder: (context, index) {
         final slot = _slots[index];
         final isSelected = _selectedSlotId == slot.id;
+        final isBooked = slot.status == SlotStatus.booked;
+        final isCompleted = slot.status == SlotStatus.completed;
+        final isUnavailable = isBooked || isCompleted;
 
         return InkWell(
-          onTap: () => setState(() => _selectedSlotId = slot.id),
+          onTap: isUnavailable
+              ? null
+              : () => setState(() => _selectedSlotId = slot.id),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: isSelected
                   ? context.primary.withValues(alpha: 0.1)
+                  : isUnavailable
+                  ? AppColors.textTertiary.withValues(alpha: 0.05)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
                     ? context.primary
+                    : isUnavailable
+                    ? Colors.transparent
                     : Theme.of(context).dividerColor.withValues(alpha: 0.1),
                 width: isSelected ? 2 : 1,
               ),
             ),
-            child: Text(
-              slot.startTime,
-              style: TextStyle(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? context.primary : AppColors.textSecondary,
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  slot.startTime,
+                  style: TextStyle(
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    color: isSelected
+                        ? context.primary
+                        : isUnavailable
+                        ? AppColors.textTertiary
+                        : AppColors.textSecondary,
+                    decoration: isUnavailable
+                        ? TextDecoration.lineThrough
+                        : null,
+                  ),
+                ),
+                if (isUnavailable)
+                  Text(
+                    isBooked ? 'Booked' : 'Done',
+                    style: const TextStyle(
+                      fontSize: 8,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+              ],
             ),
           ),
         );

@@ -18,7 +18,9 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
   final _consultationService = ConsultationService();
   final _authService = AuthService();
   List<UserModel> _patients = [];
+  List<UserModel> _filteredPatients = [];
   bool _isLoading = true;
+  final _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -33,29 +35,81 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
       final patients = await _consultationService.getDoctorPatients(uid);
       setState(() {
         _patients = patients;
+        _filteredPatients = patients;
         _isLoading = false;
       });
     }
+  }
+
+  void _filterPatients(String query) {
+    setState(() {
+      _filteredPatients = _patients
+          .where(
+            (p) =>
+                p.fullName.toLowerCase().contains(query.toLowerCase()) ||
+                p.email.toLowerCase().contains(query.toLowerCase()),
+          )
+          .toList();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const AppBarWidget(title: 'My Patients'),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _patients.isEmpty
-          ? _buildEmptyState()
-          : _buildPatientsList(),
+      body: Column(
+        children: [
+          _buildSearchBar(),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredPatients.isEmpty
+                ? _buildEmptyState()
+                : _buildPatientsList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+      child: TextField(
+        controller: _searchController,
+        onChanged: _filterPatients,
+        decoration: InputDecoration(
+          hintText: 'Search patients by name or email...',
+          prefixIcon: const Icon(Icons.search),
+          filled: true,
+          fillColor: Theme.of(context).cardColor,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: context.dividerColor.withValues(alpha: 0.1),
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(
+              color: context.dividerColor.withValues(alpha: 0.1),
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: context.primary),
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildPatientsList() {
     return ListView.builder(
-      padding: const EdgeInsets.all(24),
-      itemCount: _patients.length,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      itemCount: _filteredPatients.length,
       itemBuilder: (context, index) {
-        final patient = _patients[index];
+        final patient = _filteredPatients[index];
         return Card(
           elevation: 0,
           margin: const EdgeInsets.only(bottom: 16),

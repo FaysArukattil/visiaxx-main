@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum SlotStatus { available, booked, blocked }
+enum SlotStatus { available, booked, blocked, completed }
 
 class TimeSlotModel {
   final String id;

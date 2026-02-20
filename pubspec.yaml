@@ -20,6 +20,7 @@ dependencies:
   firebase_storage: ^12.4.0
   firebase_database: ^11.3.3
   flutter_secure_storage: ^10.0.0
+  flutter_webrtc: ^0.12.1
   
   # Google ML Kit for Face Detection (Distance Tracking)
   google_mlkit_face_detection: ^0.13.1

@@ -106,7 +106,7 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
                     child: Column(
                       children: [
                         Text(
-                          'Dr. ${_doctor!.id.substring(0, 5)}', // Placeholder name
+                          'Dr. ${_doctor!.fullName}',
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,

@@ -45,14 +45,10 @@ class ConsultationTypeScreen extends StatelessWidget {
             const SizedBox(height: 20),
             _ConsultationCard(
               title: 'In-Person Consultation',
-              description: 'Visit our clinic for a physical examination.',
-              icon: Icons.location_on_outlined,
+              description: 'Our doctors visit your doorstep for eye testing.',
+              icon: Icons.home_outlined,
               color: context.primary,
-              onTap: () => Navigator.pushNamed(
-                context,
-                '/doctor-browse',
-                arguments: {'type': 'inPerson'},
-              ),
+              onTap: () => _handleInPersonSelection(context),
             ),
             const SizedBox(height: 40),
             const Divider(),
@@ -80,6 +76,105 @@ class ConsultationTypeScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
               tileColor: Theme.of(context).cardColor,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleInPersonSelection(BuildContext context) async {
+    // Show location checking animation/dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const _LocationCheckDialog(),
+    );
+
+    // Simulate location fetch & check (Mumbai only)
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (context.mounted) {
+      Navigator.pop(context); // Close check dialog
+
+      // Success for Mumbai, otherwise show error
+      // In a real app, we'd use Geolocator. For now, we simulate success for demo
+      // but clearly message that it's Mumbai-only.
+      _showMumbaiConfirmation(context);
+    }
+  }
+
+  void _showMumbaiConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Icon(Icons.location_on, color: context.primary),
+            const SizedBox(width: 12),
+            const Text('Location Verified'),
+          ],
+        ),
+        content: const Text(
+          'We have detected your location in Mumbai. Doorstep consultation is currently available only in Mumbai.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(
+                context,
+                '/doctor-browse',
+                arguments: {'type': 'inPerson'},
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.primary,
+              foregroundColor: AppColors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Proceed'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LocationCheckDialog extends StatelessWidget {
+  const _LocationCheckDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 60,
+              height: 60,
+              child: CircularProgressIndicator(strokeWidth: 6),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Checking Location...',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Verifying service availability in your area',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
           ],
         ),

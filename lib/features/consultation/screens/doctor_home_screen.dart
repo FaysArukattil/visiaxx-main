@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/models/consultation_booking_model.dart';
 import '../../../core/services/consultation_service.dart';
+import '../../../core/extensions/theme_extension.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
   const DoctorHomeScreen({super.key});
@@ -13,6 +15,7 @@ class DoctorHomeScreen extends StatefulWidget {
 }
 
 class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
+  int _currentCarouselIndex = 0;
   final _authService = AuthService();
   final _consultationService = ConsultationService();
   UserModel? _user;
@@ -20,6 +23,29 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   int _totalPatients = 0;
   int _todaysSlots = 0;
   int _completedConsultations = 0;
+
+  final List<Map<String, dynamic>> _carouselSlides = [
+    {
+      'heading': 'Manage Consultations',
+      'content':
+          'Seamlessly connect with patients and manage your daily schedule.',
+      'supportText': 'Digital Healthcare',
+      'icon': Icons.video_call,
+    },
+    {
+      'heading': 'Patient Records',
+      'content':
+          'Access patient histories and test results instantly during calls.',
+      'supportText': 'Data-Driven Care',
+      'icon': Icons.folder_shared,
+    },
+    {
+      'heading': 'Global Reach',
+      'content': 'Consult with patients from Mumbai and beyond with Visiaxx.',
+      'supportText': 'Expanding Access',
+      'icon': Icons.public,
+    },
+  ];
 
   @override
   void initState() {
@@ -75,6 +101,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _buildCarousel(),
+                const SizedBox(height: 32),
                 _buildStatsRow(),
                 const SizedBox(height: 32),
                 const Text(
@@ -93,6 +121,43 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
               ],
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCarousel() {
+    return Column(
+      children: [
+        CarouselSlider(
+          options: CarouselOptions(
+            height: 160,
+            autoPlay: true,
+            enlargeCenterPage: true,
+            viewportFraction: 0.95,
+            onPageChanged: (index, reason) =>
+                setState(() => _currentCarouselIndex = index),
+          ),
+          items: _carouselSlides
+              .map((slide) => _CarouselSlide(slide: slide))
+              .toList(),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: _carouselSlides.asMap().entries.map((entry) {
+            return Container(
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: context.primary.withValues(
+                  alpha: _currentCarouselIndex == entry.key ? 0.8 : 0.2,
+                ),
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
@@ -219,6 +284,77 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CarouselSlide extends StatelessWidget {
+  final Map<String, dynamic> slide;
+  const _CarouselSlide({required this.slide});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [context.primary.withValues(alpha: 0.8), context.primary],
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    slide['supportText'],
+                    style: const TextStyle(
+                      color: AppColors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  slide['heading'],
+                  style: const TextStyle(
+                    color: AppColors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  slide['content'],
+                  style: TextStyle(
+                    color: AppColors.white.withValues(alpha: 0.8),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            slide['icon'],
+            size: 64,
+            color: AppColors.white.withValues(alpha: 0.2),
+          ),
+        ],
       ),
     );
   }

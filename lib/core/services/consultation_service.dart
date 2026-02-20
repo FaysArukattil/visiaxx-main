@@ -318,4 +318,24 @@ class ConsultationService {
       return [];
     }
   }
+
+  /// Complete a consultation with diagnosis and notes
+  Future<bool> completeConsultation(
+    String bookingId,
+    String diagnosis,
+    String doctorNotes,
+  ) async {
+    try {
+      await _firestore.collection(bookingsCollection).doc(bookingId).update({
+        'status': BookingStatus.completed.toString(),
+        'diagnosis': diagnosis,
+        'doctorNotes': doctorNotes,
+        'updatedAt': Timestamp.now(),
+      });
+      return true;
+    } catch (e) {
+      print('[ConsultationService] Error completing consultation: $e');
+      return false;
+    }
+  }
 }

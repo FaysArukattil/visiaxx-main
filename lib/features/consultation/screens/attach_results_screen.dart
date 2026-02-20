@@ -66,7 +66,7 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
           Padding(
             padding: const EdgeInsets.all(24),
             child: Text(
-              'Select any previous test results you want to share with Dr. ${_doctor?.id.substring(0, 5)}',
+              'Select any previous test results you want to share with Dr. ${_doctor?.fullName ?? ''}',
               style: TextStyle(
                 fontSize: 16,
                 color: AppColors.textSecondary,
