@@ -171,12 +171,41 @@ class _SplashScreenState extends State<SplashScreen>
       }
     }
 
-    // Wait for Firebase Auth token to restore before hitting database
+    // Wait for Firebase Auth to actually restore the session (polling, not a fixed delay)
     if (FirebaseAuth.instance.currentUser == null) {
-      debugPrint(
-        '[SplashScreen] ⏳ Waiting for Firebase Auth token to restore...',
-      );
-      await Future.delayed(const Duration(milliseconds: 2000));
+      debugPrint('[SplashScreen] ⏳ Waiting for Firebase Auth to restore...');
+      bool restored = false;
+      for (int i = 0; i < 16; i++) {
+        // 16 × 500ms = 8 seconds max
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (FirebaseAuth.instance.currentUser != null) {
+          restored = true;
+          debugPrint(
+            '[SplashScreen] ✅ Firebase Auth restored after ${(i + 1) * 500}ms',
+          );
+          break;
+        }
+      }
+      if (!restored) {
+        // Firebase couldn't restore the session — cache is stale
+        debugPrint(
+          '[SplashScreen] 🚫 Firebase Auth failed to restore. Clearing stale cache.',
+        );
+        await LocalStorageService().clearUserData();
+        if (mounted) Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+    }
+
+    // Force-refresh the ID token to ensure Firestore has valid credentials
+    try {
+      await FirebaseAuth.instance.currentUser!.getIdToken(true);
+      debugPrint('[SplashScreen] ✅ Firebase ID token refreshed.');
+    } catch (e) {
+      debugPrint('[SplashScreen] ⚠️ Token refresh failed: $e. Clearing cache.');
+      await LocalStorageService().clearUserData();
+      if (mounted) Navigator.pushReplacementNamed(context, '/login');
+      return;
     }
 
     // Create session

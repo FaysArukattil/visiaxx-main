@@ -362,8 +362,10 @@ class AuthService {
       // 0. Security Check: Only allow fetching current user's data (or handle accordingly)
       final currentUid = _auth.currentUser?.uid;
       if (currentUid == null) {
-        debugPrint('[AuthService] getUserData: No user logged in');
-        return await LocalStorageService().getUserProfile();
+        debugPrint(
+          '[AuthService] getUserData: No Firebase user - returning null',
+        );
+        return null;
       }
 
       if (currentUid != uid) {
