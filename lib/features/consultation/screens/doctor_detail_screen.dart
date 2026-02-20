@@ -26,22 +26,28 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final doctorId = args?['doctorId'];
+    final isFeatured = args?['isFeatured'] ?? false;
     _latitude = args?['latitude'];
     _longitude = args?['longitude'];
     _exactAddress = args?['exactAddress'];
     if (doctorId != null) {
-      _loadDoctor(doctorId);
+      _loadDoctor(doctorId, isFeatured);
     }
   }
 
-  Future<void> _loadDoctor(String doctorId) async {
+  Future<void> _loadDoctor(String doctorId, bool isFeatured) async {
     setState(() => _isLoading = true);
     final doctor = await _consultationService.getDoctorById(doctorId);
     setState(() {
       _doctor = doctor;
       _isLoading = false;
+      _heroTag = isFeatured
+          ? 'doctor_img_${doctorId}_featured'
+          : 'doctor_img_$doctorId';
     });
   }
+
+  String _heroTag = '';
 
   @override
   Widget build(BuildContext context) {
@@ -100,22 +106,22 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
                     top: 100,
                     left: 0,
                     right: 0,
-                    child: Center(
-                      child:
-                          Hero(
-                                tag: 'doctor_img_${_doctor!.id}',
+                    child:
+                        Center(
+                              child: Hero(
+                                tag: _heroTag,
                                 child: Container(
-                                  width: 180,
-                                  height: 220,
+                                  width: 200,
+                                  height: 240,
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(40),
+                                    borderRadius: BorderRadius.circular(48),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.black.withValues(
-                                          alpha: 0.2,
+                                          alpha: 0.15,
                                         ),
-                                        blurRadius: 30,
-                                        offset: const Offset(0, 15),
+                                        blurRadius: 40,
+                                        offset: const Offset(0, 20),
                                       ),
                                     ],
                                     image: _doctor!.photoUrl.isNotEmpty
@@ -127,22 +133,28 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
                                           )
                                         : null,
                                     color: AppColors.white.withValues(
-                                      alpha: 0.3,
+                                      alpha: 0.2,
+                                    ),
+                                    border: Border.all(
+                                      color: AppColors.white.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                      width: 3,
                                     ),
                                   ),
                                   child: _doctor!.photoUrl.isEmpty
                                       ? const Icon(
-                                          Icons.person,
+                                          Icons.person_rounded,
                                           size: 100,
                                           color: AppColors.white,
                                         )
                                       : null,
                                 ),
-                              )
-                              .animate()
-                              .fadeIn(duration: 600.ms)
-                              .scale(begin: const Offset(0.8, 0.8)),
-                    ),
+                              ),
+                            )
+                            .animate()
+                            .fadeIn(duration: 600.ms)
+                            .scale(begin: const Offset(0.9, 0.9)),
                   ),
                   Positioned(
                     bottom: -1,
@@ -174,46 +186,63 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 6,
+                            horizontal: 20,
+                            vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            color: color.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: color.withValues(alpha: 0.1),
+                              width: 1,
+                            ),
                           ),
                           child: Text(
                             _doctor!.degree.toUpperCase(),
                             style: TextStyle(
                               color: color,
                               fontWeight: FontWeight.w900,
-                              fontSize: 12,
-                              letterSpacing: 1.5,
+                              fontSize: 13,
+                              letterSpacing: 2,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                         Text(
                           'Dr. ${_doctor!.fullName}',
                           style: const TextStyle(
-                            fontSize: 28,
+                            fontSize: 32,
                             fontWeight: FontWeight.w900,
-                            letterSpacing: -0.5,
+                            letterSpacing: -1,
+                            height: 1.1,
                           ),
+                          textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _doctor!.specialty,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: context.textSecondary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.verified_rounded,
+                              size: 18,
+                              color: color,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _doctor!.specialty,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: context.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 32),
                         _buildStatsGrid(),
                       ],
                     ),
-                  ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1, end: 0),
+                  ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.05, end: 0),
 
                   const SizedBox(height: 40),
 
@@ -256,11 +285,15 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
           ),
         ],
+        border: Border.all(
+          color: context.dividerColor.withValues(alpha: 0.05),
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -302,24 +335,31 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.1), width: 1),
           ),
-          child: Icon(icon, color: color, size: 20),
+          child: Icon(icon, color: color, size: 24),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Text(
           value,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
+          ),
         ),
+        const SizedBox(height: 2),
         Text(
           label,
           style: TextStyle(
             fontSize: 12,
             color: context.textTertiary,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
           ),
         ),
       ],
@@ -340,32 +380,44 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
           ),
         ],
       ),
-      child: ElevatedButton(
-        onPressed: () => Navigator.pushNamed(
-          context,
-          '/slot-selection',
-          arguments: {
-            'doctor': _doctor,
-            'latitude': _latitude,
-            'longitude': _longitude,
-            'exactAddress': _exactAddress,
-          },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: context.primary.withValues(alpha: 0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
         ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: context.primary,
-          foregroundColor: AppColors.white,
-          minimumSize: const Size(double.infinity, 64),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+        child: ElevatedButton(
+          onPressed: () => Navigator.pushNamed(
+            context,
+            '/slot-selection',
+            arguments: {
+              'doctor': _doctor,
+              'latitude': _latitude,
+              'longitude': _longitude,
+              'exactAddress': _exactAddress,
+            },
           ),
-          elevation: 0,
-        ),
-        child: const Text(
-          'Select Doctor',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.5,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: context.primary,
+            foregroundColor: AppColors.white,
+            minimumSize: const Size(double.infinity, 64),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            elevation: 0,
+          ),
+          child: const Text(
+            'Book Appointment',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
+            ),
           ),
         ),
       ),

@@ -108,16 +108,12 @@ class _DoctorBrowseScreenState extends State<DoctorBrowseScreen> {
                     child: CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       slivers: [
+                        // Header with Back Button
                         SliverToBoxAdapter(
-                          child:
-                              Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      24,
-                                      24,
-                                      24,
-                                      8,
-                                    ),
-                                    child: Row(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+                            child:
+                                Row(
                                       children: [
                                         IconButton(
                                           onPressed: () =>
@@ -171,34 +167,35 @@ class _DoctorBrowseScreenState extends State<DoctorBrowseScreen> {
                                           ),
                                         ),
                                       ],
-                                    ),
-                                  )
-                                  .animate()
-                                  .fadeIn(duration: 500.ms)
-                                  .slideY(begin: -0.2, end: 0),
+                                    )
+                                    .animate()
+                                    .fadeIn(duration: 500.ms)
+                                    .slideY(begin: -0.2, end: 0),
+                          ),
                         ),
 
                         // Search Bar
                         SliverToBoxAdapter(
-                          child:
-                              Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      24,
-                                      16,
-                                      24,
-                                      24,
-                                    ),
-                                    child: Container(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                            child:
+                                Container(
                                       decoration: BoxDecoration(
                                         color: context.surface,
                                         borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: context.primary.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                          width: 1.5,
+                                        ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.03,
+                                            color: context.primary.withValues(
+                                              alpha: 0.05,
                                             ),
-                                            blurRadius: 15,
-                                            offset: const Offset(0, 8),
+                                            blurRadius: 20,
+                                            offset: const Offset(0, 10),
                                           ),
                                         ],
                                       ),
@@ -207,26 +204,29 @@ class _DoctorBrowseScreenState extends State<DoctorBrowseScreen> {
                                         onChanged: _filterDoctors,
                                         decoration: InputDecoration(
                                           hintText:
-                                              'Search by specialty, name, or degree...',
+                                              'Search specialists, clinics...',
                                           hintStyle: TextStyle(
                                             color: context.textTertiary,
                                             fontSize: 15,
+                                            fontWeight: FontWeight.w500,
                                           ),
                                           prefixIcon: Icon(
                                             Icons.search_rounded,
                                             color: context.primary,
                                           ),
                                           border: InputBorder.none,
-                                          contentPadding: const EdgeInsets.all(
-                                            20,
-                                          ),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 20,
+                                                vertical: 18,
+                                              ),
                                         ),
                                       ),
-                                    ),
-                                  )
-                                  .animate()
-                                  .fadeIn(delay: 200.ms, duration: 500.ms)
-                                  .slideY(begin: 0.1, end: 0),
+                                    )
+                                    .animate()
+                                    .fadeIn(delay: 200.ms, duration: 500.ms)
+                                    .slideY(begin: 0.1, end: 0),
+                          ),
                         ),
 
                         // Carousel for "Featured"
@@ -345,156 +345,197 @@ class _FeaturedDoctorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = context.primary;
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [color, color.withValues(alpha: 0.8)],
+          colors: [
+            color.withValues(alpha: 0.08),
+            color.withValues(alpha: 0.04),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: color.withValues(alpha: 0.15), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.25),
+            color: color.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -30,
-            bottom: -30,
-            child: Icon(
-              Icons.healing_rounded,
-              size: 180,
-              color: AppColors.white.withValues(alpha: 0.08),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Stack(
+          children: [
+            // Decorative circles (HomeScreen style)
+            Positioned(
+              right: -20,
+              top: -20,
+              child: _buildDecorativeCircle(color, 100, 0.1),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Row(
-              children: [
-                Hero(
-                  tag: 'doctor_img_${doctor.id}',
-                  child: Container(
-                    width: 90,
-                    height: 110,
-                    decoration: BoxDecoration(
-                      color: AppColors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                      image: doctor.photoUrl.isNotEmpty
-                          ? DecorationImage(
-                              image: NetworkImage(doctor.photoUrl),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
-                    ),
-                    child: doctor.photoUrl.isEmpty
-                        ? const Icon(
-                            Icons.person_rounded,
-                            size: 50,
-                            color: AppColors.white,
-                          )
-                        : null,
-                  ),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          doctor.degree.toUpperCase(),
-                          style: const TextStyle(
-                            color: AppColors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Dr. ${doctor.fullName}',
-                        style: const TextStyle(
-                          color: AppColors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.5,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        doctor.specialty,
-                        style: TextStyle(
-                          color: AppColors.white.withValues(alpha: 0.9),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
+            Positioned(
+              left: -30,
+              bottom: -30,
+              child: _buildDecorativeCircle(color, 120, 0.08),
+            ),
+
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: SizedBox(
+                      width: constraints.maxWidth - 40,
+                      height: constraints.maxHeight - 40,
+                      child: Row(
                         children: [
-                          _buildMiniStat(
-                            Icons.star_rounded,
-                            '${doctor.rating}',
-                          ),
-                          const SizedBox(width: 12),
-                          _buildMiniStat(
-                            Icons.work_rounded,
-                            '${doctor.experienceYears}y+',
-                          ),
+                          _buildImage(),
+                          const SizedBox(width: 20),
+                          Expanded(child: _buildInfo(context)),
                         ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                );
+              },
             ),
-          ),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(28),
-              onTap: () => Navigator.pushNamed(
-                context,
-                '/doctor-detail',
-                arguments: {'doctorId': doctor.id},
+
+            // Tap Area
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  '/doctor-detail',
+                  arguments: {'doctorId': doctor.id, 'isFeatured': true},
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildMiniStat(IconData icon, String label) {
+  Widget _buildDecorativeCircle(Color color, double size, double alpha) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            color.withValues(alpha: alpha),
+            color.withValues(alpha: 0),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImage() {
+    return Hero(
+      tag: 'doctor_img_${doctor.id}_featured', // Unique tag for carousel
+      child: Container(
+        width: 100,
+        height: 120,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+          image: doctor.photoUrl.isNotEmpty
+              ? DecorationImage(
+                  image: NetworkImage(doctor.photoUrl),
+                  fit: BoxFit.cover,
+                )
+              : null,
+          color: AppColors.white,
+        ),
+        child: doctor.photoUrl.isEmpty
+            ? const Icon(Icons.person_rounded, size: 50, color: AppColors.grey)
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildInfo(BuildContext context) {
+    final color = context.primary;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            doctor.degree.toUpperCase(),
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Dr. ${doctor.fullName}',
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
+            height: 1.1,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          doctor.specialty,
+          style: TextStyle(
+            color: context.textSecondary,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            _buildStat(Icons.star_rounded, '${doctor.rating}', Colors.amber),
+            const SizedBox(width: 16),
+            _buildStat(
+              Icons.work_rounded,
+              '${doctor.experienceYears}y+',
+              color,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStat(IconData icon, String label, Color iconColor) {
     return Row(
       children: [
-        Icon(icon, color: Colors.amber, size: 16),
+        Icon(icon, color: iconColor, size: 18),
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(
-            color: AppColors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
         ),
       ],
     );
@@ -550,26 +591,36 @@ class _DoctorListTile extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(18),
-                    image: doctor.photoUrl.isNotEmpty
-                        ? DecorationImage(
-                            image: NetworkImage(doctor.photoUrl),
-                            fit: BoxFit.cover,
+                Hero(
+                  tag: 'doctor_img_${doctor.id}',
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      image: doctor.photoUrl.isNotEmpty
+                          ? DecorationImage(
+                              image: NetworkImage(doctor.photoUrl),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.1),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: doctor.photoUrl.isEmpty
+                        ? Icon(
+                            Icons.person_outline_rounded,
+                            color: color,
+                            size: 40,
                           )
                         : null,
                   ),
-                  child: doctor.photoUrl.isEmpty
-                      ? Icon(
-                          Icons.person_outline_rounded,
-                          color: color,
-                          size: 35,
-                        )
-                      : null,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -577,32 +628,42 @@ class _DoctorListTile extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Expanded(
+                          Flexible(
                             child: Text(
                               'Dr. ${doctor.fullName}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.w900,
-                                fontSize: 17,
-                                letterSpacing: -0.3,
+                                fontSize: 18,
+                                letterSpacing: -0.5,
+                                height: 1.2,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
+                              horizontal: 10,
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
+                              color: color.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: color.withValues(alpha: 0.1),
+                                width: 1,
+                              ),
                             ),
                             child: Text(
                               doctor.degree,
                               style: TextStyle(
                                 fontSize: 10,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w900,
                                 color: color,
+                                letterSpacing: 0.5,
                               ),
                             ),
                           ),
@@ -616,30 +677,43 @@ class _DoctorListTile extends StatelessWidget {
                           color: context.textSecondary,
                           fontWeight: FontWeight.w500,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          _buildStatBadge(
-                            Icons.star_rounded,
-                            '${doctor.rating}',
-                            Colors.amber,
-                          ),
-                          const SizedBox(width: 12),
-                          _buildStatBadge(
-                            Icons.work_history_rounded,
-                            '${doctor.experienceYears}y Exp',
-                            color,
-                          ),
-                        ],
+                      const SizedBox(height: 12),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildStatBadge(
+                              Icons.star_rounded,
+                              '${doctor.rating}',
+                              Colors.amber,
+                            ),
+                            const SizedBox(width: 12),
+                            _buildStatBadge(
+                              Icons.work_history_rounded,
+                              '${doctor.experienceYears}y Exp',
+                              color,
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 16,
-                  color: context.textTertiary,
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: context.primary.withValues(alpha: 0.05),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: context.primary,
+                  ),
                 ),
               ],
             ),
