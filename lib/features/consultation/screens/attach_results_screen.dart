@@ -24,6 +24,9 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
   DoctorModel? _doctor;
   DateTime? _date;
   TimeSlotModel? _slot;
+  double? _latitude;
+  double? _longitude;
+  String? _exactAddress;
 
   List<TestResultModel> _results = [];
   final List<String> _selectedResultIds = [];
@@ -37,6 +40,9 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
     _doctor = args?['doctor'];
     _date = args?['date'];
     _slot = args?['slot'];
+    _latitude = args?['latitude'];
+    _longitude = args?['longitude'];
+    _exactAddress = args?['exactAddress'];
 
     if (_doctor != null) {
       _loadResults();
@@ -229,6 +235,9 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
         'date': _date,
         'slot': _slot,
         'attachedResultIds': _selectedResultIds,
+        'latitude': _latitude,
+        'longitude': _longitude,
+        'exactAddress': _exactAddress,
       },
     );
   }

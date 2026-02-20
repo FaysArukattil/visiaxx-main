@@ -21,6 +21,9 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
   List<TimeSlotModel> _slots = [];
   bool _isLoading = true;
   String? _selectedSlotId;
+  double? _latitude;
+  double? _longitude;
+  String? _exactAddress;
 
   @override
   void didChangeDependencies() {
@@ -28,6 +31,9 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     _doctor = args?['doctor'];
+    _latitude = args?['latitude'];
+    _longitude = args?['longitude'];
+    _exactAddress = args?['exactAddress'];
     if (_doctor != null) {
       _loadSlots();
     }
@@ -255,6 +261,9 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
                     'doctor': _doctor,
                     'date': _selectedDate,
                     'slot': selectedSlot,
+                    'latitude': _latitude,
+                    'longitude': _longitude,
+                    'exactAddress': _exactAddress,
                   },
                 );
               },

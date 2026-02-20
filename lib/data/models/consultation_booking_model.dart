@@ -20,6 +20,9 @@ class ConsultationBookingModel {
   final String? diagnosis;
   final String? zoomLink; // For online consultations
   final String? clinicAddress; // For in-person consultations
+  final double? latitude;
+  final double? longitude;
+  final String? exactAddress;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -39,6 +42,9 @@ class ConsultationBookingModel {
     this.diagnosis,
     this.zoomLink,
     this.clinicAddress,
+    this.latitude,
+    this.longitude,
+    this.exactAddress,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -67,6 +73,9 @@ class ConsultationBookingModel {
       diagnosis: data['diagnosis'],
       zoomLink: data['zoomLink'],
       clinicAddress: data['clinicAddress'],
+      latitude: data['latitude']?.toDouble(),
+      longitude: data['longitude']?.toDouble(),
+      exactAddress: data['exactAddress'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
     );
@@ -88,6 +97,9 @@ class ConsultationBookingModel {
       'diagnosis': diagnosis,
       'zoomLink': zoomLink,
       'clinicAddress': clinicAddress,
+      'latitude': latitude,
+      'longitude': longitude,
+      'exactAddress': exactAddress,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };

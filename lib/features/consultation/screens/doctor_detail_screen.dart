@@ -15,6 +15,9 @@ class DoctorDetailScreen extends StatefulWidget {
 class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
   final _consultationService = ConsultationService();
   DoctorModel? _doctor;
+  double? _latitude;
+  double? _longitude;
+  String? _exactAddress;
   bool _isLoading = true;
 
   @override
@@ -23,6 +26,9 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final doctorId = args?['doctorId'];
+    _latitude = args?['latitude'];
+    _longitude = args?['longitude'];
+    _exactAddress = args?['exactAddress'];
     if (doctorId != null) {
       _loadDoctor(doctorId);
     }
@@ -216,7 +222,12 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
         onPressed: () => Navigator.pushNamed(
           context,
           '/slot-selection',
-          arguments: {'doctor': _doctor},
+          arguments: {
+            'doctor': _doctor,
+            'latitude': _latitude,
+            'longitude': _longitude,
+            'exactAddress': _exactAddress,
+          },
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: context.primary,

@@ -20,6 +20,9 @@ class _DoctorBrowseScreenState extends State<DoctorBrowseScreen> {
   List<DoctorModel> _filteredDoctors = [];
   bool _isLoading = true;
   String? _consultationType;
+  double? _latitude;
+  double? _longitude;
+  String? _exactAddress;
 
   @override
   void didChangeDependencies() {
@@ -27,6 +30,9 @@ class _DoctorBrowseScreenState extends State<DoctorBrowseScreen> {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     _consultationType = args?['type'];
+    _latitude = args?['latitude'];
+    _longitude = args?['longitude'];
+    _exactAddress = args?['exactAddress'];
     _loadDoctors();
   }
 
@@ -160,6 +166,9 @@ class _DoctorBrowseScreenState extends State<DoctorBrowseScreen> {
                         delegate: SliverChildBuilderDelegate((context, index) {
                           return _DoctorListTile(
                             doctor: _filteredDoctors[index],
+                            latitude: _latitude,
+                            longitude: _longitude,
+                            exactAddress: _exactAddress,
                           );
                         }, childCount: _filteredDoctors.length),
                       ),
@@ -282,7 +291,16 @@ class _FeaturedDoctorCard extends StatelessWidget {
 
 class _DoctorListTile extends StatelessWidget {
   final DoctorModel doctor;
-  const _DoctorListTile({required this.doctor});
+  final double? latitude;
+  final double? longitude;
+  final String? exactAddress;
+
+  const _DoctorListTile({
+    required this.doctor,
+    this.latitude,
+    this.longitude,
+    this.exactAddress,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -298,7 +316,12 @@ class _DoctorListTile extends StatelessWidget {
         onTap: () => Navigator.pushNamed(
           context,
           '/doctor-detail',
-          arguments: {'doctorId': doctor.id},
+          arguments: {
+            'doctorId': doctor.id,
+            'latitude': latitude,
+            'longitude': longitude,
+            'exactAddress': exactAddress,
+          },
         ),
         contentPadding: const EdgeInsets.all(12),
         leading: Container(

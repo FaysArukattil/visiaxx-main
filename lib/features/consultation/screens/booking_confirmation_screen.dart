@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/consultation_service.dart';
+import '../../../core/utils/snackbar_utils.dart';
 import '../../../data/models/doctor_model.dart';
 import '../../../data/models/time_slot_model.dart';
 import '../../../data/models/consultation_booking_model.dart';
@@ -25,6 +26,9 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   DateTime? _date;
   TimeSlotModel? _slot;
   List<String> _attachedResultIds = [];
+  double? _latitude;
+  double? _longitude;
+  String? _exactAddress;
   bool _isSubmitting = false;
 
   @override
@@ -36,6 +40,9 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
     _date = args?['date'];
     _slot = args?['slot'];
     _attachedResultIds = args?['attachedResultIds'] ?? [];
+    _latitude = args?['latitude'];
+    _longitude = args?['longitude'];
+    _exactAddress = args?['exactAddress'];
   }
 
   Future<void> _finalizeBooking() async {
@@ -62,6 +69,9 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
             : ConsultationType.online,
         status: BookingStatus.requested,
         attachedResultIds: _attachedResultIds,
+        latitude: _latitude,
+        longitude: _longitude,
+        exactAddress: _exactAddress,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -77,10 +87,9 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to request booking. Please try again.'),
-            ),
+          SnackbarUtils.showError(
+            context,
+            'Failed to request booking. Please try again.',
           );
         }
       }

@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/consultation_service.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/utils/snackbar_utils.dart';
 import '../../../data/models/consultation_booking_model.dart';
 import '../../home/widgets/app_bar_widget.dart';
 import 'patient_results_view_screen.dart';
@@ -60,13 +61,12 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen> {
     );
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Booking ${newStatus == BookingStatus.confirmed ? 'confirmed' : 'rejected'}.',
-          ),
-        ),
-      );
+      if (mounted) {
+        SnackbarUtils.showSuccess(
+          context,
+          'Booking ${newStatus == BookingStatus.confirmed ? 'confirmed' : 'rejected'}.',
+        );
+      }
       _loadRequests();
     }
   }
@@ -191,6 +191,15 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen> {
                     _infoChip(Icons.access_time, booking.timeSlot),
                   ],
                 ),
+                if (booking.type == ConsultationType.inPerson &&
+                    booking.exactAddress != null) ...[
+                  const SizedBox(height: 12),
+                  _infoChip(
+                    Icons.location_on,
+                    booking.exactAddress!,
+                    isLong: true,
+                  ),
+                ],
                 if (booking.attachedResultIds.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Row(
@@ -272,7 +281,7 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen> {
     );
   }
 
-  Widget _infoChip(IconData icon, String label) {
+  Widget _infoChip(IconData icon, String label, {bool isLong = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -280,14 +289,28 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: isLong
+            ? BoxShape.values.isNotEmpty
+                  ? MainAxisSize.max
+                  : MainAxisSize.min
+            : MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: AppColors.textSecondary),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-          ),
+          if (isLong)
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+            )
+          else
+            Text(
+              label,
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
         ],
       ),
     );

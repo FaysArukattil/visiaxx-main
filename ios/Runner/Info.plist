@@ -72,6 +72,12 @@
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>This app saves PDF reports of your vision test results.</string>
 	
+	<!-- Location Permission -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Visiaxx needs location access to find doctors near you for in-person consultations.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Visiaxx needs location access to find doctors near you for in-person consultations.</string>
+	
 	<!-- Background Modes (if needed for audio processing) -->
 	<key>UIBackgroundModes</key>
 	<array>
