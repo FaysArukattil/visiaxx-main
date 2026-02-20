@@ -23,6 +23,7 @@ import 'features/home/screens/home_screen.dart';
 import 'features/home/screens/help_center_screen.dart';
 import 'features/home/screens/support_chat_screen.dart';
 import 'features/consultation/screens/consultation_type_screen.dart';
+import 'features/consultation/screens/in_person_location_screen.dart';
 import 'features/consultation/screens/doctor_browse_screen.dart';
 import 'features/consultation/screens/doctor_detail_screen.dart';
 import 'features/consultation/screens/slot_selection_screen.dart';
@@ -393,6 +394,8 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
 
               // Consultation Routes
               '/consultation-type': (context) => const ConsultationTypeScreen(),
+              '/in-person-location': (context) =>
+                  const InPersonLocationScreen(),
               '/doctor-browse': (context) => const DoctorBrowseScreen(),
               '/doctor-detail': (context) => const DoctorDetailScreen(),
               '/slot-selection': (context) => const SlotSelectionScreen(),

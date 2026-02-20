@@ -122,7 +122,10 @@ class _ConsultationTypeScreenState extends State<ConsultationTypeScreen> {
                               'Our certified doctors visit your doorstep for professional eye examinations.',
                           icon: Icons.home_work_rounded,
                           color: context.primary,
-                          onTap: () => _handleInPersonSelection(context),
+                          onTap: () => Navigator.pushNamed(
+                            context,
+                            '/in-person-location',
+                          ),
                         )
                         .animate()
                         .fadeIn(delay: 400.ms, duration: 600.ms)
