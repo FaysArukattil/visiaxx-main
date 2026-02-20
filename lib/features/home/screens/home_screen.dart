@@ -83,31 +83,73 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadUserData() async {
+    debugPrint(
+      '[HomeScreen] 🔄 _loadUserData started. currentUserId: ${_authService.currentUserId}',
+    );
     try {
-      if (_authService.currentUserId != null) {
-        final user = await _authService.getUserData(
-          _authService.currentUserId!,
-        );
-        if (mounted && user != null) {
-          setState(() {
-            _user = user;
-            _isLoading = false;
-          });
-          // Initialize music provider for user role
-          if (user.role == UserRole.user && mounted) {
-            context.read<MusicProvider>().initialize(user.id);
-          }
+      // If Firebase Auth hasn't restored yet, wait a short moment (fallback)
+      if (_authService.currentUserId == null) {
+        debugPrint('[HomeScreen] ⏳ Auth not ready, waiting (3s fallback)...');
+        await _authService.waitForAuth(timeout: const Duration(seconds: 3));
 
-          // Trigger pre-fetching in background
-          _preFetchData(user);
-        } else if (mounted) {
-          setState(() => _isLoading = false);
+        if (_authService.currentUserId == null) {
+          debugPrint(
+            '[HomeScreen] 🚫 Still no auth after fallback. Redirecting to login.',
+          );
+          await _authService.signOut();
+          if (mounted) Navigator.pushReplacementNamed(context, '/login');
+          return;
+        }
+      }
+
+      if (_authService.currentUserId != null) {
+        final uid = _authService.currentUserId!;
+        debugPrint('[HomeScreen] 🔍 Fetching user data for UID: $uid');
+        final user = await _authService.getUserData(uid);
+
+        if (mounted) {
+          if (user != null) {
+            debugPrint(
+              '[HomeScreen] 👤 User found: ${user.fullName} (Role: ${user.role})',
+            );
+            debugPrint('[HomeScreen] 👤 User Identity: ${user.identityString}');
+            setState(() {
+              _user = user;
+              _isLoading = false;
+            });
+            // Initialize music provider for user role
+            if (user.role == UserRole.user) {
+              debugPrint(
+                '[HomeScreen] 🎵 Initializing MusicProvider for ${user.id}',
+              );
+              context.read<MusicProvider>().initialize(user.id);
+            }
+
+            // Trigger pre-fetching in background
+            debugPrint('[HomeScreen] 🛰️ Triggering pre-fetch...');
+            _preFetchData(user);
+          } else {
+            debugPrint(
+              '[HomeScreen] ⚠️ _authService.getUserData returned NULL for UID: $uid',
+            );
+            setState(() => _isLoading = false);
+          }
+        } else {
+          debugPrint(
+            '[HomeScreen] 🚨 User data is null. Sign out and return to login.',
+          );
+          await _authService.signOut();
+          if (mounted) Navigator.pushReplacementNamed(context, '/login');
         }
       } else {
-        if (mounted) setState(() => _isLoading = false);
+        debugPrint(
+          '[HomeScreen] 🚫 No currentUserId. Sign out and return to login.',
+        );
+        await _authService.signOut();
+        if (mounted) Navigator.pushReplacementNamed(context, '/login');
       }
     } catch (e) {
-      debugPrint('[HomeScreen] ❌ Error loading user data: $e');
+      debugPrint('[HomeScreen] ❌ _loadUserData error: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }

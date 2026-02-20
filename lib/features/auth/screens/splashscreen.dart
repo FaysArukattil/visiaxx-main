@@ -3,7 +3,6 @@ import '../../../core/constants/app_status.dart';
 import '../../../core/extensions/theme_extension.dart';
 import 'package:visiaxx/core/widgets/eye_loader.dart';
 import 'dart:async';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/local_storage_service.dart';
 import '../../../core/services/session_monitor_service.dart';
@@ -148,10 +147,35 @@ class _SplashScreenState extends State<SplashScreen>
     final isPractitioner = user.role == UserRole.examiner;
     final identityString = user.identityString;
 
-    // Initialize service to load stored session ID
-    debugPrint('[SplashScreen] Starting session check...');
+    debugPrint('[SplashScreen] Starting session initialization...');
 
-    // Check for conflicts (regular users only)
+    // STEP 1: Wait for Firebase Auth to restore (Strict Stabilization)
+    final firebaseUser = await AuthService().waitForAuth(
+      timeout: const Duration(seconds: 5),
+    );
+
+    if (firebaseUser == null) {
+      debugPrint(
+        '[SplashScreen] 🚫 Firebase Auth failed to stabilize. Clearing stale cache.',
+      );
+      await LocalStorageService().clearUserData();
+      if (mounted) Navigator.pushReplacementNamed(context, '/login');
+      return;
+    }
+
+    // Best-effort token refresh (non-blocking)
+    firebaseUser
+        .getIdToken(true)
+        .then((_) {
+          debugPrint('[SplashScreen] ✅ Firebase ID token refreshed.');
+        })
+        .catchError((e) {
+          debugPrint(
+            '[SplashScreen] ⚠️ Token refresh failed (non-blocking): $e',
+          );
+        });
+
+    // STEP 2: Check for session conflicts (regular users only)
     if (!isPractitioner) {
       debugPrint('[SplashScreen] Checking session conflict...');
       final checkResult = await sessionService.checkExistingSession(
@@ -171,76 +195,29 @@ class _SplashScreenState extends State<SplashScreen>
       }
     }
 
-    // Wait for Firebase Auth to actually restore the session (polling, not a fixed delay)
-    if (FirebaseAuth.instance.currentUser == null) {
-      debugPrint('[SplashScreen] ⏳ Waiting for Firebase Auth to restore...');
-      bool restored = false;
-      for (int i = 0; i < 16; i++) {
-        // 16 × 500ms = 8 seconds max
-        await Future.delayed(const Duration(milliseconds: 500));
-        if (FirebaseAuth.instance.currentUser != null) {
-          restored = true;
-          debugPrint(
-            '[SplashScreen] ✅ Firebase Auth restored after ${(i + 1) * 500}ms',
-          );
-          break;
-        }
-      }
-      if (!restored) {
-        // Firebase couldn't restore the session — cache is stale
-        debugPrint(
-          '[SplashScreen] 🚫 Firebase Auth failed to restore. Clearing stale cache.',
-        );
-        await LocalStorageService().clearUserData();
-        if (mounted) Navigator.pushReplacementNamed(context, '/login');
-        return;
-      }
-    }
-
-    // Force-refresh the ID token to ensure Firestore has valid credentials
-    try {
-      await FirebaseAuth.instance.currentUser!.getIdToken(true);
-      debugPrint('[SplashScreen] ✅ Firebase ID token refreshed.');
-    } catch (e) {
-      debugPrint('[SplashScreen] ⚠️ Token refresh failed: $e. Clearing cache.');
-      await LocalStorageService().clearUserData();
-      if (mounted) Navigator.pushReplacementNamed(context, '/login');
-      return;
-    }
-
-    // Create session
+    // STEP 3: Create/Update session
     debugPrint('[SplashScreen] Creating session...');
-    final creationResult = await sessionService
-        .createSession(user.id, identityString, isPractitioner: isPractitioner)
-        .timeout(
-          const Duration(seconds: 5),
-          onTimeout: () {
-            debugPrint(
-              '[SplashScreen] Session creation timed out, proceeding...',
-            );
-            return SessionCreationResult(sessionId: 'pending');
-          },
-        );
+    final result = await sessionService.createSession(
+      firebaseUser.uid,
+      identityString,
+      isPractitioner: isPractitioner,
+    );
 
-    if (creationResult.error != null) {
+    if (result.error != null) {
       debugPrint(
-        '[SplashScreen] ⚠️ Session creation error: ${creationResult.error}. Proceeding anyway.',
-      );
-      // Do NOT block home navigation for session errors - auth is valid
-    }
-
-    // Start monitoring
-    if (mounted) {
-      sessionService.startMonitoring(
-        identityString,
-        context,
-        isPractitioner: isPractitioner,
+        '[SplashScreen] ⚠️ Session creation error: ${result.error}. Proceeding anyway.',
       );
     }
 
-    // Navigate home with full data
-    debugPrint('[SplashScreen] 🏠 Navigating home...');
+    sessionService.startMonitoring(
+      identityString,
+      context,
+      isPractitioner: isPractitioner,
+    );
+
+    // STEP 4: Navigate Home
     if (mounted) {
+      debugPrint('[SplashScreen] 🏠 Navigating home...');
       await NavigationUtils.navigateHome(context, preFetchedRole: user.role);
     }
   }

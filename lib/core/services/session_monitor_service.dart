@@ -1,5 +1,6 @@
 ﻿import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -98,6 +99,14 @@ class SessionMonitorService with WidgetsBindingObserver {
     String identityString, {
     bool isPractitioner = false,
   }) async {
+    // GUARD: Ensure authenticated
+    if (FirebaseAuth.instance.currentUser == null) {
+      debugPrint(
+        '[SessionMonitor] 🚫 Cannot create session: No authenticated user.',
+      );
+      return SessionCreationResult(error: 'User not authenticated');
+    }
+
     try {
       debugPrint(
         '[SessionMonitor] Creating session for: $identityString (Practitioner: $isPractitioner)',
@@ -175,6 +184,14 @@ class SessionMonitorService with WidgetsBindingObserver {
   /// Check if an active session exists using the identity string
   /// For practitioners, this is just for info. For regular users, this blocks login.
   Future<SessionCheckResult> checkExistingSession(String identityString) async {
+    // GUARD: Ensure authenticated
+    if (FirebaseAuth.instance.currentUser == null) {
+      debugPrint(
+        '[SessionMonitor] 🚫 Cannot check session: No authenticated user.',
+      );
+      return SessionCheckResult(exists: false, isOurSession: false);
+    }
+
     try {
       final userSessionsRef = _database.ref('active_sessions/$identityString');
       final snapshot = await userSessionsRef.get();

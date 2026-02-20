@@ -32,21 +32,39 @@ class AuthService {
   /// Wait for the first valid auth state (to handle cold starts)
   /// Returns the current user or null if definitely not logged in
   Future<User?> getInitialUser() async {
-    debugPrint('[AuthService] ⏳ Stabilizing auth state (3s max)...');
+    return waitForAuth(timeout: const Duration(seconds: 5));
+  }
 
-    // Polling loop: check every 500ms for up to 3 seconds
-    // This handles cases where Firebase restores the session AFTER the first null emission
-    for (int i = 0; i < 6; i++) {
-      final user = _auth.currentUser;
-      if (user != null) {
-        debugPrint('[AuthService] ✅ Auth stabilized: ${user.uid}');
-        return user;
-      }
-      await Future.delayed(const Duration(milliseconds: 500));
+  /// Explicitly wait for Firebase Auth to stabilize.
+  /// This handles cases where authStateChanges emits null initially before restoration.
+  Future<User?> waitForAuth({
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    debugPrint(
+      '[AuthService] ⏳ Waiting for auth stabilization (${timeout.inSeconds}s max)...',
+    );
+
+    // Check immediate state first
+    if (_auth.currentUser != null) {
+      debugPrint(
+        '[AuthService] ✅ Auth ready immediately: ${_auth.currentUser!.uid}',
+      );
+      return _auth.currentUser;
     }
 
-    debugPrint('[AuthService] ⚠️ Auth stabilization timed out.');
-    return _auth.currentUser;
+    try {
+      // Use authStateChanges stream - skip the first null if it happens immediately
+      final user = await _auth
+          .authStateChanges()
+          .firstWhere((user) => user != null)
+          .timeout(timeout);
+
+      debugPrint('[AuthService] ✅ Auth stabilized via stream: ${user?.uid}');
+      return user;
+    } catch (e) {
+      debugPrint('[AuthService] ⚠️ Auth stabilization timeout or no user: $e');
+      return _auth.currentUser; // Final fallback to current state
+    }
   }
 
   /// Sign in with email and password
@@ -359,18 +377,21 @@ class AuthService {
   /// Get user data from Firestore using the lookup system
   Future<UserModel?> getUserData(String uid) async {
     try {
-      // 0. Security Check: Only allow fetching current user's data (or handle accordingly)
-      final currentUid = _auth.currentUser?.uid;
-      if (currentUid == null) {
+      // 0. Security Check: ONLY allow fetching if we are authenticated
+      final user = _auth.currentUser;
+      if (user == null) {
         debugPrint(
-          '[AuthService] getUserData: No Firebase user - returning null',
+          '[AuthService] 🚫 getUserData: No authenticated user. Returning null.',
         );
         return null;
       }
 
-      if (currentUid != uid) {
-        // NOTE: Practitioners often lookup patient data, so mismatch is common.
-        // real security is handled by Firestore depth-rules.
+      if (user.uid != uid) {
+        // NOTE: Practitioners might fetch patient data, so this check is context-dependent
+        // For now, we allow it but log it
+        debugPrint(
+          '[AuthService] ℹ️ Fetching data for different UID: $uid (Current: ${user.uid})',
+        );
       }
 
       // 1. Check IN-MEMORY cache (Instant)
@@ -497,9 +518,10 @@ class AuthService {
 
   /// Get current user's role
   Future<UserRole?> getCurrentUserRole() async {
-    if (currentUserId == null) return null;
-    final user = await getUserData(currentUserId!);
-    return user?.role;
+    final user = await waitForAuth(timeout: const Duration(seconds: 3));
+    if (user == null) return null;
+    final userData = await getUserData(user.uid);
+    return userData?.role;
   }
 
   /// Update user's agreement to terms and conditions status
