@@ -70,12 +70,12 @@ class _SplashScreenState extends State<SplashScreen>
     // Start auth check in parallel with animation - NO pre-delay
     final authFuture = _checkAuthAndNavigate();
 
-    // Minimum splash display time
-    await Future.delayed(const Duration(milliseconds: 1000));
+    // Minimum splash display time (reduced for snappier feel)
+    await Future.delayed(const Duration(milliseconds: 500));
 
     try {
       await authFuture.timeout(
-        const Duration(seconds: 15),
+        const Duration(seconds: 8),
         onTimeout: () async {
           debugPrint('[SplashScreen] ⚠️ Auth check timed out.');
           if (mounted) {
@@ -128,7 +128,7 @@ class _SplashScreenState extends State<SplashScreen>
     try {
       user = await _authService
           .getUserData(initialUser.uid)
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 5));
     } catch (e) {
       debugPrint('[SplashScreen] ⚠️ Failed to fetch user data: $e');
     }
@@ -149,10 +149,15 @@ class _SplashScreenState extends State<SplashScreen>
 
     debugPrint('[SplashScreen] Starting session initialization...');
 
-    // STEP 1: Wait for Firebase Auth to restore (Strict Stabilization)
-    var firebaseUser = await AuthService().waitForAuth(
-      timeout: const Duration(seconds: 5),
-    );
+    // STEP 1: Quick check if Firebase Auth is already available
+    var firebaseUser = _authService.currentUser;
+
+    // If not immediately available, wait briefly for restoration
+    if (firebaseUser == null) {
+      firebaseUser = await AuthService().waitForAuth(
+        timeout: const Duration(seconds: 2),
+      );
+    }
 
     // STEP 1b: If Firebase session didn't restore, try silent re-auth
     if (firebaseUser == null) {
@@ -171,7 +176,7 @@ class _SplashScreenState extends State<SplashScreen>
       return;
     }
 
-    // Best-effort token refresh (non-blocking)
+    // Best-effort token refresh (non-blocking, fire-and-forget)
     firebaseUser
         .getIdToken(true)
         .then((_) {
@@ -203,19 +208,23 @@ class _SplashScreenState extends State<SplashScreen>
       }
     }
 
-    // STEP 3: Create/Update session
+    // STEP 3: Create session (fire-and-forget to not block navigation)
     debugPrint('[SplashScreen] Creating session...');
-    final result = await sessionService.createSession(
-      firebaseUser.uid,
-      identityString,
-      isPractitioner: isPractitioner,
+    unawaited(
+      sessionService
+          .createSession(
+            firebaseUser.uid,
+            identityString,
+            isPractitioner: isPractitioner,
+          )
+          .then((result) {
+            if (result.error != null) {
+              debugPrint(
+                '[SplashScreen] ⚠️ Session creation error: ${result.error}',
+              );
+            }
+          }),
     );
-
-    if (result.error != null) {
-      debugPrint(
-        '[SplashScreen] ⚠️ Session creation error: ${result.error}. Proceeding anyway.',
-      );
-    }
 
     sessionService.startMonitoring(
       identityString,
@@ -223,7 +232,7 @@ class _SplashScreenState extends State<SplashScreen>
       isPractitioner: isPractitioner,
     );
 
-    // STEP 4: Navigate Home
+    // STEP 4: Navigate Home immediately
     if (mounted) {
       debugPrint('[SplashScreen] 🏠 Navigating home...');
       await NavigationUtils.navigateHome(context, preFetchedRole: user.role);
