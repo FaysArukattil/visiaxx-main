@@ -6,7 +6,6 @@ import '../../../data/models/user_model.dart';
 import '../../../data/models/music_track.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/widgets/glass_chat_button.dart';
-import '../../../core/utils/snackbar_utils.dart';
 import '../../../core/extensions/theme_extension.dart';
 import 'package:provider/provider.dart';
 import '../../../data/providers/family_member_provider.dart';
@@ -1011,17 +1010,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.video_call_outlined,
                   title: 'Consultation',
                   subtitle: 'Talk to doctor',
-                  onTap: () async {
-                    setState(() => _isConsultationLoading = true);
-                    await Future.delayed(const Duration(seconds: 4));
-                    if (mounted) {
-                      setState(() => _isConsultationLoading = false);
-                      SnackbarUtils.showInfo(
-                        context,
-                        'Consultation feature coming soon!',
-                      );
-                    }
-                  },
+                  onTap: () =>
+                      Navigator.pushNamed(context, '/consultation-type'),
                   height: compactCardHeight,
                   screenWidth: screenWidth,
                 ),

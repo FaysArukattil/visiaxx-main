@@ -22,6 +22,16 @@ import 'features/auth/screens/forgot_password_screen.dart';
 import 'features/home/screens/home_screen.dart';
 import 'features/home/screens/help_center_screen.dart';
 import 'features/home/screens/support_chat_screen.dart';
+import 'features/consultation/screens/consultation_type_screen.dart';
+import 'features/consultation/screens/doctor_browse_screen.dart';
+import 'features/consultation/screens/doctor_detail_screen.dart';
+import 'features/consultation/screens/slot_selection_screen.dart';
+import 'features/consultation/screens/attach_results_screen.dart';
+import 'features/consultation/screens/booking_confirmation_screen.dart';
+import 'features/consultation/screens/my_bookings_screen.dart';
+import 'features/consultation/screens/doctor_main_navigation_screen.dart';
+import 'features/consultation/screens/doctor_slot_management_screen.dart';
+import 'features/consultation/screens/doctor_booking_review_screen.dart';
 import 'features/quick_vision_test/screens/profile_selection_screen.dart';
 import 'features/quick_vision_test/screens/questionnaire_screen.dart';
 import 'features/quick_vision_test/screens/test_instructions_screen.dart';
@@ -380,6 +390,20 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
               '/eye-quest-game': (context) => const EyeQuestGameScreen(),
               '/ocular-snake-game': (context) => const OcularSnakeGameScreen(),
               '/color-rush-game': (context) => const ColorRushGameScreen(),
+
+              // Consultation Routes
+              '/consultation-type': (context) => const ConsultationTypeScreen(),
+              '/doctor-browse': (context) => const DoctorBrowseScreen(),
+              '/doctor-detail': (context) => const DoctorDetailScreen(),
+              '/slot-selection': (context) => const SlotSelectionScreen(),
+              '/attach-results': (context) => const AttachResultsScreen(),
+              '/booking-confirmation': (context) =>
+                  const BookingConfirmationScreen(),
+              '/my-bookings': (context) => const MyBookingsScreen(),
+              '/doctor-home': (context) => const DoctorMainNavigationScreen(),
+              '/doctor-slots': (context) => const DoctorSlotManagementScreen(),
+              '/doctor-booking-review': (context) =>
+                  const DoctorBookingReviewScreen(),
             },
           );
         },

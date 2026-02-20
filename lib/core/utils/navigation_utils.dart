@@ -12,7 +12,11 @@ class NavigationUtils {
 
     if (!context.mounted) return;
 
-    final route = role == UserRole.examiner ? '/practitioner-home' : '/home';
+    final route = role == UserRole.examiner
+        ? '/practitioner-home'
+        : role == UserRole.doctor
+        ? '/doctor-home'
+        : '/home';
     debugPrint('[NavigationUtils] Navigating to home: $route (role: $role)');
 
     Navigator.pushNamedAndRemoveUntil(context, route, (route) => false);
@@ -21,6 +25,10 @@ class NavigationUtils {
   /// Get the home route name based on current user role
   static Future<String> getHomeRoute() async {
     final role = await AuthService().getCurrentUserRole();
-    return role == UserRole.examiner ? '/practitioner-home' : '/home';
+    return role == UserRole.examiner
+        ? '/practitioner-home'
+        : role == UserRole.doctor
+        ? '/doctor-home'
+        : '/home';
   }
 }

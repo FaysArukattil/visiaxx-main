@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../core/widgets/verification_dialog.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -54,35 +55,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Password Reset'),
-        content: const Text(
-          'Have you successfully reset your password in your email?\n\nWould you like to continue to the login page?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context), // Close dialog only
-            child: const Text('Not Yet'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(
-                context,
-                'Password reset link sent. Please log in with your new password.',
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text('Yes, Continue'),
-          ),
-        ],
+      builder: (context) => VerificationDialog(
+        title: 'Password Reset',
+        message:
+            'Have you successfully reset your password in your email?\n\nWould you like to continue to the login page?',
+        confirmLabel: 'Yes, Continue',
+        cancelLabel: 'Not Yet',
+        onConfirm: () {
+          Navigator.pop(context); // Close dialog
+          Navigator.pop(
+            context,
+            'Password reset link sent. Please log in with your new password.',
+          );
+        },
+        onCancel: () => Navigator.pop(context),
       ),
     );
   }
@@ -127,6 +113,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                 "Verification link has been sent to your email. Check your inbox to reset your password.";
             _isLinkSent = true;
             _startTimer();
+            // Show success dialog
+            showDialog(
+              context: context,
+              builder: (context) => VerificationDialog(
+                isSuccess: true,
+                title: 'Link Sent!',
+                message:
+                    'A password reset link has been sent to ${_emailController.text}. Please check your inbox.',
+                confirmLabel: 'OK',
+                onConfirm: () => Navigator.pop(context),
+              ),
+            );
           } else {
             _errorMessage =
                 result.message?.contains('network-request-failed') == true

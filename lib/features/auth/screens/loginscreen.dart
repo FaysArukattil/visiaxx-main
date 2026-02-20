@@ -8,6 +8,7 @@ import '../../../core/widgets/eye_loader.dart';
 import '../../../core/utils/navigation_utils.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import '../../../data/models/user_model.dart';
+import '../../../core/widgets/verification_dialog.dart';
 
 /// Login screen with Firebase authentication
 class LoginScreen extends StatefulWidget {
@@ -164,38 +165,39 @@ class _LoginScreenState extends State<LoginScreen> {
   void _showVerificationDialog(String email) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Verify Your Email'),
-        content: Text(
-          'Your email $email is not verified. Please check your inbox for the verification link.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              setState(() => _isLoading = true);
-              final resendResult = await _authService.sendEmailVerification();
-              if (!context.mounted) return;
-              setState(() => _isLoading = false);
-              if (resendResult.isSuccess) {
-                SnackbarUtils.showSuccess(
-                  context,
-                  resendResult.message ?? 'Verification email sent',
-                );
-              } else {
-                SnackbarUtils.showError(
-                  context,
-                  resendResult.message ?? 'Failed to send verification email',
-                );
-              }
-            },
-            child: const Text('Resend Email'),
-          ),
-        ],
+      barrierDismissible: false,
+      builder: (context) => VerificationDialog(
+        title: 'Verify Your Email',
+        message:
+            'Your email $email is not verified. Please check your inbox for the verification link.',
+        confirmLabel: 'Resend Email',
+        cancelLabel: 'Cancel',
+        onConfirm: () async {
+          Navigator.pop(context);
+          setState(() => _isLoading = true);
+          final resendResult = await _authService.sendEmailVerification();
+          if (!context.mounted) return;
+          setState(() => _isLoading = false);
+          if (resendResult.isSuccess) {
+            showDialog(
+              context: context,
+              builder: (context) => VerificationDialog(
+                isSuccess: true,
+                title: 'Email Sent!',
+                message:
+                    resendResult.message ??
+                    'A new verification link has been sent to your inbox.',
+                confirmLabel: 'Got it',
+                onConfirm: () => Navigator.pop(context),
+              ),
+            );
+          } else {
+            SnackbarUtils.showError(
+              context,
+              resendResult.message ?? 'Failed to send verification email',
+            );
+          }
+        },
       ),
     );
   }

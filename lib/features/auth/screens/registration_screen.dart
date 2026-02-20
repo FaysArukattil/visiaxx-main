@@ -6,6 +6,7 @@ import '../../../core/services/auth_service.dart';
 import '../../../core/widgets/premium_dropdown.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../data/models/user_model.dart';
+import '../../../core/widgets/verification_dialog.dart';
 
 /// Registration screen with Firebase authentication
 class RegistrationScreen extends StatefulWidget {
@@ -25,6 +26,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _practitionerCodeController = TextEditingController();
+  final _doctorSpecialtyController = TextEditingController();
+  final _doctorDegreeController = TextEditingController();
+  final _doctorBioController = TextEditingController();
+  final _doctorExperienceController = TextEditingController();
   final _authService = AuthService();
 
   String _selectedSex = 'Male';
@@ -43,6 +48,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _practitionerCodeController.dispose();
+    _doctorSpecialtyController.dispose();
+    _doctorDegreeController.dispose();
+    _doctorBioController.dispose();
+    _doctorExperienceController.dispose();
     super.dispose();
   }
 
@@ -53,6 +62,19 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       _isLoading = true;
       _errorMessage = null;
     });
+
+    Map<String, dynamic>? doctorData;
+    if (_selectedRole == UserRole.doctor) {
+      doctorData = {
+        'specialty': _doctorSpecialtyController.text.trim(),
+        'degree': _doctorDegreeController.text.trim(),
+        'bio': _doctorBioController.text.trim(),
+        'experienceYears': int.tryParse(_doctorExperienceController.text) ?? 0,
+        'rating': 0.0,
+        'reviewCount': 0,
+        'availableServices': ['Online', 'In-Person'],
+      };
+    }
 
     debugPrint(
       '[RegistrationScreen] 🚀 Attempting registration for role: $_selectedRole',
@@ -73,9 +95,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         sex: _selectedSex,
         phone: '+91${_phoneController.text.trim()}',
         role: _selectedRole,
-        practitionerCode: _selectedRole == UserRole.examiner
+        practitionerCode:
+            (_selectedRole == UserRole.examiner ||
+                _selectedRole == UserRole.doctor)
             ? _practitionerCodeController.text.trim()
             : null,
+        doctorData: doctorData,
       );
 
       if (result.isSuccess) {
@@ -108,20 +133,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Registration Successful!'),
-        content: const Text(
-          'A verification email has been sent to your email address. Please verify your account before signing in.',
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(context).pop(); // Go back to login screen
-            },
-            child: const Text('Go to Sign In'),
-          ),
-        ],
+      builder: (context) => VerificationDialog(
+        isSuccess: true,
+        title: 'Registration Successful!',
+        message:
+            'A verification email has been sent to your email address. Please verify your account before signing in.',
+        confirmLabel: 'Go to Sign In',
+        onConfirm: () {
+          Navigator.of(context).pop(); // Close dialog
+          Navigator.of(context).pop(); // Go back to login screen
+        },
       ),
     );
   }
@@ -508,29 +529,114 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
           // --- Role Section ---
           _buildSectionTitle('You are a', Icons.badge_rounded),
-          Row(
-            children: [
-              Expanded(
-                child: _RoleCard(
-                  title: 'User',
-                  icon: Icons.person_outline_rounded,
-                  isSelected: _selectedRole == UserRole.user,
-                  onTap: () => setState(() => _selectedRole = UserRole.user),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 140,
+                  child: _RoleCard(
+                    title: 'User',
+                    icon: Icons.person_outline_rounded,
+                    isSelected: _selectedRole == UserRole.user,
+                    onTap: () => setState(() => _selectedRole = UserRole.user),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _RoleCard(
-                  title: 'Examiner',
-                  icon: Icons.medical_services_outlined,
-                  isSelected: _selectedRole == UserRole.examiner,
-                  onTap: () =>
-                      setState(() => _selectedRole = UserRole.examiner),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 140,
+                  child: _RoleCard(
+                    title: 'Practitioner',
+                    icon: Icons.medical_services_outlined,
+                    isSelected: _selectedRole == UserRole.examiner,
+                    onTap: () =>
+                        setState(() => _selectedRole = UserRole.examiner),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 140,
+                  child: _RoleCard(
+                    title: 'Doctor',
+                    icon: Icons.health_and_safety_outlined,
+                    isSelected: _selectedRole == UserRole.doctor,
+                    onTap: () =>
+                        setState(() => _selectedRole = UserRole.doctor),
+                  ),
+                ),
+              ],
+            ),
           ),
-          if (_selectedRole == UserRole.examiner) ...[
+
+          if (_selectedRole == UserRole.doctor) ...[
+            const SizedBox(height: 24),
+            _buildSectionTitle(
+              'Doctor Profile',
+              Icons.medical_information_outlined,
+            ),
+            TextFormField(
+              controller: _doctorSpecialtyController,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Specialty',
+                hintText: 'e.g. Ophthalmologist',
+              ),
+              validator: (value) =>
+                  (_selectedRole == UserRole.doctor &&
+                      (value == null || value.isEmpty))
+                  ? 'Required'
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _doctorDegreeController,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: const InputDecoration(
+                      labelText: 'Degree',
+                      hintText: 'e.g. MS, MD',
+                    ),
+                    validator: (value) =>
+                        (_selectedRole == UserRole.doctor &&
+                            (value == null || value.isEmpty))
+                        ? 'Required'
+                        : null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _doctorExperienceController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Experience',
+                      suffixText: 'years',
+                    ),
+                    validator: (value) =>
+                        (_selectedRole == UserRole.doctor &&
+                            (value == null || value.isEmpty))
+                        ? 'Required'
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _doctorBioController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Short Bio',
+                hintText: 'Tell patients about your expertise...',
+                alignLabelWithHint: true,
+              ),
+            ),
+          ],
+
+          if (_selectedRole == UserRole.examiner ||
+              _selectedRole == UserRole.doctor) ...[
             const SizedBox(height: 16),
             TextFormField(
               controller: _practitionerCodeController,
@@ -541,7 +647,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 prefixIcon: Icon(Icons.vpn_key_rounded),
               ),
               validator: (value) =>
-                  (_selectedRole == UserRole.examiner &&
+                  ((_selectedRole == UserRole.examiner ||
+                          _selectedRole == UserRole.doctor) &&
                       (value == null || value.isEmpty))
                   ? 'Required'
                   : null,
@@ -690,8 +797,10 @@ class _RoleCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               title,
+              maxLines: 1,
+              overflow: TextOverflow.visible,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                 color: isSelected
                     ? context.primary

@@ -1235,6 +1235,41 @@ class TestResultService {
     }
   }
 
+  /// Get specific test results by their IDs
+  Future<List<TestResultModel>> getTestResultsByIds(
+    List<String> resultIds,
+  ) async {
+    if (resultIds.isEmpty) return [];
+
+    try {
+      debugPrint(
+        '[TestResultService] Fetching ${resultIds.length} results by ID',
+      );
+
+      // Fetch in parallel for efficiency
+      final futures = resultIds.map((id) async {
+        final snap = await _firestore
+            .collectionGroup('tests')
+            .where(FieldPath.documentId, isEqualTo: id)
+            .limit(1)
+            .get();
+
+        if (snap.docs.isNotEmpty) {
+          final data = snap.docs.first.data();
+          data['id'] = snap.docs.first.id;
+          return TestResultModel.fromJson(data);
+        }
+        return null;
+      });
+
+      final results = await Future.wait(futures);
+      return results.where((r) => r != null).cast<TestResultModel>().toList();
+    } catch (e) {
+      debugPrint('[TestResultService] Error fetching results by IDs: $e');
+      return [];
+    }
+  }
+
   /// Get all test results for a practitioner's patients
   /// OPTIMIZED: Uses collectionGroup for O(1) fetch, with O(N) fallback if index building
   Future<List<TestResultModel>> getPractitionerPatientResults(

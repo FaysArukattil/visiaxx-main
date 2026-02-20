@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// User roles in the application
-enum UserRole { user, examiner, admin }
+enum UserRole { user, examiner, admin, doctor }
 
 /// User model representing a registered user
 class UserModel {
@@ -53,6 +53,8 @@ class UserModel {
         return 'Practitioners';
       case UserRole.admin:
         return 'Admins';
+      case UserRole.doctor:
+        return 'Doctors';
     }
   }
 

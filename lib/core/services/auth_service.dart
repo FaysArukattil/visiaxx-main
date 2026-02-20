@@ -26,6 +26,20 @@ class AuthService {
   /// Current user ID
   String? get currentUserId => _auth.currentUser?.uid;
 
+  /// Get current user profile (cached or fresh)
+  Future<UserModel?> getCurrentUserProfile() async {
+    if (_cachedUser != null) return _cachedUser;
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return null;
+    final profile = await LocalStorageService().getUserProfile();
+    if (profile != null) {
+      _cachedUser = profile;
+      return profile;
+    }
+    // Fallback: fetch from lookup if offline/first boot
+    return getUserData(uid);
+  }
+
   /// Check if user is logged in
   bool get isLoggedIn => _auth.currentUser != null;
 
@@ -257,6 +271,7 @@ class AuthService {
     required String phone,
     required UserRole role,
     String? practitionerCode,
+    Map<String, dynamic>? doctorData,
   }) async {
     try {
       // 1. Backend Validation
@@ -293,8 +308,8 @@ class AuthService {
         );
       }
 
-      // 2. If role is examiner, validate the access code first
-      if (role == UserRole.examiner) {
+      // 2. If role is examiner or doctor, validate the access code first
+      if (role == UserRole.examiner || role == UserRole.doctor) {
         if (practitionerCode == null || practitionerCode.isEmpty) {
           return AuthResult.failure(
             message: 'Practitioner access code is required',
@@ -305,6 +320,15 @@ class AuthService {
         if (!isValidCode) {
           return AuthResult.failure(
             message: "You don't have access to this feature",
+          );
+        }
+      }
+
+      // 3. If role is doctor, validate specialized fields
+      if (role == UserRole.doctor) {
+        if (doctorData == null || doctorData['specialty'] == null) {
+          return AuthResult.failure(
+            message: 'Doctor profile information is incomplete',
           );
         }
       }
@@ -339,13 +363,21 @@ class AuthService {
             .doc(identity)
             .set(userModel.toMap());
 
+        // 2. If doctor, also save specialized profile
+        if (role == UserRole.doctor && doctorData != null) {
+          await _firestore.collection('Doctors').doc(identity).set({
+            ...doctorData,
+            'id': credential.user!.uid, // Ensure ID continuity
+          }, SetOptions(merge: true));
+        }
+
         // Save to local cache
         await LocalStorageService().saveUserProfile(userModel);
 
         // Save credentials securely for auto-login on next app launch
         await LocalStorageService().saveCredentials(email.trim(), password);
 
-        // 2. Save to lookup collection for UID -> Path mapping
+        // 3. Save to lookup collection for UID -> Path mapping
         await _firestore
             .collection('all_users_lookup')
             .doc(credential.user!.uid)
