@@ -208,23 +208,19 @@ class _SplashScreenState extends State<SplashScreen>
       }
     }
 
-    // STEP 3: Create session (fire-and-forget to not block navigation)
+    // STEP 3: Create/Update session (must await so _currentSessionId is set before monitoring starts)
     debugPrint('[SplashScreen] Creating session...');
-    unawaited(
-      sessionService
-          .createSession(
-            firebaseUser.uid,
-            identityString,
-            isPractitioner: isPractitioner,
-          )
-          .then((result) {
-            if (result.error != null) {
-              debugPrint(
-                '[SplashScreen] ⚠️ Session creation error: ${result.error}',
-              );
-            }
-          }),
+    final result = await sessionService.createSession(
+      firebaseUser.uid,
+      identityString,
+      isPractitioner: isPractitioner,
     );
+
+    if (result.error != null) {
+      debugPrint(
+        '[SplashScreen] ⚠️ Session creation error: ${result.error}. Proceeding anyway.',
+      );
+    }
 
     sessionService.startMonitoring(
       identityString,
