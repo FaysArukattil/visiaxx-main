@@ -609,6 +609,45 @@ class AWSS3StorageService {
     }
   }
 
+  /// Upload profile image to S3
+  Future<String?> uploadProfileImage({
+    required String userId,
+    required String role, // e.g., 'Doctors'
+    required File imageFile,
+  }) async {
+    if (!isAvailable) return null;
+
+    try {
+      final fileName =
+          'profile_${userId}_${DateTime.now().millisecondsSinceEpoch}.png';
+      final objectName = 'Profiles/$role/$fileName';
+
+      debugPrint('[AWS S3] Uploading profile image to: $objectName');
+
+      final bytes = await imageFile.readAsBytes();
+      final stream = Stream.value(bytes);
+
+      await _client!.putObject(
+        AWSCredentials.bucketName,
+        objectName,
+        stream,
+        size: bytes.length,
+        metadata: {
+          'Content-Type': 'image/png',
+          'user-id': userId,
+          'type': 'profile_image',
+        },
+      );
+
+      final url = await getPresignedUrl(objectName);
+      debugPrint('[AWS S3] … Profile image upload successful: $url');
+      return url;
+    } catch (e) {
+      debugPrint('[AWS S3]  Œ Profile image upload failed: $e');
+      return null;
+    }
+  }
+
   /// Download image from S3 to local file
   /// Returns the local file or null if failed
   Future<File?> downloadImage({

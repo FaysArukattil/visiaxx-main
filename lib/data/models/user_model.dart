@@ -18,6 +18,7 @@ class UserModel {
   final List<String> familyMemberIds;
   final List<String> hiddenResultIds;
   final bool agreedToTerms;
+  final String photoUrl;
 
   UserModel({
     required this.id,
@@ -33,6 +34,7 @@ class UserModel {
     this.familyMemberIds = const [],
     this.hiddenResultIds = const [],
     this.agreedToTerms = false,
+    this.photoUrl = '',
   });
 
   String get fullName => '$firstName $lastName';
@@ -85,6 +87,7 @@ class UserModel {
       familyMemberIds: List<String>.from(data['familyMemberIds'] ?? []),
       hiddenResultIds: List<String>.from(data['hiddenResultIds'] ?? []),
       agreedToTerms: data['agreedToTerms'] ?? false,
+      photoUrl: data['photoUrl'] ?? '',
     );
   }
 
@@ -106,6 +109,7 @@ class UserModel {
       'familyMemberIds': familyMemberIds,
       'hiddenResultIds': hiddenResultIds,
       'agreedToTerms': agreedToTerms,
+      'photoUrl': photoUrl,
     };
   }
 
@@ -125,6 +129,7 @@ class UserModel {
       'familyMemberIds': familyMemberIds,
       'hiddenResultIds': hiddenResultIds,
       'agreedToTerms': agreedToTerms,
+      'photoUrl': photoUrl,
     };
   }
 
@@ -151,6 +156,7 @@ class UserModel {
       familyMemberIds: List<String>.from(json['familyMemberIds'] ?? []),
       hiddenResultIds: List<String>.from(json['hiddenResultIds'] ?? []),
       agreedToTerms: json['agreedToTerms'] ?? false,
+      photoUrl: json['photoUrl'] ?? '',
     );
   }
 
@@ -185,6 +191,7 @@ class UserModel {
       familyMemberIds: List<String>.from(data['familyMemberIds'] ?? []),
       hiddenResultIds: List<String>.from(data['hiddenResultIds'] ?? []),
       agreedToTerms: data['agreedToTerms'] ?? false,
+      photoUrl: data['photoUrl'] ?? '',
     );
   }
 
@@ -203,6 +210,7 @@ class UserModel {
     List<String>? familyMemberIds,
     List<String>? hiddenResultIds,
     bool? agreedToTerms,
+    String? photoUrl,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -218,6 +226,7 @@ class UserModel {
       familyMemberIds: familyMemberIds ?? this.familyMemberIds,
       hiddenResultIds: hiddenResultIds ?? this.hiddenResultIds,
       agreedToTerms: agreedToTerms ?? this.agreedToTerms,
+      photoUrl: photoUrl ?? this.photoUrl,
     );
   }
 }

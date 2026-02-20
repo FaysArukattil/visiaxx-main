@@ -1,15 +1,18 @@
-﻿import 'dart:async';
+﻿import 'dart:io';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/user_model.dart';
 import 'session_monitor_service.dart';
 import 'local_storage_service.dart';
+import 'aws_s3_storage_service.dart';
 
 /// Firebase Authentication Service
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final _s3Service = AWSS3StorageService();
 
   // In-memory cache to prevent redundant fetches during navigation
   static UserModel? _cachedUser;
@@ -272,6 +275,7 @@ class AuthService {
     required UserRole role,
     String? practitionerCode,
     Map<String, dynamic>? doctorData,
+    File? profileImage,
   }) async {
     try {
       // 1. Backend Validation
@@ -331,6 +335,12 @@ class AuthService {
             message: 'Doctor profile information is incomplete',
           );
         }
+
+        if (profileImage == null) {
+          return AuthResult.failure(
+            message: 'Profile picture is mandatory for doctors',
+          );
+        }
       }
 
       final credential = await _auth.createUserWithEmailAndPassword(
@@ -339,6 +349,20 @@ class AuthService {
       );
 
       if (credential.user != null) {
+        String photoUrl = '';
+
+        // Handle profile image upload if provided
+        if (profileImage != null) {
+          final uploadedUrl = await _s3Service.uploadProfileImage(
+            userId: credential.user!.uid,
+            role: role.name == 'doctor' ? 'Doctors' : 'Users',
+            imageFile: profileImage,
+          );
+          if (uploadedUrl != null) {
+            photoUrl = uploadedUrl;
+          }
+        }
+
         // Create user model
         final userModel = UserModel(
           id: credential.user!.uid,
@@ -352,6 +376,7 @@ class AuthService {
           createdAt: DateTime.now(),
           lastLoginAt: DateTime.now(),
           familyMemberIds: [],
+          photoUrl: photoUrl,
         );
 
         final identity = userModel.identityString;
@@ -368,6 +393,7 @@ class AuthService {
           await _firestore.collection('Doctors').doc(identity).set({
             ...doctorData,
             'id': credential.user!.uid, // Ensure ID continuity
+            'photoUrl': photoUrl,
           }, SetOptions(merge: true));
         }
 
@@ -390,6 +416,7 @@ class AuthService {
               'fullName': userModel.fullName,
               'age': age,
               'sex': sex,
+              'photoUrl': photoUrl,
               'createdAt': FieldValue.serverTimestamp(),
               'lastLoginAt': FieldValue.serverTimestamp(),
             });
