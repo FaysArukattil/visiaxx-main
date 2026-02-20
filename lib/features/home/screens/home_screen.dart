@@ -887,7 +887,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         return _MusicServiceCard(
           icon: Icons.headphones_rounded,
-          title: 'Music Library',
+          title: 'Visiaxx Music Library',
           subtitle: track != null ? 'Now Playing' : 'Play your favorite tracks',
           track: track,
           isPlaying: music.isPlaying,
@@ -977,7 +977,7 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(height: cardSpacing),
             _WideServiceCard(
               icon: Icons.sports_esports_outlined,
-              title: 'Eye Therapy Games',
+              title: 'Visiaxx Eye Therapy Games',
               subtitle: 'Fun exercises for your eyes',
               onTap: () => Navigator.pushNamed(context, '/game-selection'),
               height: wideCardHeight,
