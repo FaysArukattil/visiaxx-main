@@ -33,6 +33,9 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   double? _latitude;
   double? _longitude;
   String? _exactAddress;
+  String? _flat;
+  String? _landmark;
+  String? _pincode;
   ConsultationType? _type;
   List<TimeSlotModel> _availableSlots = [];
   List<TestResultModel> _previousResults = [];
@@ -54,6 +57,9 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
     _latitude = args?['latitude'];
     _longitude = args?['longitude'];
     _exactAddress = args?['exactAddress'];
+    _flat = args?['flat'];
+    _landmark = args?['landmark'];
+    _pincode = args?['pincode'];
     _type = args?['type'] is String
         ? (args?['type'] == 'inPerson'
               ? ConsultationType.inPerson
@@ -65,10 +71,11 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   Future<void> _finalizeBooking() async {
     if (_doctor == null || _slot == null || _date == null) return;
 
-    if (_type == ConsultationType.inPerson && _exactAddress == null) {
+    if (_type == ConsultationType.inPerson &&
+        (_latitude == null || _longitude == null || _flat == null)) {
       SnackbarUtils.showWarning(
         context,
-        'Please select a visit address for in-person consultation.',
+        'Please select a valid visit location and provide your address.',
       );
       return;
     }
@@ -90,9 +97,11 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
         type: _type ?? ConsultationType.online,
         status: BookingStatus.requested,
         attachedResultIds: _attachedResultIds,
-        latitude: _latitude,
         longitude: _longitude,
         exactAddress: _exactAddress,
+        clinicAddress: _type == ConsultationType.inPerson
+            ? '${_flat ?? ''}, ${_landmark != null && _landmark!.isNotEmpty ? '$_landmark, ' : ''}${_exactAddress ?? ''} - ${_pincode ?? ''}'
+            : null,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -320,7 +329,9 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                           _buildSummaryItem(
                             Icons.home_filled,
                             'Visit Address',
-                            _exactAddress ?? 'Address not selected',
+                            _flat != null
+                                ? '${_flat ?? ''}, ${_landmark != null && _landmark!.isNotEmpty ? '$_landmark, ' : ''}${_exactAddress ?? ''} - ${_pincode ?? ''}'
+                                : (_exactAddress ?? 'Address not selected'),
                             color,
                             onEdit: _pickLocation,
                           ),
@@ -881,6 +892,9 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
         _latitude = result['latitude'];
         _longitude = result['longitude'];
         _exactAddress = result['exactAddress'];
+        _flat = result['flat'];
+        _landmark = result['landmark'];
+        _pincode = result['pincode'];
       });
     }
   }

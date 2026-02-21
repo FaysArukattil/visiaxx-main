@@ -22,7 +22,28 @@ class _InPersonLocationScreenState extends State<InPersonLocationScreen> {
   bool _isLoading = false;
   bool _isCheckingPermission = false;
 
+  final _flatController = TextEditingController();
+  final _landmarkController = TextEditingController();
+  final _pincodeController = TextEditingController();
+
   final List<String> _availableCities = ['Mumbai'];
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-detect location on load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleLocationDetection();
+    });
+  }
+
+  @override
+  void dispose() {
+    _flatController.dispose();
+    _landmarkController.dispose();
+    _pincodeController.dispose();
+    super.dispose();
+  }
 
   Future<void> _handleLocationDetection() async {
     setState(() => _isCheckingPermission = true);
@@ -90,6 +111,9 @@ class _InPersonLocationScreenState extends State<InPersonLocationScreen> {
             _latitude = position.latitude;
             _longitude = position.longitude;
             _exactAddress = address;
+            if (place.postalCode != null) {
+              _pincodeController.text = place.postalCode!;
+            }
           });
 
           if (!_availableCities.contains(city)) {
@@ -150,12 +174,28 @@ class _InPersonLocationScreenState extends State<InPersonLocationScreen> {
   void _onContinue() {
     if (_selectedCity == null) return;
 
+    final flat = _flatController.text.trim();
+    final landmark = _landmarkController.text.trim();
+    final pincode = _pincodeController.text.trim();
+
+    // Enforce detailed address for in-person if either pickerMode or actual navigation
+    if (flat.isEmpty || pincode.isEmpty) {
+      SnackbarUtils.showWarning(
+        context,
+        'Please provide your house/flat number and pin code.',
+      );
+      return;
+    }
+
     if (_availableCities.contains(_selectedCity)) {
       if (widget.pickerMode) {
         Navigator.pop(context, {
           'latitude': _latitude,
           'longitude': _longitude,
           'exactAddress': _exactAddress,
+          'flat': flat,
+          'landmark': landmark,
+          'pincode': pincode,
         });
         return;
       }
@@ -168,6 +208,9 @@ class _InPersonLocationScreenState extends State<InPersonLocationScreen> {
           'latitude': _latitude,
           'longitude': _longitude,
           'exactAddress': _exactAddress,
+          'flat': flat,
+          'landmark': landmark,
+          'pincode': pincode,
         },
       );
     } else {
@@ -254,17 +297,21 @@ class _InPersonLocationScreenState extends State<InPersonLocationScreen> {
             _buildSheetHeaderPicker(context),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildAutoDetectButton(context),
-                  const SizedBox(height: 24),
-                  _buildDivider(context),
-                  const SizedBox(height: 24),
-                  SizedBox(height: 180, child: _buildCityGrid(context)),
-                  const SizedBox(height: 24),
-                  _buildContinueButton(context),
-                ],
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildAutoDetectButton(context),
+                    const SizedBox(height: 20),
+                    _buildAddressForm(context),
+                    const SizedBox(height: 24),
+                    _buildDivider(context),
+                    const SizedBox(height: 24),
+                    SizedBox(height: 140, child: _buildCityGrid(context)),
+                    const SizedBox(height: 24),
+                    _buildContinueButton(context),
+                  ],
+                ),
               ),
             ),
           ],
@@ -370,19 +417,25 @@ class _InPersonLocationScreenState extends State<InPersonLocationScreen> {
   );
 
   Widget _buildPortraitContent(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(context),
-        const SizedBox(height: 40),
-        _buildAutoDetectButton(context),
-        const SizedBox(height: 32),
-        _buildDivider(context),
-        const SizedBox(height: 24),
-        Expanded(child: _buildCityGrid(context)),
-        _buildContinueButton(context),
-        const SizedBox(height: 24),
-      ],
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(context),
+          const SizedBox(height: 40),
+          _buildAutoDetectButton(context),
+          const SizedBox(height: 32),
+          _buildAddressForm(context),
+          const SizedBox(height: 32),
+          _buildDivider(context),
+          const SizedBox(height: 24),
+          SizedBox(height: 160, child: _buildCityGrid(context)),
+          const SizedBox(height: 16),
+          _buildContinueButton(context),
+          const SizedBox(height: 40),
+        ],
+      ),
     );
   }
 
@@ -652,5 +705,109 @@ class _InPersonLocationScreenState extends State<InPersonLocationScreen> {
         ),
       ),
     ).animate().fadeIn(delay: 400.ms);
+  }
+
+  Widget _buildAddressForm(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildInputField(
+          context,
+          'Flat / House / Building No.',
+          'e.g. 102, Blue Heights',
+          _flatController,
+          Icons.apartment_rounded,
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildInputField(
+                context,
+                'Pin Code',
+                'e.g. 400001',
+                _pincodeController,
+                Icons.pin_drop_rounded,
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildInputField(
+                context,
+                'Landmark (Optional)',
+                'e.g. Near Metro',
+                _landmarkController,
+                Icons.assistant_navigation,
+              ),
+            ),
+          ],
+        ),
+      ],
+    ).animate().fadeIn(delay: 300.ms);
+  }
+
+  Widget _buildInputField(
+    BuildContext context,
+    String label,
+    String hint,
+    TextEditingController controller,
+    IconData icon, {
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: context.textSecondary,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: context.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: context.dividerColor.withValues(alpha: 0.1),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(
+                color: context.textTertiary,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+              prefixIcon: Icon(icon, color: context.primary, size: 20),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+            ),
+            onChanged: (val) => setState(() {}),
+          ),
+        ),
+      ],
+    );
   }
 }
