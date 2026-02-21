@@ -82,40 +82,65 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
             ),
           ),
 
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverAppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                pinned: true,
-                centerTitle: false,
-                title: Text(
-                  'My Patients',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(child: _buildSearchBar()),
-              if (_isLoading)
-                const SliverFillRemaining(
-                  child: Center(child: EyeLoader(size: 40)),
-                )
-              else if (_filteredPatients.isEmpty)
-                SliverFillRemaining(child: _buildEmptyState())
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.all(24),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final patient = _filteredPatients[index];
-                      return _buildPatientCard(patient);
-                    }, childCount: _filteredPatients.length),
-                  ),
-                ),
-            ],
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    SliverAppBar(
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      pinned: true,
+                      centerTitle: false,
+                      title: Text(
+                        'My Patients',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: (constraints.maxWidth * 0.045).clamp(
+                            16.0,
+                            40.0,
+                          ),
+                        ),
+                        child: _buildSearchBar(),
+                      ),
+                    ),
+                    if (_isLoading)
+                      const SliverFillRemaining(
+                        child: Center(child: EyeLoader(size: 40)),
+                      )
+                    else if (_filteredPatients.isEmpty)
+                      SliverFillRemaining(child: _buildEmptyState())
+                    else
+                      SliverPadding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: (constraints.maxWidth * 0.045).clamp(
+                            16.0,
+                            40.0,
+                          ),
+                          vertical: 24,
+                        ),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final patient = _filteredPatients[index];
+                            return _buildPatientCard(patient);
+                          }, childCount: _filteredPatients.length),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -124,7 +149,7 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+      padding: const EdgeInsets.fromLTRB(0, 16, 0, 8),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),

@@ -110,42 +110,72 @@ class _DoctorSlotManagementScreenState
             ),
           ),
 
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverAppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                pinned: true,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                title: Text(
-                  'Manage Slots',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(child: _buildDatePicker()),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                sliver: SliverToBoxAdapter(
-                  child: _buildSectionHeader('Availability Timeline'),
-                ),
-              ),
-              if (_isLoading)
-                const SliverFillRemaining(
-                  child: Center(child: EyeLoader(size: 40)),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.all(24),
-                  sliver: _buildSlotsGrid(),
-                ),
-            ],
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    SliverAppBar(
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      pinned: true,
+                      leading: IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 20,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      title: Text(
+                        'Manage Slots',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: (constraints.maxWidth * 0.045).clamp(
+                            16.0,
+                            40.0,
+                          ),
+                        ),
+                        child: _buildDatePicker(),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: (constraints.maxWidth * 0.045).clamp(
+                          16.0,
+                          40.0,
+                        ),
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: _buildSectionHeader('Availability Timeline'),
+                      ),
+                    ),
+                    if (_isLoading)
+                      const SliverFillRemaining(
+                        child: Center(child: EyeLoader(size: 40)),
+                      )
+                    else
+                      SliverPadding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: (constraints.maxWidth * 0.045).clamp(
+                            16.0,
+                            40.0,
+                          ),
+                          vertical: 24,
+                        ),
+                        sliver: _buildSlotsGrid(constraints),
+                      ),
+                  ],
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -175,11 +205,11 @@ class _DoctorSlotManagementScreenState
     );
   }
 
-  Widget _buildSlotsGrid() {
+  Widget _buildSlotsGrid(BoxConstraints constraints) {
     final intervals = _generateTimeIntervals();
     return SliverGrid(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: MediaQuery.of(context).size.width > 900 ? 3 : 1,
+        crossAxisCount: constraints.maxWidth > 900 ? 3 : 1,
         mainAxisExtent: 200,
         mainAxisSpacing: 16,
         crossAxisSpacing: 16,
@@ -469,7 +499,7 @@ class _DoctorSlotManagementScreenState
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: EdgeInsets.zero,
         itemCount: 30,
         itemBuilder: (context, index) {
           final date = DateTime.now().add(Duration(days: index));

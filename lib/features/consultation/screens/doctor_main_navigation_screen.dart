@@ -6,6 +6,7 @@ import 'doctor_home_screen.dart';
 import 'doctor_patients_screen.dart';
 import 'doctor_slot_management_screen.dart';
 import 'doctor_profile_screen.dart';
+import '../../../core/services/auth_service.dart';
 
 class DoctorMainNavigationScreen extends StatefulWidget {
   const DoctorMainNavigationScreen({super.key});
@@ -18,6 +19,7 @@ class DoctorMainNavigationScreen extends StatefulWidget {
 class _DoctorMainNavigationScreenState
     extends State<DoctorMainNavigationScreen> {
   int _selectedIndex = 0;
+  final _authService = AuthService();
 
   final List<Widget> _screens = [
     const DoctorHomeScreen(),
@@ -213,7 +215,7 @@ class _DoctorMainNavigationScreenState
                       ),
                     ),
                   ),
-                  _buildWebLogoutButton(),
+                  _buildWebLogoutButton(context),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -275,20 +277,23 @@ class _DoctorMainNavigationScreenState
     );
   }
 
-  Widget _buildWebLogoutButton() {
+  Widget _buildWebLogoutButton(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
           onTap: () async {
-            // Logout logic
+            final nav = Navigator.of(context);
+            await _authService.signOut();
+            nav.pushReplacementNamed('/login');
           },
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.error.withValues(alpha: 0.05),
+              color: AppColors.error.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.error.withValues(alpha: 0.1)),
             ),
             child: Row(
               children: [

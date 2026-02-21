@@ -29,25 +29,32 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
 
   final List<Map<String, dynamic>> _carouselSlides = [
     {
-      'heading': 'Professional Care',
+      'heading': 'Who We Are',
       'content':
-          'Connect with patients globally and provide premium eye diagnostics.',
-      'supportText': 'DIGITAL CLINIC',
-      'icon': Icons.medical_services_rounded,
+          'Vision Optocare reshapes eye care with mobile-first technology and optometric precision.',
+      'supportText': 'Built by professionals',
+      'hasImages': true,
     },
     {
-      'heading': 'Advanced Insights',
+      'heading': 'Our Product',
       'content':
-          'Analyze comprehensive test results with our AI-driven diagnostic tools.',
-      'supportText': 'DATA INSIGHTS',
-      'icon': Icons.analytics_rounded,
+          'Visiaxx Digital Eye Clinic App conducts clinically approved vision screenings from your smartphone.',
+      'supportText': 'Smart. Clinical. Mobile-first.',
+      'hasImages': false,
     },
     {
-      'heading': 'Seamless Workflow',
+      'heading': 'Our Mission',
       'content':
-          'Manage your slots and consultation records in one consolidated dashboard.',
-      'supportText': 'EFFICIENCY',
-      'icon': Icons.auto_graph_rounded,
+          'Deliver high-quality, validated eye-care solutions through intuitive digital platforms.',
+      'supportText': 'Accessible eye care everywhere.',
+      'hasImages': false,
+    },
+    {
+      'heading': 'Our Vision',
+      'content':
+          'Create a future where comprehensive eye care is universally accessible and technology-driven.',
+      'supportText': 'Redefining digital eye health.',
+      'hasImages': false,
     },
   ];
 
@@ -95,115 +102,139 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       return const Center(child: EyeLoader(size: 40));
     }
 
-    final theme = Theme.of(context);
-
-    return Stack(
-      children: [
-        // Background Decorations
-        Positioned(
-          top: -100,
-          right: -100,
-          child: Container(
-            width: 300,
-            height: 300,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  context.primary.withValues(alpha: 0.08),
-                  context.primary.withValues(alpha: 0.0),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 100,
-          left: -50,
-          child: Container(
-            width: 200,
-            height: 200,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppColors.secondary.withValues(alpha: 0.05),
-                  AppColors.secondary.withValues(alpha: 0.0),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverAppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              floating: true,
-              centerTitle: false,
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Welcome back,',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: context.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Text(
-                    'Dr. ${_user?.firstName ?? ''}',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: context.onSurface,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                _buildHeaderAction(Icons.notifications_none_rounded, () {}),
-                _buildHeaderAction(Icons.logout_rounded, () async {
-                  final nav = Navigator.of(context);
-                  await _authService.signOut();
-                  nav.pushReplacementNamed('/login');
-                }),
-                const SizedBox(width: 16),
-              ],
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildCarousel(),
-                    const SizedBox(height: 32),
-                    _buildSectionTitle(
-                      'Live Analytics',
-                      Icons.insights_rounded,
-                    ),
-                    _buildStatsRow(),
-                    const SizedBox(height: 32),
-                    _buildSectionTitle('Quick Actions', Icons.bolt_rounded),
-                    _buildQuickActionsGrid(),
-                    const SizedBox(height: 32),
-                    _buildSectionTitle(
-                      'Upcoming Consultations',
-                      Icons.event_note_rounded,
-                    ),
-                    _buildUpcomingConsultations(),
-                    const SizedBox(height: 100),
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Stack(
+        children: [
+          // Background Decorations
+          Positioned(
+            top: -100,
+            right: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    context.primary.withValues(alpha: 0.08),
+                    context.primary.withValues(alpha: 0.0),
                   ],
                 ),
               ),
             ),
-          ],
-        ),
-      ],
+          ),
+          Positioned(
+            bottom: 100,
+            left: -50,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.secondary.withValues(alpha: 0.05),
+                    AppColors.secondary.withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    SliverAppBar(
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      floating: true,
+                      expandedHeight: 80,
+                      toolbarHeight: 70,
+                      centerTitle: false,
+                      title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Welcome back,',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: context.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            'Dr. ${_user?.firstName ?? ''}',
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  color: context.onSurface,
+                                  letterSpacing: -0.5,
+                                ),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        _buildHeaderAction(
+                          Icons.notifications_none_rounded,
+                          () {},
+                        ),
+                        _buildHeaderAction(Icons.logout_rounded, () async {
+                          final nav = Navigator.of(context);
+                          await _authService.signOut();
+                          nav.pushReplacementNamed('/login');
+                        }),
+                        const SizedBox(width: 16),
+                      ],
+                    ),
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: (constraints.maxWidth * 0.045).clamp(
+                          16.0,
+                          40.0,
+                        ),
+                        vertical: 16,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildCarousel(constraints),
+                            const SizedBox(height: 12),
+                            _buildCarouselIndicators(),
+                            const SizedBox(height: 32),
+                            _buildSectionTitle(
+                              'Live Analytics',
+                              Icons.insights_rounded,
+                            ),
+                            _buildStatsRow(),
+                            const SizedBox(height: 32),
+                            _buildSectionTitle(
+                              'Quick Actions',
+                              Icons.bolt_rounded,
+                            ),
+                            _buildQuickActionsGrid(),
+                            const SizedBox(height: 32),
+                            _buildSectionTitle(
+                              'Upcoming Consultations',
+                              Icons.event_note_rounded,
+                            ),
+                            _buildUpcomingConsultations(),
+                            const SizedBox(height: 100),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -302,42 +333,388 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
-  Widget _buildCarousel() {
-    return Column(
-      children: [
-        CarouselSlider(
-          options: CarouselOptions(
-            height: 180,
-            autoPlay: true,
-            enlargeCenterPage: true,
-            viewportFraction: 0.92,
-            onPageChanged: (index, reason) =>
-                setState(() => _currentCarouselIndex = index),
-          ),
-          items: _carouselSlides
-              .map((slide) => _CarouselSlide(slide: slide))
-              .toList(),
+  Widget _buildCarousel(BoxConstraints constraints) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    // Adaptive height calculation
+    final double carouselHeight;
+    if (isLandscape) {
+      carouselHeight = (screenHeight * 0.45).clamp(180.0, 240.0);
+    } else {
+      carouselHeight = (screenHeight * 0.22).clamp(160.0, 210.0);
+    }
+
+    return SizedBox(
+      width: screenWidth,
+      height: carouselHeight,
+      child: CarouselSlider(
+        options: CarouselOptions(
+          height: carouselHeight,
+          autoPlay: true,
+          autoPlayInterval: const Duration(seconds: 5),
+          enlargeCenterPage: true,
+          enlargeFactor: 0.1,
+          viewportFraction: 0.92,
+          padEnds: true,
+          onPageChanged: (index, reason) =>
+              setState(() => _currentCarouselIndex = index),
         ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: _carouselSlides.asMap().entries.map((entry) {
-            final isSelected = _currentCarouselIndex == entry.key;
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              width: isSelected ? 20 : 6,
-              height: 6,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(3),
-                color: context.primary.withValues(
-                  alpha: isSelected ? 0.8 : 0.2,
+        items: _carouselSlides.map((slide) {
+          return Builder(
+            builder: (BuildContext context) {
+              return Container(
+                width: screenWidth * 0.92,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      context.primary.withValues(alpha: 0.08),
+                      context.primary.withValues(alpha: 0.03),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: context.primary.withValues(alpha: 0.15),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: context.primary.withValues(alpha: 0.08),
+                      blurRadius: 20,
+                      spreadRadius: 0,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -30,
+                        top: -30,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                context.primary.withValues(alpha: 0.12),
+                                context.primary.withValues(alpha: 0.02),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: -25,
+                        bottom: -25,
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                context.primary.withValues(alpha: 0.1),
+                                context.primary.withValues(alpha: 0.02),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: (screenWidth * 0.04).clamp(16.0, 24.0),
+                          vertical: (screenWidth * 0.02).clamp(8.0, 12.0),
+                        ),
+                        child: slide['hasImages'] as bool
+                            ? _buildSlideWithImages(
+                                slide,
+                                screenWidth,
+                                carouselHeight,
+                              )
+                            : _buildSlideWithoutImages(
+                                slide,
+                                screenWidth,
+                                carouselHeight,
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildSlideWithImages(
+    Map<String, dynamic> slide,
+    double screenWidth,
+    double carouselHeight,
+  ) {
+    return LayoutBuilder(
+      builder: (context, cardConstraints) {
+        final availableHeight = cardConstraints.maxHeight;
+        final availableWidth = cardConstraints.maxWidth;
+        final isBroad = availableWidth > 450;
+
+        return FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: SizedBox(
+            width: availableWidth,
+            height: availableHeight,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  flex: isBroad ? 70 : 64,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        slide['heading'] as String,
+                        style: TextStyle(
+                          color: context.primary,
+                          fontSize: (availableWidth * 0.06).clamp(15.0, 20.0),
+                          fontWeight: FontWeight.bold,
+                          height: 1.1,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(
+                        height: (availableHeight * 0.04).clamp(4.0, 8.0),
+                      ),
+                      Text(
+                        slide['content'] as String,
+                        style: TextStyle(
+                          color: context.onSurface.withValues(alpha: 0.6),
+                          fontSize: (availableWidth * 0.035).clamp(11.0, 13.5),
+                          height: 1.2,
+                        ),
+                        maxLines: isBroad ? 3 : 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(
+                        height: (availableHeight * 0.04).clamp(6.0, 10.0),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: context.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          slide['supportText'] as String,
+                          style: TextStyle(
+                            color: context.primary,
+                            fontSize: (availableWidth * 0.028).clamp(9.0, 11.0),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: availableWidth * 0.02),
+                Flexible(
+                  flex: isBroad ? 30 : 36,
+                  child: Center(
+                    child: SizedBox(
+                      height: availableHeight * 0.85,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Container(
+                            width: (availableWidth * 0.22).clamp(70.0, 110.0),
+                            height: (availableWidth * 0.22).clamp(70.0, 110.0),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: context.primary.withValues(alpha: 0.04),
+                            ),
+                          ),
+                          Positioned(
+                            top: 0,
+                            left: isBroad ? 0 : -5,
+                            child: _buildFounderImage(
+                              'assets/images/founder_image_1.png',
+                              availableWidth,
+                              availableHeight,
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: isBroad ? 0 : -5,
+                            child: _buildFounderImage(
+                              'assets/images/founder_image_2.png',
+                              availableWidth,
+                              availableHeight,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFounderImage(String imagePath, double width, double height) {
+    final imageWidth = (width * 0.15).clamp(38.0, 58.0);
+    final imageHeight = (height * 0.42).clamp(70.0, 95.0);
+
+    return Container(
+      width: imageWidth,
+      height: imageHeight,
+      decoration: BoxDecoration(
+        color: context.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(
+          color: context.primary.withValues(alpha: 0.1),
+          width: 0.5,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.asset(
+          imagePath,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: context.primary.withValues(alpha: 0.1),
+              child: Icon(
+                Icons.person,
+                color: context.primary.withValues(alpha: 0.6),
+                size: imageWidth * 0.4,
               ),
             );
-          }).toList(),
+          },
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildSlideWithoutImages(
+    Map<String, dynamic> slide,
+    double screenWidth,
+    double carouselHeight,
+  ) {
+    return LayoutBuilder(
+      builder: (context, cardConstraints) {
+        final availableWidth = cardConstraints.maxWidth;
+        final availableHeight = cardConstraints.maxHeight;
+
+        return FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: SizedBox(
+            width: availableWidth,
+            height: availableHeight,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  slide['heading'] as String,
+                  style: TextStyle(
+                    color: context.primary,
+                    fontSize: (availableWidth * 0.06).clamp(16.0, 24.0),
+                    fontWeight: FontWeight.bold,
+                    height: 1.1,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: (availableHeight * 0.05).clamp(6.0, 12.0)),
+                Text(
+                  slide['content'] as String,
+                  style: TextStyle(
+                    color: context.onSurface.withValues(alpha: 0.6),
+                    fontSize: (availableWidth * 0.04).clamp(12.0, 16.0),
+                    height: 1.4,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: (availableHeight * 0.06).clamp(8.0, 16.0)),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: context.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    slide['supportText'] as String,
+                    style: TextStyle(
+                      color: context.primary,
+                      fontSize: (availableWidth * 0.035).clamp(10.0, 13.5),
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCarouselIndicators() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(
+          _carouselSlides.length,
+          (index) => AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: _currentCarouselIndex == index ? 20 : 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: _currentCarouselIndex == index
+                  ? context.primary
+                  : context.dividerColor.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -509,93 +886,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _CarouselSlide extends StatelessWidget {
-  final Map<String, dynamic> slide;
-  const _CarouselSlide({required this.slide});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [context.primary, context.primary.withValues(alpha: 0.8)],
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: context.primary.withValues(alpha: 0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    slide['supportText'],
-                    style: const TextStyle(
-                      color: AppColors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  slide['heading'],
-                  style: const TextStyle(
-                    color: AppColors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    height: 1.1,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  slide['content'],
-                  style: TextStyle(
-                    color: AppColors.white.withValues(alpha: 0.9),
-                    fontSize: 12,
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.white.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(slide['icon'], size: 40, color: AppColors.white),
-          ),
-        ],
       ),
     );
   }
