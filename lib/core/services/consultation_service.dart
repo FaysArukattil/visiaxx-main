@@ -86,19 +86,9 @@ class ConsultationService {
 
       // 1. Create booking document
       final bookingRef = _firestore.collection(bookingsCollection).doc();
-      final finalBooking = ConsultationBookingModel(
+      final finalBooking = booking.copyWith(
         id: bookingRef.id,
-        patientId: booking.patientId,
-        doctorId: booking.doctorId,
-        doctorName: booking.doctorName,
-        patientName: booking.patientName,
-        dateTime: booking.dateTime,
-        timeSlot: booking.timeSlot,
-        type: booking.type,
         status: BookingStatus.requested,
-        attachedResultIds: booking.attachedResultIds,
-        patientNotes: booking.patientNotes,
-        clinicAddress: booking.clinicAddress,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );

@@ -148,9 +148,16 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
         if (mounted) {
           SnackbarUtils.showError(
             context,
-            'Failed to request booking. Please try again.',
+            'Failed to load user profile. Please try again.',
           );
         }
+      }
+    } else {
+      if (mounted) {
+        SnackbarUtils.showError(
+          context,
+          'You must be logged in to request a booking.',
+        );
       }
     }
 

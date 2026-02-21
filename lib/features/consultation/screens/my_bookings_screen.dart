@@ -164,7 +164,7 @@ class _BookingListTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    booking.status.name.toUpperCase(),
+                    _getStatusText(booking.status),
                     style: TextStyle(
                       color: statusColor,
                       fontSize: 10,
@@ -289,6 +289,21 @@ class _BookingListTile extends StatelessWidget {
       return now.isAfter(earlyJoinTime) && now.isBefore(slotEndTime);
     } catch (e) {
       return false;
+    }
+  }
+
+  String _getStatusText(BookingStatus status) {
+    switch (status) {
+      case BookingStatus.requested:
+        return 'REQUEST SENT';
+      case BookingStatus.confirmed:
+        return 'CONFIRMED';
+      case BookingStatus.completed:
+        return 'COMPLETED';
+      case BookingStatus.cancelled:
+        return 'CANCELLED';
+      case BookingStatus.noShow:
+        return 'NO SHOW';
     }
   }
 

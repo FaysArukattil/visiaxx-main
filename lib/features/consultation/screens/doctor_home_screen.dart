@@ -23,6 +23,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   int _totalPatients = 0;
   int _todaysSlots = 0;
   int _completedConsultations = 0;
+  List<ConsultationBookingModel> _upcomingBookings = [];
 
   final List<Map<String, dynamic>> _carouselSlides = [
     {
@@ -70,6 +71,10 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         _completedConsultations = bookings
             .where((b) => b.status == BookingStatus.completed)
             .length;
+        _upcomingBookings = bookings
+            .where((b) => b.status == BookingStatus.confirmed)
+            .take(5)
+            .toList();
         _isLoading = false;
       });
     } else {
@@ -79,7 +84,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return CustomScrollView(
       slivers: [
@@ -89,9 +96,11 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
           actions: [
             IconButton(
               icon: const Icon(Icons.logout),
-              onPressed: () => _authService.signOut().then(
-                (_) => Navigator.pushReplacementNamed(context, '/login'),
-              ),
+              onPressed: () async {
+                final nav = Navigator.of(context);
+                await _authService.signOut();
+                nav.pushReplacementNamed('/login');
+              },
             ),
           ],
         ),
@@ -116,13 +125,92 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                   'Upcoming Consultations',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-                // TODO: Add list of today's bookings
+                const SizedBox(height: 16),
+                _buildUpcomingConsultations(),
                 const SizedBox(height: 100),
               ],
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildUpcomingConsultations() {
+    if (_upcomingBookings.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.event_available,
+              size: 48,
+              color: AppColors.textTertiary.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No confirmed bookings for today.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _upcomingBookings.length,
+      itemBuilder: (context, index) {
+        final booking = _upcomingBookings[index];
+        return Card(
+          elevation: 0,
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
+            ),
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(16),
+            leading: CircleAvatar(
+              backgroundColor: context.primary.withValues(alpha: 0.1),
+              child: const Icon(Icons.person),
+            ),
+            title: Text(
+              booking.patientName,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              '${booking.timeSlot} • ${booking.type == ConsultationType.online ? 'Online' : 'In-Person'}',
+              style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            ),
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'Confirmed',
+                style: TextStyle(
+                  color: Colors.green,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
