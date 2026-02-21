@@ -136,11 +136,16 @@ class _DoctorMainNavigationScreenState
           Container(
             width: 280,
             decoration: BoxDecoration(
-              color: context.surface,
+              color: context.surface.withValues(alpha: 0.8),
+              border: Border(
+                right: BorderSide(
+                  color: context.dividerColor.withValues(alpha: 0.05),
+                ),
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 20,
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 30,
                   offset: const Offset(10, 0),
                 ),
               ],
@@ -148,44 +153,56 @@ class _DoctorMainNavigationScreenState
             child: SafeArea(
               child: Column(
                 children: [
-                  const SizedBox(height: 40),
-                  // App Logo/Branding
+                  const SizedBox(height: 48),
+                  // Premium Visiaxx Logo - Balanced for clarity
                   Container(
-                    width: 60,
-                    height: 60,
+                    width: 170,
+                    height: 68,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          context.primary,
-                          context.primary.withValues(alpha: 0.8),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
+                      color: context.surface,
+                      borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: context.primary.withValues(alpha: 0.3),
+                          color: context.primary.withValues(alpha: 0.1),
                           blurRadius: 15,
-                          offset: const Offset(0, 8),
+                          offset: const Offset(0, 5),
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.shield_rounded,
-                      color: Colors.white,
-                      size: 30,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.asset(
+                        'assets/images/icons/app_logo.png',
+                        fit: BoxFit.cover,
+                        filterQuality: FilterQuality.high,
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          Icons.remove_red_eye_rounded,
+                          color: context.primary,
+                          size: 40,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   Text(
                     'VISIAXX',
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
-                      fontSize: 14,
-                      letterSpacing: 2,
+                      fontSize: 20,
+                      letterSpacing: 4.5,
                       color: context.primary,
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  Text(
+                    'DOCTOR PORTAL',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 10,
+                      letterSpacing: 1.5,
+                      color: context.textSecondary.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  const SizedBox(height: 48),
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -216,7 +233,7 @@ class _DoctorMainNavigationScreenState
                     ),
                   ),
                   _buildWebLogoutButton(context),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),

@@ -148,54 +148,10 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                 return CustomScrollView(
                   physics: const BouncingScrollPhysics(),
                   slivers: [
-                    SliverAppBar(
-                      backgroundColor: Colors.transparent,
-                      elevation: 0,
-                      floating: true,
-                      expandedHeight: 80,
-                      toolbarHeight: 70,
-                      centerTitle: false,
-                      title: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Welcome back,',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: context.textSecondary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            'Dr. ${_user?.firstName ?? ''}',
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  color: context.onSurface,
-                                  letterSpacing: -0.5,
-                                ),
-                          ),
-                        ],
-                      ),
-                      actions: [
-                        _buildHeaderAction(
-                          Icons.notifications_none_rounded,
-                          () {},
-                        ),
-                        _buildHeaderAction(Icons.logout_rounded, () async {
-                          final nav = Navigator.of(context);
-                          await _authService.signOut();
-                          nav.pushReplacementNamed('/login');
-                        }),
-                        const SizedBox(width: 16),
-                      ],
-                    ),
+                    SliverToBoxAdapter(child: _buildHeader(constraints)),
                     SliverPadding(
                       padding: EdgeInsets.symmetric(
-                        horizontal: (constraints.maxWidth * 0.045).clamp(
-                          16.0,
-                          40.0,
-                        ),
+                        horizontal: constraints.maxWidth * 0.045,
                         vertical: 16,
                       ),
                       sliver: SliverToBoxAdapter(
@@ -210,13 +166,13 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                               'Live Analytics',
                               Icons.insights_rounded,
                             ),
-                            _buildStatsRow(),
+                            _buildStatsRow(constraints),
                             const SizedBox(height: 32),
                             _buildSectionTitle(
                               'Quick Actions',
                               Icons.bolt_rounded,
                             ),
-                            _buildQuickActionsGrid(),
+                            _buildQuickActionsGrid(constraints),
                             const SizedBox(height: 32),
                             _buildSectionTitle(
                               'Upcoming Consultations',
@@ -231,6 +187,114 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                   ],
                 );
               },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BoxConstraints constraints) {
+    final horizontalPadding = constraints.maxWidth * 0.045;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    final logoWidth = (screenWidth * 0.25).clamp(110.0, 150.0);
+    final logoHeight = (screenHeight * 0.06).clamp(50.0, 65.0);
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(horizontalPadding, 16, horizontalPadding, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (constraints.maxWidth <= 800)
+                Container(
+                  width: logoWidth,
+                  height: logoHeight,
+                  decoration: BoxDecoration(
+                    color: context.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.asset(
+                      'assets/images/icons/app_logo.png',
+                      fit: BoxFit.cover,
+                      filterQuality: FilterQuality.high,
+                      errorBuilder: (context, error, stackTrace) =>
+                          Icon(Icons.remove_red_eye, color: context.primary),
+                    ),
+                  ),
+                ),
+              const Spacer(),
+              _buildHeaderAction(Icons.notifications_none_rounded, () {}),
+              if (constraints.maxWidth <= 800)
+                _buildHeaderAction(Icons.logout_rounded, () async {
+                  final nav = Navigator.of(context);
+                  await _authService.signOut();
+                  nav.pushReplacementNamed('/login');
+                }),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Hello, Dr. ${_user?.fullName ?? ''} 👋',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: (screenWidth * 0.055).clamp(18.0, 24.0),
+              color: context.onSurface,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  context.primary.withValues(alpha: 0.08),
+                  context.primary.withValues(alpha: 0.03),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: context.primary.withValues(alpha: 0.15),
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: context.primary.withValues(alpha: 0.05),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.remove_red_eye, color: context.primary, size: 18),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Your Vision, Our Priority',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: context.primary,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -718,31 +782,37 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
-  Widget _buildStatsRow() {
-    return Row(
-      children: [
-        _statCard(
-          'PATIENTS',
-          _totalPatients.toString(),
-          Icons.people_rounded,
-          Colors.blue,
-        ),
-        const SizedBox(width: 12),
-        _statCard(
-          'TODAY SLOTS',
-          _todaysSlots.toString(),
-          Icons.schedule_rounded,
-          Colors.orange,
-        ),
-        const SizedBox(width: 12),
-        _statCard(
-          'COMPLETED',
-          _completedConsultations.toString(),
-          Icons.verified_rounded,
-          Colors.green,
-        ),
-      ],
-    );
+  Widget _buildStatsRow(BoxConstraints constraints) {
+    final isWide = constraints.maxWidth > 800;
+    final content = [
+      _statCard(
+        'PATIENTS',
+        _totalPatients.toString(),
+        Icons.people_rounded,
+        Colors.blue,
+      ),
+      const SizedBox(width: 12),
+      _statCard(
+        'TODAY SLOTS',
+        _todaysSlots.toString(),
+        Icons.schedule_rounded,
+        Colors.orange,
+      ),
+      const SizedBox(width: 12),
+      _statCard(
+        'COMPLETED',
+        _completedConsultations.toString(),
+        Icons.verified_rounded,
+        Colors.green,
+      ),
+    ];
+
+    if (isWide) {
+      return Row(
+        children: [Expanded(child: Row(children: content))],
+      );
+    }
+    return Row(children: content);
   }
 
   Widget _statCard(String label, String value, IconData icon, Color color) {
@@ -803,90 +873,105 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     ).animate().fadeIn(duration: 500.ms).scale(delay: 100.ms);
   }
 
-  Widget _buildQuickActionsGrid() {
-    final isWide = MediaQuery.of(context).size.width > 800;
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: isWide ? 4 : 2,
-      mainAxisSpacing: 16,
-      crossAxisSpacing: 16,
-      childAspectRatio: 1.4,
+  Widget _buildQuickActionsGrid(BoxConstraints constraints) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = constraints.maxWidth > 800;
+    final cardSpacing = 16.0;
+    final compactCardHeight = 100.0;
+    final wideCardHeight = 70.0;
+
+    if (isWide) {
+      return GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 2,
+        mainAxisSpacing: cardSpacing,
+        crossAxisSpacing: cardSpacing,
+        childAspectRatio: 3.5,
+        children: [
+          _CompactServiceCard(
+            icon: Icons.pending_actions_rounded,
+            title: 'Review Requests',
+            subtitle: 'Pending bookings',
+            onTap: () => Navigator.pushNamed(context, '/doctor-booking-review'),
+            height: compactCardHeight,
+            screenWidth: screenWidth,
+          ),
+          _CompactServiceCard(
+            icon: Icons.calendar_view_day_rounded,
+            title: 'Manage Slots',
+            subtitle: 'Daily availability',
+            onTap: () => Navigator.pushNamed(context, '/doctor-slots'),
+            height: compactCardHeight,
+            screenWidth: screenWidth,
+          ),
+          _WideServiceCard(
+            icon: Icons.videocam_rounded,
+            title: 'Tele-Health Consultation',
+            subtitle: 'Start a video session',
+            onTap: () {},
+            height: wideCardHeight,
+            screenWidth: screenWidth,
+          ),
+          _WideServiceCard(
+            icon: Icons.storage_rounded,
+            title: 'Patient Vault',
+            subtitle: 'Access patient records',
+            onTap: () {},
+            height: wideCardHeight,
+            screenWidth: screenWidth,
+          ),
+        ],
+      );
+    }
+
+    return Column(
       children: [
-        _actionCard(
-          'Review Requests',
-          Icons.pending_actions_rounded,
-          Colors.orange,
-          () => Navigator.pushNamed(context, '/doctor-booking-review'),
+        Row(
+          children: [
+            Expanded(
+              child: _CompactServiceCard(
+                icon: Icons.pending_actions_rounded,
+                title: 'Review Requests',
+                subtitle: 'Pending bookings',
+                onTap: () =>
+                    Navigator.pushNamed(context, '/doctor-booking-review'),
+                height: compactCardHeight,
+                screenWidth: screenWidth,
+              ),
+            ),
+            SizedBox(width: cardSpacing),
+            Expanded(
+              child: _CompactServiceCard(
+                icon: Icons.calendar_view_day_rounded,
+                title: 'Manage Slots',
+                subtitle: 'Daily availability',
+                onTap: () => Navigator.pushNamed(context, '/doctor-slots'),
+                height: compactCardHeight,
+                screenWidth: screenWidth,
+              ),
+            ),
+          ],
         ),
-        _actionCard(
-          'Manage Slots',
-          Icons.calendar_view_day_rounded,
-          Colors.blue,
-          () => Navigator.pushNamed(context, '/doctor-slots'),
+        SizedBox(height: cardSpacing),
+        _WideServiceCard(
+          icon: Icons.videocam_rounded,
+          title: 'Tele-Health Consultation',
+          subtitle: 'Start a video session',
+          onTap: () {},
+          height: wideCardHeight,
+          screenWidth: screenWidth,
         ),
-        _actionCard('Tele-Health', Icons.videocam_rounded, Colors.green, () {}),
-        _actionCard(
-          'Patient Vault',
-          Icons.storage_rounded,
-          Colors.purple,
-          () {},
+        SizedBox(height: cardSpacing),
+        _WideServiceCard(
+          icon: Icons.storage_rounded,
+          title: 'Patient Vault',
+          subtitle: 'Access patient records',
+          onTap: () {},
+          height: wideCardHeight,
+          screenWidth: screenWidth,
         ),
       ],
-    );
-  }
-
-  Widget _actionCard(
-    String label,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: context.surface,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: context.dividerColor.withValues(alpha: 0.05),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 24),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12,
-                  color: context.onSurface,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -998,6 +1083,272 @@ class _BookingTile extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CompactServiceCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final double height;
+  final double screenWidth;
+
+  const _CompactServiceCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    required this.height,
+    required this.screenWidth,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color activeColor = context.primary;
+    return LayoutBuilder(
+      builder: (context, cardConstraints) {
+        final availableWidth = cardConstraints.maxWidth;
+        final iconSize = (availableWidth * 0.18).clamp(28.0, 36.0);
+        final titleFontSize = (availableWidth * 0.08).clamp(13.0, 16.0);
+        final subtitleFontSize = (availableWidth * 0.058).clamp(9.5, 12.0);
+        final cardPadding = (availableWidth * 0.065).clamp(10.0, 14.0);
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(20),
+            splashColor: activeColor.withValues(alpha: 0.1),
+            highlightColor: activeColor.withValues(alpha: 0.05),
+            child: Ink(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    activeColor.withValues(alpha: 0.08),
+                    activeColor.withValues(alpha: 0.03),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: activeColor.withValues(alpha: 0.15),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: activeColor.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Container(
+                constraints: BoxConstraints(minHeight: height),
+                padding: EdgeInsets.all(cardPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (height > 60) ...[
+                      Container(
+                        width: iconSize + 14,
+                        height: iconSize + 14,
+                        decoration: BoxDecoration(
+                          color: context.scaffoldBackground,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(icon, color: activeColor, size: iconSize),
+                      ),
+                      SizedBox(height: cardPadding * 0.8),
+                    ],
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: titleFontSize,
+                            color: activeColor,
+                            height: 1.1,
+                            letterSpacing: -0.2,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: subtitleFontSize,
+                            color: context.textSecondary,
+                            height: 1.1,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _WideServiceCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final double height;
+  final double screenWidth;
+
+  const _WideServiceCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    required this.height,
+    required this.screenWidth,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color activeColor = context.primary;
+    return LayoutBuilder(
+      builder: (context, cardConstraints) {
+        final iconSize = (cardConstraints.maxWidth * 0.055).clamp(24.0, 30.0);
+        final titleFontSize = (cardConstraints.maxWidth * 0.042).clamp(
+          14.0,
+          17.0,
+        );
+        final subtitleFontSize = (cardConstraints.maxWidth * 0.032).clamp(
+          10.0,
+          12.0,
+        );
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(20),
+            splashColor: activeColor.withValues(alpha: 0.1),
+            highlightColor: activeColor.withValues(alpha: 0.05),
+            child: Ink(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    activeColor.withValues(alpha: 0.08),
+                    activeColor.withValues(alpha: 0.03),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: activeColor.withValues(alpha: 0.15),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: activeColor.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Container(
+                constraints: BoxConstraints(minHeight: height),
+                padding: EdgeInsets.symmetric(
+                  horizontal: (cardConstraints.maxWidth * 0.04).clamp(
+                    12.0,
+                    18.0,
+                  ),
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    if (height > 40) ...[
+                      Container(
+                        width: iconSize + 14,
+                        height: iconSize + 14,
+                        decoration: BoxDecoration(
+                          color: context.scaffoldBackground,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(icon, color: activeColor, size: iconSize),
+                      ),
+                      SizedBox(
+                        width: (cardConstraints.maxWidth * 0.03).clamp(
+                          8.0,
+                          14.0,
+                        ),
+                      ),
+                    ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: titleFontSize,
+                              color: activeColor,
+                              letterSpacing: -0.3,
+                              height: 1.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: subtitleFontSize,
+                              color: context.textSecondary,
+                              height: 1.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: context.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        size: (cardConstraints.maxWidth * 0.038).clamp(
+                          16.0,
+                          20.0,
+                        ),
+                        color: context.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
