@@ -239,6 +239,39 @@ class _InPersonLocationScreenState extends State<InPersonLocationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.pickerMode) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        padding: const EdgeInsets.fromLTRB(0, 16, 0, 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSheetHandle(),
+            _buildSheetHeaderPicker(context),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildAutoDetectButton(context),
+                  const SizedBox(height: 24),
+                  _buildDivider(context),
+                  const SizedBox(height: 24),
+                  SizedBox(height: 180, child: _buildCityGrid(context)),
+                  const SizedBox(height: 24),
+                  _buildContinueButton(context),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       body: OrientationBuilder(
         builder: (context, orientation) {
@@ -292,6 +325,49 @@ class _InPersonLocationScreenState extends State<InPersonLocationScreen> {
       ),
     );
   }
+
+  Widget _buildSheetHandle() => Center(
+    child: Container(
+      width: 40,
+      height: 4,
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: context.dividerColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(2),
+      ),
+    ),
+  );
+
+  Widget _buildSheetHeaderPicker(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(28, 0, 20, 20),
+    child: Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Update Location',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+              ),
+              Text(
+                'Select or detect your visit address',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: context.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.close_rounded),
+        ),
+      ],
+    ),
+  );
 
   Widget _buildPortraitContent(BuildContext context) {
     return Column(

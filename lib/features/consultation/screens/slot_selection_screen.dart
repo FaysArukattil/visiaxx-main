@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/consultation_service.dart';
 import '../../../data/models/doctor_model.dart';
+import '../../../data/models/consultation_booking_model.dart';
 import '../../../data/models/time_slot_model.dart';
 import '../../../core/widgets/eye_loader.dart';
 
@@ -24,6 +25,7 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
   double? _latitude;
   double? _longitude;
   String? _exactAddress;
+  ConsultationType? _type;
 
   @override
   void didChangeDependencies() {
@@ -45,6 +47,7 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
     _latitude = args?['latitude'];
     _longitude = args?['longitude'];
     _exactAddress = args?['exactAddress'];
+    _type = args?['type'];
     if (_doctor != null) {
       _loadSlots();
     }
@@ -641,6 +644,7 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
                     'doctor': _doctor,
                     'date': _selectedDate,
                     'slot': selectedSlot,
+                    'type': _type,
                     'latitude': _latitude,
                     'longitude': _longitude,
                     'exactAddress': _exactAddress,

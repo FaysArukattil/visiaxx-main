@@ -272,7 +272,13 @@ class _DoctorBrowseScreenState extends State<DoctorBrowseScreen> {
                                     ),
                                   ),
                                   items: _allDoctors.take(5).map((doctor) {
-                                    return _FeaturedDoctorCard(doctor: doctor);
+                                    return _FeaturedDoctorCard(
+                                      doctor: doctor,
+                                      type: _consultationType,
+                                      latitude: _latitude,
+                                      longitude: _longitude,
+                                      exactAddress: _exactAddress,
+                                    );
                                   }).toList(),
                                 ),
                                 const SizedBox(height: 32),
@@ -314,6 +320,7 @@ class _DoctorBrowseScreenState extends State<DoctorBrowseScreen> {
                               ) {
                                 return _DoctorListTile(
                                       doctor: _filteredDoctors[index],
+                                      type: _consultationType,
                                       latitude: _latitude,
                                       longitude: _longitude,
                                       exactAddress: _exactAddress,
@@ -336,7 +343,18 @@ class _DoctorBrowseScreenState extends State<DoctorBrowseScreen> {
 
 class _FeaturedDoctorCard extends StatelessWidget {
   final DoctorModel doctor;
-  const _FeaturedDoctorCard({required this.doctor});
+  final String? type;
+  final double? latitude;
+  final double? longitude;
+  final String? exactAddress;
+
+  const _FeaturedDoctorCard({
+    required this.doctor,
+    this.type,
+    this.latitude,
+    this.longitude,
+    this.exactAddress,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -409,7 +427,14 @@ class _FeaturedDoctorCard extends StatelessWidget {
                 onTap: () => Navigator.pushNamed(
                   context,
                   '/doctor-detail',
-                  arguments: {'doctorId': doctor.id, 'isFeatured': true},
+                  arguments: {
+                    'doctorId': doctor.id,
+                    'isFeatured': true,
+                    'type': type,
+                    'latitude': latitude,
+                    'longitude': longitude,
+                    'exactAddress': exactAddress,
+                  },
                 ),
               ),
             ),
@@ -540,12 +565,14 @@ class _FeaturedDoctorCard extends StatelessWidget {
 
 class _DoctorListTile extends StatelessWidget {
   final DoctorModel doctor;
+  final String? type;
   final double? latitude;
   final double? longitude;
   final String? exactAddress;
 
   const _DoctorListTile({
     required this.doctor,
+    this.type,
     this.latitude,
     this.longitude,
     this.exactAddress,
@@ -578,6 +605,7 @@ class _DoctorListTile extends StatelessWidget {
             '/doctor-detail',
             arguments: {
               'doctorId': doctor.id,
+              'type': type,
               'latitude': latitude,
               'longitude': longitude,
               'exactAddress': exactAddress,

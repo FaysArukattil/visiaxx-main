@@ -54,9 +54,12 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
     _latitude = args?['latitude'];
     _longitude = args?['longitude'];
     _exactAddress = args?['exactAddress'];
-    _type = args?['type'] == 'inPerson'
-        ? ConsultationType.inPerson
-        : ConsultationType.online;
+    _type = args?['type'] is String
+        ? (args?['type'] == 'inPerson'
+              ? ConsultationType.inPerson
+              : ConsultationType.online)
+        : args?['type'] ?? ConsultationType.online;
+    // Default to online if completely missing, but propagation should prevent this now
   }
 
   Future<void> _finalizeBooking() async {
@@ -866,11 +869,11 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   }
 
   Future<void> _pickLocation() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const InPersonLocationScreen(pickerMode: true),
-      ),
+    final result = await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const InPersonLocationScreen(pickerMode: true),
     );
 
     if (result != null && result is Map<String, dynamic>) {

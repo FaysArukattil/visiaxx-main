@@ -8,6 +8,7 @@ import '../../../core/utils/snackbar_utils.dart';
 import '../../../data/models/doctor_model.dart';
 import '../../../data/models/time_slot_model.dart';
 import '../../../data/models/test_result_model.dart';
+import '../../../data/models/consultation_booking_model.dart';
 import '../../quick_vision_test/screens/quick_test_result_screen.dart';
 import '../../../core/widgets/eye_loader.dart';
 
@@ -28,6 +29,7 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
   double? _latitude;
   double? _longitude;
   String? _exactAddress;
+  ConsultationType? _type;
 
   List<TestResultModel> _results = [];
   final List<String> _selectedResultIds = [];
@@ -46,6 +48,7 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
     _latitude = args?['latitude'];
     _longitude = args?['longitude'];
     _exactAddress = args?['exactAddress'];
+    _type = args?['type'];
 
     // Handle pre-selected values for editability
     if (args?['preSelectedResultIds'] != null) {
@@ -891,6 +894,7 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
         'latitude': _latitude,
         'longitude': _longitude,
         'exactAddress': _exactAddress,
+        'type': _type,
       },
     );
   }

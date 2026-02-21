@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/consultation_service.dart';
 import '../../../data/models/doctor_model.dart';
+import '../../../data/models/consultation_booking_model.dart';
 import '../../../core/widgets/eye_loader.dart';
 
 class DoctorDetailScreen extends StatefulWidget {
@@ -18,6 +19,10 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
   DoctorModel? _doctor;
   bool _isLoading = true;
   bool _isFeatured = false;
+  ConsultationType? _type;
+  double? _latitude;
+  double? _longitude;
+  String? _exactAddress;
 
   @override
   void didChangeDependencies() {
@@ -26,6 +31,16 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final doctorId = args?['doctorId'] as String?;
     _isFeatured = args?['isFeatured'] ?? false;
+
+    _type = args?['type'] is String
+        ? (args?['type'] == 'inPerson'
+              ? ConsultationType.inPerson
+              : ConsultationType.online)
+        : args?['type'];
+    _latitude = args?['latitude'];
+    _longitude = args?['longitude'];
+    _exactAddress = args?['exactAddress'];
+
     if (doctorId != null) {
       _loadDoctorDetail(doctorId);
     }
@@ -463,9 +478,10 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
                 '/slot-selection',
                 arguments: {
                   'doctor': _doctor,
-                  'latitude': args?['latitude'],
-                  'longitude': args?['longitude'],
-                  'exactAddress': args?['exactAddress'],
+                  'type': _type,
+                  'latitude': _latitude,
+                  'longitude': _longitude,
+                  'exactAddress': _exactAddress,
                 },
               );
             },
