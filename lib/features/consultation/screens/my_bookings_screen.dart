@@ -5,7 +5,6 @@ import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/consultation_service.dart';
 import '../../../data/models/consultation_booking_model.dart';
-import '../../home/widgets/app_bar_widget.dart';
 import 'patient_video_call_screen.dart';
 
 class MyBookingsScreen extends StatefulWidget {
@@ -31,7 +30,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
     setState(() => _isLoading = true);
     final user = _authService.currentUser;
     if (user != null) {
-      print('[MyBookingsScreen] Loading bookings for UID: ${user.uid}');
       final bookings = await _consultationService.getPatientBookings(user.uid);
       if (mounted) {
         setState(() {
@@ -47,39 +45,141 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const AppBarWidget(title: 'My Bookings'),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadBookings,
-              color: context.primary,
-              child: _bookings.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 16,
-                      ),
-                      itemCount: _bookings.length,
-                      itemBuilder: (context, index) {
-                        return _BookingListTile(
-                              booking: _bookings[index],
-                              onCancel: () =>
-                                  _cancelBooking(_bookings[index].id),
-                              onDelete: () =>
-                                  _deleteBooking(_bookings[index].id),
-                            )
-                            .animate()
-                            .fadeIn(duration: 400.ms, delay: (index * 50).ms)
-                            .slideY(
-                              begin: 0.1,
-                              end: 0,
-                              duration: 400.ms,
-                              curve: Curves.easeOutCubic,
-                            );
-                      },
-                    ),
+      body: Stack(
+        children: [
+          // Background decorative elements
+          Positioned(
+            top: -50,
+            right: -50,
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: context.primary.withValues(alpha: 0.03),
+              ),
             ),
+          ),
+          Positioned(
+            bottom: 100,
+            left: -80,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: context.primary.withValues(alpha: 0.02),
+              ),
+            ),
+          ),
+
+          SafeArea(
+            child: Column(
+              children: [
+                _buildPremiumAppBar(context),
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : RefreshIndicator(
+                          onRefresh: _loadBookings,
+                          color: context.primary,
+                          child: _bookings.isEmpty
+                              ? _buildEmptyState()
+                              : ListView.builder(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 8,
+                                  ),
+                                  itemCount: _bookings.length,
+                                  itemBuilder: (context, index) {
+                                    return _BookingListTile(
+                                          booking: _bookings[index],
+                                          onCancel: () => _cancelBooking(
+                                            _bookings[index].id,
+                                          ),
+                                          onDelete: () => _deleteBooking(
+                                            _bookings[index].id,
+                                          ),
+                                        )
+                                        .animate()
+                                        .fadeIn(
+                                          duration: 400.ms,
+                                          delay: (index * 80).ms,
+                                        )
+                                        .slideY(
+                                          begin: 0.1,
+                                          end: 0,
+                                          curve: Curves.easeOutCubic,
+                                        );
+                                  },
+                                ),
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPremiumAppBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: context.surface,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.arrow_back_ios_new, size: 18),
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'HISTORY',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                  color: Colors.grey,
+                ),
+              ),
+              Text(
+                'My Bookings',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: context.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.history_rounded, color: context.primary),
+          ),
+        ],
+      ),
     );
   }
 
@@ -125,7 +225,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              elevation: 0,
+              elevation: 4,
+              shadowColor: context.primary.withValues(alpha: 0.3),
             ),
             child: const Text(
               'Book Now',
@@ -267,35 +368,50 @@ class _BookingListTile extends StatelessWidget {
           ? onDelete
           : null,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: context.surface,
-          borderRadius: BorderRadius.circular(28),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              context.primary.withValues(alpha: 0.08),
+              context.primary.withValues(alpha: 0.03),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: context.primary.withValues(alpha: 0.15),
+            width: 1.2,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              color: context.primary.withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 6),
             ),
           ],
-          border: Border.all(
-            color: context.dividerColor.withValues(alpha: 0.05),
-          ),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(24),
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                 child: Row(
                   children: [
                     Container(
-                      width: 60,
-                      height: 60,
+                      width: 65,
+                      height: 65,
                       decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(18),
+                        color: context.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                         image:
                             (booking.doctorPhotoUrl != null &&
                                 booking.doctorPhotoUrl!.isNotEmpty)
@@ -308,7 +424,7 @@ class _BookingListTile extends StatelessWidget {
                       child:
                           (booking.doctorPhotoUrl == null ||
                               booking.doctorPhotoUrl!.isEmpty)
-                          ? Icon(Icons.person, color: color, size: 30)
+                          ? Icon(Icons.person_rounded, color: color, size: 30)
                           : null,
                     ),
                     const SizedBox(width: 16),
@@ -323,43 +439,49 @@ class _BookingListTile extends StatelessWidget {
                                   booking.doctorName,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w900,
-                                    fontSize: 17,
-                                    letterSpacing: -0.5,
+                                    fontSize: 18,
+                                    letterSpacing: -0.6,
                                   ),
                                 ),
                               ),
                               _buildStatusBadge(booking.status, statusColor),
                             ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            booking.type == ConsultationType.online
-                                ? 'Online Consultation'
-                                : 'In-Person Visit',
-                            style: TextStyle(
-                              color: context.textTertiary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              'Patient: ${booking.patientName}${booking.isForSelf ? ' (Self)' : ''}',
-                              style: TextStyle(
-                                color: color,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              if (booking.type == ConsultationType.online &&
+                                  booking.status == BookingStatus.confirmed &&
+                                  _isSlotActive(booking)) ...[
+                                Icon(
+                                  Icons.videocam_rounded,
+                                  size: 14,
+                                  color: color,
+                                ),
+                                const SizedBox(width: 6),
+                              ],
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: context.surface.withValues(alpha: 0.8),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: color.withValues(alpha: 0.1),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Patient: ${booking.patientName}${booking.isForSelf ? ' (Self)' : ''}',
+                                  style: TextStyle(
+                                    color: context.textSecondary,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
                         ],
                       ),
@@ -369,13 +491,11 @@ class _BookingListTile extends StatelessWidget {
               ),
               Container(
                 height: 1,
-                color: context.dividerColor.withValues(alpha: 0.05),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                color: context.primary.withValues(alpha: 0.05),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
+                padding: const EdgeInsets.all(12),
                 child: Wrap(
                   spacing: 12,
                   runSpacing: 10,
@@ -386,13 +506,13 @@ class _BookingListTile extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _buildInfoChip(
-                          Icons.calendar_month_rounded,
-                          DateFormat('dd MMM yyyy').format(booking.dateTime),
+                          Icons.calendar_today_rounded,
+                          DateFormat('dd MMM yy').format(booking.dateTime),
                           context,
                         ),
                         const SizedBox(width: 8),
                         _buildInfoChip(
-                          Icons.access_time_filled_rounded,
+                          Icons.schedule_rounded,
                           booking.timeSlot,
                           context,
                         ),
@@ -402,15 +522,16 @@ class _BookingListTile extends StatelessWidget {
                       TextButton.icon(
                         onPressed: onCancel,
                         icon: const Icon(Icons.close_rounded, size: 14),
-                        label: const Text('Cancel Request'),
+                        label: const Text('CANCEL'),
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.red,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           textStyle: const TextStyle(
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight: FontWeight.w900,
+                            letterSpacing: 1,
                           ),
                         ),
                       ),
@@ -420,43 +541,67 @@ class _BookingListTile extends StatelessWidget {
               if (booking.status == BookingStatus.confirmed)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                  child: ElevatedButton(
-                    onPressed: _isSlotActive(booking)
-                        ? () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  PatientVideoCallScreen(booking: booking),
-                            ),
-                          )
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _isSlotActive(booking)
-                          ? context.primary
-                          : context.dividerColor.withValues(alpha: 0.1),
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 50),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: _isSlotActive(booking)
+                          ? [
+                              BoxShadow(
+                                color: context.primary.withValues(alpha: 0.2),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : null,
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.videocam_rounded),
-                        const SizedBox(width: 12),
-                        Text(
-                          _isSlotActive(booking)
-                              ? 'Join Video Consultation'
-                              : 'Starts at ${booking.timeSlot}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
-                          ),
+                    child: ElevatedButton(
+                      onPressed: _isSlotActive(booking)
+                          ? () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    PatientVideoCallScreen(booking: booking),
+                              ),
+                            )
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _isSlotActive(booking)
+                            ? context.primary
+                            : context.dividerColor.withValues(alpha: 0.1),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 48),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                      ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.videocam_rounded,
+                            size: 20,
+                            color: _isSlotActive(booking)
+                                ? Colors.white
+                                : Colors.grey,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _isSlotActive(booking)
+                                ? 'JOIN CONSULTATION'
+                                : 'STARTS AT ${booking.timeSlot}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                              color: _isSlotActive(booking)
+                                  ? Colors.white
+                                  : Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -469,18 +614,19 @@ class _BookingListTile extends StatelessWidget {
 
   Widget _buildStatusBadge(BookingStatus status, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 0.5),
       ),
       child: Text(
         _getStatusText(status),
         style: TextStyle(
           color: color,
-          fontSize: 9,
+          fontSize: 8,
           fontWeight: FontWeight.w900,
-          letterSpacing: 0.5,
+          letterSpacing: 1.2,
         ),
       ),
     );
@@ -497,14 +643,15 @@ class _BookingListTile extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: context.textTertiary),
+          Icon(icon, size: 14, color: context.primary.withValues(alpha: 0.6)),
           const SizedBox(width: 6),
           Text(
             text,
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
               color: context.textSecondary,
+              letterSpacing: -0.2,
             ),
           ),
         ],
@@ -554,7 +701,7 @@ class _BookingListTile extends StatelessWidget {
   String _getStatusText(BookingStatus status) {
     switch (status) {
       case BookingStatus.requested:
-        return 'REQUEST SENT';
+        return 'REQUESTED';
       case BookingStatus.confirmed:
         return 'CONFIRMED';
       case BookingStatus.completed:
@@ -569,15 +716,15 @@ class _BookingListTile extends StatelessWidget {
   Color _getStatusColor(BookingStatus status) {
     switch (status) {
       case BookingStatus.requested:
-        return Colors.orange;
+        return Colors.orange.shade700;
       case BookingStatus.confirmed:
-        return Colors.green;
+        return Colors.green.shade700;
       case BookingStatus.completed:
-        return Colors.blue;
+        return Colors.blue.shade700;
       case BookingStatus.cancelled:
-        return Colors.red;
+        return Colors.red.shade700;
       case BookingStatus.noShow:
-        return Colors.grey;
+        return Colors.grey.shade700;
     }
   }
 }
