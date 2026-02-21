@@ -36,7 +36,6 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Guard against redundant initialization on orientation changes
     if (_doctor != null) return;
 
     final args =
@@ -87,7 +86,6 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Decorative background circles
           Positioned(
             top: -120,
             right: -60,
@@ -102,74 +100,67 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
           SafeArea(
             child: Column(
               children: [
-                if (isLandscape)
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Left Column: Header & Context
-                        Expanded(
-                          flex: 2,
-                          child: SingleChildScrollView(
-                            physics: const BouncingScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(24, 12, 0, 12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildHeader(context),
-                                const SizedBox(height: 32),
-                                _buildContextInfo(),
-                              ],
-                            ),
-                          ),
-                        ),
-                        // Right Column: Result List
-                        Expanded(
-                          flex: 3,
-                          child: Column(
-                            children: [
-                              Expanded(
-                                child: _isLoading
-                                    ? const Center(child: EyeLoader(size: 60))
-                                    : _results.isEmpty
-                                    ? _buildEmptyState()
-                                    : _buildResultsList(),
+                Expanded(
+                  child: isLandscape
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  12,
+                                  0,
+                                  12,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildHeader(context),
+                                    const SizedBox(height: 32),
+                                    _buildContextInfo(),
+                                  ],
+                                ),
                               ),
-                              _buildBottomAction(),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  Expanded(
-                    child: Column(
-                      children: [
-                        _buildHeader(context),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-                          child: Text(
-                            'Share your previous test results with Dr. ${_doctor!.fullName} for a more accurate clinical evaluation.',
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: context.textSecondary,
-                              height: 1.5,
-                              letterSpacing: -0.2,
                             ),
-                          ),
+                            Expanded(
+                              flex: 3,
+                              child: _isLoading
+                                  ? const Center(child: EyeLoader(size: 60))
+                                  : _results.isEmpty
+                                  ? _buildEmptyState()
+                                  : _buildResultsList(),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            _buildHeader(context),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+                              child: Text(
+                                'Share your previous test results with Dr. ${_doctor!.fullName} for a more accurate clinical evaluation.',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: context.textSecondary,
+                                  height: 1.5,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: _isLoading
+                                  ? const Center(child: EyeLoader(size: 60))
+                                  : _results.isEmpty
+                                  ? _buildEmptyState()
+                                  : _buildResultsList(),
+                            ),
+                          ],
                         ),
-                        Expanded(
-                          child: _isLoading
-                              ? const Center(child: EyeLoader(size: 60))
-                              : _results.isEmpty
-                              ? _buildEmptyState()
-                              : _buildResultsList(),
-                        ),
-                        _buildBottomAction(),
-                      ],
-                    ),
-                  ),
+                ),
+                _buildBottomAction(),
               ],
             ),
           ),
@@ -410,6 +401,13 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
                       ],
                     ),
                   ),
+
+                  // Amsler Image thumbnail if issues detected
+                  if (_hasAmslerIssues(result)) ...[
+                    const SizedBox(height: 16),
+                    _buildAmslerThumbnails(result),
+                  ],
+
                   const SizedBox(height: 14),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -452,6 +450,91 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
     );
   }
 
+  bool _hasAmslerIssues(TestResultModel result) {
+    if (result.overallStatus == TestStatus.normal) return false;
+    final r = result.amslerGridRight;
+    final l = result.amslerGridLeft;
+    return (r != null && r.needsAttention) || (l != null && l.needsAttention);
+  }
+
+  Widget _buildAmslerThumbnails(TestResultModel result) {
+    final List<Widget> thumbs = [];
+    final r = result.amslerGridRight;
+    final l = result.amslerGridLeft;
+
+    if (r != null &&
+        r.needsAttention &&
+        (r.awsImageUrl != null || r.firebaseImageUrl != null)) {
+      thumbs.add(
+        _buildThumb(r.awsImageUrl ?? r.firebaseImageUrl!, 'Right Eye'),
+      );
+    }
+    if (l != null &&
+        l.needsAttention &&
+        (l.awsImageUrl != null || l.firebaseImageUrl != null)) {
+      thumbs.add(_buildThumb(l.awsImageUrl ?? l.firebaseImageUrl!, 'Left Eye'));
+    }
+
+    if (thumbs.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Amsler Grid Findings:',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: context.textTertiary,
+            letterSpacing: 0.2,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 80,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: thumbs.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, index) => thumbs[index],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildThumb(String url, String label) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Container(
+            width: 80,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: context.dividerColor.withValues(alpha: 0.1),
+              ),
+              image: DecorationImage(
+                image: NetworkImage(url),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: context.textTertiary,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSelectedIndicator(bool isSelected) {
     final color = context.primary;
     return AnimatedContainer(
@@ -484,22 +567,19 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
 
   String _getTestsPerformedSummary(TestResultModel result) {
     final List<String> tests = [];
-    if (result.visualAcuityRight != null || result.visualAcuityLeft != null) {
+    if (result.visualAcuityRight != null || result.visualAcuityLeft != null)
       tests.add('Acuity');
-    }
     if (result.colorVision != null) tests.add('Color Vision');
-    if (result.amslerGridRight != null || result.amslerGridLeft != null) {
+    if (result.amslerGridRight != null || result.amslerGridLeft != null)
       tests.add('Amsler');
-    }
     if (result.shortDistance != null) tests.add('Reading');
     if (result.pelliRobson != null) tests.add('Contrast');
     if (result.mobileRefractometry != null) tests.add('Refraction');
     if (result.shadowTest != null) tests.add('Cataract');
     if (result.stereopsis != null) tests.add('Depth');
     if (result.eyeHydration != null) tests.add('Hydration');
-    if (result.visualFieldRight != null || result.visualFieldLeft != null) {
+    if (result.visualFieldRight != null || result.visualFieldLeft != null)
       tests.add('Field');
-    }
     if (result.coverTest != null) tests.add('Alignment');
     if (result.torchlight != null) tests.add('Torch');
 
@@ -575,6 +655,8 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
   }
 
   Widget _buildBottomAction() {
+    final isSelected = _selectedResultIds.isNotEmpty;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
       decoration: BoxDecoration(
@@ -591,6 +673,7 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
       child: Row(
         children: [
           Expanded(
+            flex: 1,
             child: OutlinedButton(
               onPressed: () => _navigateToConfirmation(),
               style: OutlinedButton.styleFrom(
@@ -603,12 +686,10 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
                   width: 1.5,
                 ),
               ),
-              child: Text(
-                'Skip',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  color: context.textSecondary,
+              child: const FittedBox(
+                child: Text(
+                  'Skip',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
                 ),
               ),
             ),
@@ -627,20 +708,22 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
                 ),
                 elevation: 0,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _selectedResultIds.isEmpty ? 'Proceed' : 'Attach & Proceed',
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.5,
+              child: FittedBox(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      isSelected ? 'Attach & Proceed' : 'Proceed',
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Icon(Icons.arrow_forward_rounded, size: 18),
-                ],
+                    const SizedBox(width: 12),
+                    const Icon(Icons.arrow_forward_rounded, size: 18),
+                  ],
+                ),
               ),
             ),
           ),

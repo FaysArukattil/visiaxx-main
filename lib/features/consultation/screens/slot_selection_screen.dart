@@ -28,7 +28,6 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Guard against redundant initialization on orientation changes
     if (_doctor != null) return;
 
     final args =
@@ -65,7 +64,6 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
     setState(() {
       _slots = finalSlots;
       _isLoading = false;
-      // selection is now managed explicitly by interactions
     });
   }
 
@@ -113,7 +111,6 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Background Decorative Circles
           Positioned(
             top: -120,
             right: -60,
@@ -128,73 +125,66 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
           SafeArea(
             child: Column(
               children: [
-                if (isLandscape)
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Left Column: Header & Date Selection
-                        Expanded(
-                          flex: 2,
-                          child: SingleChildScrollView(
-                            physics: const BouncingScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(24, 12, 0, 12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildHeaderRow(context),
-                                const SizedBox(height: 32),
-                                Text(
-                                  'Select Date',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w900,
-                                    color: context.textPrimary,
-                                    letterSpacing: -0.4,
-                                  ),
+                Expanded(
+                  child: isLandscape
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  12,
+                                  0,
+                                  12,
                                 ),
-                                const SizedBox(height: 16),
-                                _buildDateList(isVertical: true),
-                              ],
-                            ),
-                          ),
-                        ),
-                        // Right Column: Slots
-                        Expanded(
-                          flex: 3,
-                          child: Column(
-                            children: [
-                              Expanded(
-                                child: _isLoading
-                                    ? const Center(child: EyeLoader(size: 60))
-                                    : _slots.isEmpty
-                                    ? _buildEmptyState()
-                                    : _buildSlotGrid(crossAxisCount: 4),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildHeaderRow(context),
+                                    const SizedBox(height: 32),
+                                    Text(
+                                      'Select Date',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w900,
+                                        color: context.textPrimary,
+                                        letterSpacing: -0.4,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildDateList(isVertical: true),
+                                  ],
+                                ),
                               ),
-                              _buildBottomAction(),
-                            ],
-                          ),
+                            ),
+                            Expanded(
+                              flex: 3,
+                              child: _isLoading
+                                  ? const Center(child: EyeLoader(size: 60))
+                                  : _slots.isEmpty
+                                  ? _buildEmptyState()
+                                  : _buildSlotGrid(crossAxisCount: 4),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            _buildHeaderRow(context),
+                            _buildDatePicker(),
+                            Expanded(
+                              child: _isLoading
+                                  ? const Center(child: EyeLoader(size: 60))
+                                  : _slots.isEmpty
+                                  ? _buildEmptyState()
+                                  : _buildSlotGrid(crossAxisCount: 3),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  )
-                else
-                  Expanded(
-                    child: Column(
-                      children: [
-                        _buildHeaderRow(context),
-                        _buildDatePicker(),
-                        Expanded(
-                          child: _isLoading
-                              ? const Center(child: EyeLoader(size: 60))
-                              : _slots.isEmpty
-                              ? _buildEmptyState()
-                              : _buildSlotGrid(crossAxisCount: 3),
-                        ),
-                        _buildBottomAction(),
-                      ],
-                    ),
-                  ),
+                ),
+                _buildBottomAction(),
               ],
             ),
           ),
@@ -287,7 +277,7 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
               onTap: () {
                 setState(() {
                   _selectedDate = date;
-                  _selectedSlotId = null; // Clear selection on date change
+                  _selectedSlotId = null;
                 });
                 _loadSlots();
               },
@@ -351,7 +341,7 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
             onTap: () {
               setState(() {
                 _selectedDate = date;
-                _selectedSlotId = null; // Clear selection on date change
+                _selectedSlotId = null;
               });
               _loadSlots();
             },
@@ -605,7 +595,7 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: context.primary,
           foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 60),
+          minimumSize: const Size(double.infinity, 64),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
