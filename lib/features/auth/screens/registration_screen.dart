@@ -1,6 +1,7 @@
 ﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
@@ -69,29 +70,46 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   void _showImageSourceActionSheet() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 width: 40,
                 height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
+                margin: const EdgeInsets.only(bottom: 24),
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: context.dividerColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Text(
-                'Select Profile Photo',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                'Professional Photo',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 8),
+              Text(
+                'Select a source for your profile picture',
+                style: TextStyle(color: context.textSecondary),
+              ),
+              const SizedBox(height: 32),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -128,28 +146,36 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: 100,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.primary.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: context.primary.withValues(alpha: 0.2)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: context.primary, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: context.primary,
-                fontWeight: FontWeight.w600,
+      borderRadius: BorderRadius.circular(24),
+      child: Column(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  context.primary.withValues(alpha: 0.1),
+                  context.primary.withValues(alpha: 0.05),
+                ],
               ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: context.primary.withValues(alpha: 0.2)),
             ),
-          ],
-        ),
+            child: Icon(icon, color: context.primary, size: 32),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            label,
+            style: TextStyle(
+              color: context.primary,
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -174,6 +200,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (_selectedRole == UserRole.doctor && _profileImage == null) {
+      setState(() => _errorMessage = 'Profile photo is required for doctors.');
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -190,15 +221,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         'reviewCount': 0,
         'availableServices': ['Online', 'In-Person'],
       };
-    }
-
-    debugPrint(
-      '[RegistrationScreen] 🚀 Attempting registration for role: $_selectedRole',
-    );
-    if (_selectedRole == UserRole.examiner) {
-      debugPrint(
-        '[RegistrationScreen] 🔑 Access code entered: "${_practitionerCodeController.text}"',
-      );
     }
 
     try {
@@ -257,32 +279,50 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             'A verification email has been sent to your email address. Please verify your account before signing in.',
         confirmLabel: 'Go to Sign In',
         onConfirm: () {
-          Navigator.of(context).pop(); // Close dialog
-          Navigator.of(context).pop(); // Go back to login screen
+          Navigator.of(context).pop();
+          Navigator.of(context).pop();
         },
       ),
     );
   }
 
   Widget _buildSectionTitle(String title, IconData icon) {
-    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16, top: 8),
+      padding: const EdgeInsets.only(bottom: 20, top: 12),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: context.primary),
-          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: context.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 16, color: context.primary),
+          ),
+          const SizedBox(width: 12),
           Text(
-            title,
+            title.toUpperCase(),
             style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-              color: theme.textTheme.titleLarge?.color,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
+              color: context.primary,
             ),
           ),
-          const SizedBox(width: 8),
-          const Expanded(child: Divider(thickness: 0.5)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    context.primary.withValues(alpha: 0.2),
+                    context.primary.withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -294,39 +334,44 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Create Account'),
-        backgroundColor: AppColors.transparent,
-        elevation: 0,
-      ),
-      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-          // Background Decoration
+          // Background Layering
           Positioned(
-            top: -50,
-            right: -50,
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: context.primary.withValues(alpha: 0.04),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 200,
-            left: -100,
+            top: -100,
+            right: -100,
             child: Container(
               width: 300,
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.secondary.withValues(alpha: 0.04),
+                gradient: RadialGradient(
+                  colors: [
+                    context.primary.withValues(alpha: 0.08),
+                    context.primary.withValues(alpha: 0.0),
+                  ],
+                ),
               ),
             ),
-          ),
+          ).animate().fadeIn(duration: 800.ms),
+          Positioned(
+            bottom: -50,
+            left: -100,
+            child: Container(
+              width: 350,
+              height: 350,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.secondary.withValues(alpha: 0.05),
+                    AppColors.secondary.withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
+          ).animate().fadeIn(duration: 800.ms, delay: 300.ms),
+
           SafeArea(
             child: OrientationBuilder(
               builder: (context, orientation) {
@@ -339,90 +384,67 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Left Side: Header Text
+                          // Left Side: Premium Context
                           Expanded(
                             flex: 4,
                             child: SingleChildScrollView(
                               padding: const EdgeInsets.fromLTRB(
-                                24,
                                 40,
-                                24,
-                                32,
+                                60,
+                                40,
+                                40,
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
+                                  _buildBackButton(),
+                                  const SizedBox(height: 48),
                                   Text(
-                                    'Join Visiaxx',
-                                    style: theme.textTheme.displaySmall
+                                    'Create New\nAccount',
+                                    style: theme.textTheme.displayMedium
                                         ?.copyWith(
                                           fontWeight: FontWeight.w900,
                                           color: context.primary,
-                                          fontSize: 32,
+                                          fontSize: 38,
+                                          letterSpacing: -1.5,
+                                          height: 1.1,
                                         ),
                                   ),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 16),
                                   Text(
-                                    'Experience premium digital eye diagnostics',
+                                    'Begin your journey with premium digital eye care diagnostic tools.',
                                     style: theme.textTheme.bodyLarge?.copyWith(
-                                      color: AppColors.textSecondary,
-                                      height: 1.4,
+                                      color: context.textSecondary,
+                                      height: 1.5,
                                     ),
                                   ),
-                                  const SizedBox(height: 40),
-                                  // Already have account
-                                  Wrap(
-                                    alignment: WrapAlignment.center,
-                                    crossAxisAlignment:
-                                        WrapCrossAlignment.center,
-                                    children: [
-                                      Text(
-                                        'Already have an account? ',
-                                        style: TextStyle(
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        style: TextButton.styleFrom(
-                                          padding: EdgeInsets.zero,
-                                          minimumSize: Size.zero,
-                                          tapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        child: const Text(
-                                          'Sign In',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                  const SizedBox(height: 60),
+                                  _buildSignInLink(),
                                 ],
                               ),
                             ),
                           ),
-                          // Right Side: Form
+                          // Right Side: High-Fidelity Form
                           Expanded(
                             flex: 6,
                             child: SingleChildScrollView(
                               padding: const EdgeInsets.fromLTRB(
-                                12,
-                                12,
-                                24,
-                                32,
+                                20,
+                                20,
+                                40,
+                                40,
                               ),
                               child: Form(
                                 key: _formKey,
-                                child: _buildRegistrationForm(),
+                                child: _buildRegistrationForm(
+                                  isLandscape: true,
+                                ),
                               ),
                             ),
                           ),
                         ],
                       ),
-                    ),
+                    ).animate().fadeIn(duration: 600.ms).slideX(begin: 0.05),
                   );
                 }
 
@@ -431,60 +453,38 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 550),
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
                       child: Form(
                         key: _formKey,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Header text
+                            _buildBackButton(),
+                            const SizedBox(height: 32),
                             Text(
-                              'Join Visiaxx',
+                              'Create Account',
                               style: theme.textTheme.displaySmall?.copyWith(
                                 fontWeight: FontWeight.w900,
                                 color: context.primary,
-                                fontSize: 28,
+                                fontSize: 30,
+                                letterSpacing: -1,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Experience premium digital eye diagnostics',
+                              'Join our premium eye diagnostic ecosystem',
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: AppColors.textSecondary,
+                                color: context.textSecondary,
                               ),
                             ),
+                            const SizedBox(height: 40),
+                            _buildRegistrationForm(isLandscape: false),
                             const SizedBox(height: 32),
-
-                            _buildRegistrationForm(),
-
-                            const SizedBox(height: 24),
-
-                            // Already have account
-                            Wrap(
-                              alignment: WrapAlignment.center,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                Text(
-                                  'Already have an account? ',
-                                  style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text(
-                                    'Sign In',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                            _buildSignInLink(),
                           ],
                         ),
                       ),
-                    ),
+                    ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.05),
                   ),
                 );
               },
@@ -495,122 +495,225 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
   }
 
-  Widget _buildRegistrationForm() {
-    final theme = Theme.of(context);
+  Widget _buildBackButton() {
+    return GestureDetector(
+      onTap: () => Navigator.pop(context),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: context.primary.withValues(alpha: 0.05),
+          shape: BoxShape.circle,
+          border: Border.all(color: context.primary.withValues(alpha: 0.1)),
+        ),
+        child: Icon(Icons.arrow_back_rounded, color: context.primary, size: 20),
+      ),
+    );
+  }
+
+  Widget _buildSignInLink() {
+    return Center(
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(
+            'Already have an account? ',
+            style: TextStyle(color: context.textSecondary),
+          ),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Text(
+              'Sign In',
+              style: TextStyle(
+                color: context.primary,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRegistrationForm({required bool isLandscape}) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isLandscape ? 32 : 24),
       decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            context.primary.withValues(alpha: 0.08),
+            context.primary.withValues(alpha: 0.02),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+          color: context.primary.withValues(alpha: 0.15),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: theme.brightness == Brightness.light
-                ? AppColors.black.withValues(alpha: 0.04)
-                : AppColors.transparent,
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: context.primary.withValues(alpha: 0.05),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Error message
           if (_errorMessage != null) ...[
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
+              margin: const EdgeInsets.only(bottom: 24),
               decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                _errorMessage!,
-                style: const TextStyle(
-                  color: AppColors.error,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+                color: AppColors.error.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppColors.error.withValues(alpha: 0.2),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // --- Profile Photo Section (Mandatory for Doctors) ---
-          if (_selectedRole == UserRole.doctor) ...[
-            _buildSectionTitle('Profile Photo', Icons.camera_alt_outlined),
-            Center(
-              child: Stack(
+              child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: _showImageSourceActionSheet,
-                    child: Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: context.primary.withValues(alpha: 0.05),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: _profileImage == null && _errorMessage != null
-                              ? AppColors.error
-                              : context.primary,
-                          width: 2,
-                        ),
-                        image: _profileImage != null
-                            ? DecorationImage(
-                                image: FileImage(_profileImage!),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
+                  const Icon(
+                    Icons.error_outline_rounded,
+                    color: AppColors.error,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _errorMessage!,
+                      style: const TextStyle(
+                        color: AppColors.error,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
-                      child: _profileImage == null
-                          ? Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.add_a_photo_outlined,
-                                  color: context.primary,
-                                  size: 32,
-                                ),
-                                const SizedBox(height: 4),
-                                const Text(
-                                  'Select',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            )
-                          : null,
                     ),
                   ),
-                  if (_profileImage != null)
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: GestureDetector(
-                        onTap: () => setState(() => _profileImage = null),
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: AppColors.error,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.close_rounded,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                    ),
                 ],
+              ),
+            ),
+          ],
+
+          _buildSectionTitle('You are a', Icons.badge_rounded),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: [
+                _RoleCard(
+                  title: 'User',
+                  icon: Icons.person_outline_rounded,
+                  isSelected: _selectedRole == UserRole.user,
+                  onTap: () => setState(() => _selectedRole = UserRole.user),
+                ),
+                const SizedBox(width: 12),
+                _RoleCard(
+                  title: 'Practitioner',
+                  icon: Icons.medical_services_outlined,
+                  isSelected: _selectedRole == UserRole.examiner,
+                  onTap: () =>
+                      setState(() => _selectedRole = UserRole.examiner),
+                ),
+                const SizedBox(width: 12),
+                _RoleCard(
+                  title: 'Doctor',
+                  icon: Icons.health_and_safety_outlined,
+                  isSelected: _selectedRole == UserRole.doctor,
+                  onTap: () => setState(() => _selectedRole = UserRole.doctor),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          if (_selectedRole == UserRole.doctor) ...[
+            const SizedBox(height: 12),
+            Center(
+              child:
+                  Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Container(
+                            width: 110,
+                            height: 110,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: context.primary.withValues(alpha: 0.2),
+                                width: 4,
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: _showImageSourceActionSheet,
+                            child: Container(
+                              width: 95,
+                              height: 95,
+                              decoration: BoxDecoration(
+                                color: context.primary.withValues(alpha: 0.05),
+                                shape: BoxShape.circle,
+                                image: _profileImage != null
+                                    ? DecorationImage(
+                                        image: FileImage(_profileImage!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child: _profileImage == null
+                                  ? Icon(
+                                      Icons.add_a_photo_rounded,
+                                      color: context.primary,
+                                      size: 28,
+                                    )
+                                  : null,
+                            ),
+                          ),
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: context.primary,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: context.surface,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Icon(
+                                _profileImage == null
+                                    ? Icons.add_rounded
+                                    : Icons.edit_rounded,
+                                color: AppColors.white,
+                                size: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                      .animate(target: _profileImage != null ? 1 : 0)
+                      .shimmer(duration: 1.seconds),
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                'PROFESSIONAL PHOTO',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  color: context.primary,
+                  letterSpacing: 1.2,
+                ),
               ),
             ),
             const SizedBox(height: 24),
           ],
 
-          // --- Personal Info Section ---
           _buildSectionTitle('Personal Info', Icons.person_rounded),
           Row(
             children: [
@@ -619,6 +722,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   controller: _firstNameController,
                   textCapitalization: TextCapitalization.words,
                   textInputAction: TextInputAction.next,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                   decoration: const InputDecoration(labelText: 'First Name'),
                   validator: (value) =>
                       (value == null || value.isEmpty) ? 'Required' : null,
@@ -630,12 +734,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   controller: _lastNameController,
                   textCapitalization: TextCapitalization.words,
                   textInputAction: TextInputAction.next,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                   decoration: const InputDecoration(labelText: 'Last Name'),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -645,25 +750,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   controller: _ageController,
                   keyboardType: TextInputType.number,
                   textInputAction: TextInputAction.next,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
                     LengthLimitingTextInputFormatter(3),
-                    TextInputFormatter.withFunction((oldValue, newValue) {
-                      if (newValue.text.isEmpty) return newValue;
-                      final n = int.tryParse(newValue.text);
-                      if (n != null && n <= 200) return newValue;
-                      return oldValue;
-                    }),
                   ],
                   decoration: const InputDecoration(labelText: 'Age'),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Age?';
-                    }
+                    if (value == null || value.isEmpty) return 'Age?';
                     final age = int.tryParse(value);
-                    if (age == null || age < 1 || age > 200) {
-                      return '!';
-                    }
+                    if (age == null || age < 1 || age > 200) return '!';
                     return null;
                   },
                 ),
@@ -676,35 +772,32 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   value: _selectedSex,
                   items: const ['Male', 'Female', 'Other'],
                   itemLabelBuilder: (s) => s,
-                  onChanged: (value) {
-                    setState(() => _selectedSex = value);
-                  },
+                  onChanged: (value) => setState(() => _selectedSex = value),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 24),
 
-          // --- Contact Info Section ---
           _buildSectionTitle('Contact Info', Icons.alternate_email_rounded),
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
+            style: const TextStyle(fontWeight: FontWeight.w600),
             decoration: const InputDecoration(labelText: 'Email Address'),
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Required';
-              }
-              if (!value.contains('@')) return 'Invalid email';
+              if (value == null || value.isEmpty) return 'Required';
+              if (!value.contains('@')) return 'Invalid Email';
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           TextFormField(
             controller: _phoneController,
             keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.next,
+            style: const TextStyle(fontWeight: FontWeight.w600),
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(10),
@@ -712,63 +805,24 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             decoration: const InputDecoration(
               labelText: 'Phone Number',
               prefixText: '+91 ',
-              prefixStyle: TextStyle(fontWeight: FontWeight.bold),
+              prefixStyle: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: AppColors.textPrimary,
+              ),
             ),
-            validator: (value) =>
-                (value?.length != 10) ? '10 digits required' : null,
+            validator: (value) => (value?.length != 10) ? '10 digits' : null,
           ),
           const SizedBox(height: 24),
 
-          // --- Role Section ---
-          _buildSectionTitle('You are a', Icons.badge_rounded),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 140,
-                  child: _RoleCard(
-                    title: 'User',
-                    icon: Icons.person_outline_rounded,
-                    isSelected: _selectedRole == UserRole.user,
-                    onTap: () => setState(() => _selectedRole = UserRole.user),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 140,
-                  child: _RoleCard(
-                    title: 'Practitioner',
-                    icon: Icons.medical_services_outlined,
-                    isSelected: _selectedRole == UserRole.examiner,
-                    onTap: () =>
-                        setState(() => _selectedRole = UserRole.examiner),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 140,
-                  child: _RoleCard(
-                    title: 'Doctor',
-                    icon: Icons.health_and_safety_outlined,
-                    isSelected: _selectedRole == UserRole.doctor,
-                    onTap: () =>
-                        setState(() => _selectedRole = UserRole.doctor),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
           if (_selectedRole == UserRole.doctor) ...[
-            const SizedBox(height: 24),
             _buildSectionTitle(
-              'Doctor Profile',
-              Icons.medical_information_outlined,
+              'Professional Profile',
+              Icons.medical_information_rounded,
             ),
             TextFormField(
               controller: _doctorSpecialtyController,
               textCapitalization: TextCapitalization.words,
+              style: const TextStyle(fontWeight: FontWeight.w600),
               decoration: const InputDecoration(
                 labelText: 'Specialty',
                 hintText: 'e.g. Ophthalmologist',
@@ -779,16 +833,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   ? 'Required'
                   : null,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
                   child: TextFormField(
                     controller: _doctorDegreeController,
                     textCapitalization: TextCapitalization.characters,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                     decoration: const InputDecoration(
                       labelText: 'Degree',
-                      hintText: 'e.g. MS, MD',
+                      hintText: 'MS, MD',
                     ),
                     validator: (value) =>
                         (_selectedRole == UserRole.doctor &&
@@ -802,9 +857,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   child: TextFormField(
                     controller: _doctorExperienceController,
                     keyboardType: TextInputType.number,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                     decoration: const InputDecoration(
                       labelText: 'Experience',
-                      suffixText: 'years',
+                      suffixText: 'yrs',
                     ),
                     validator: (value) =>
                         (_selectedRole == UserRole.doctor &&
@@ -815,27 +871,29 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             TextFormField(
               controller: _doctorBioController,
-              maxLines: 3,
+              maxLines: 2,
+              style: const TextStyle(fontWeight: FontWeight.w600),
               decoration: const InputDecoration(
-                labelText: 'Short Bio',
-                hintText: 'Tell patients about your expertise...',
+                labelText: 'Personal Bio',
+                hintText: 'Tell us about your expertise...',
                 alignLabelWithHint: true,
               ),
             ),
+            const SizedBox(height: 24),
           ],
 
           if (_selectedRole == UserRole.examiner ||
               _selectedRole == UserRole.doctor) ...[
-            const SizedBox(height: 16),
+            _buildSectionTitle('Verification', Icons.security_rounded),
             TextFormField(
               controller: _practitionerCodeController,
-              textInputAction: TextInputAction.next,
+              style: const TextStyle(fontWeight: FontWeight.w600),
               decoration: const InputDecoration(
                 labelText: 'Access Code',
-                hintText: 'Enter secret code',
+                hintText: 'Enter registration code',
                 prefixIcon: Icon(Icons.vpn_key_rounded),
               ),
               validator: (value) =>
@@ -845,15 +903,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   ? 'Required'
                   : null,
             ),
+            const SizedBox(height: 24),
           ],
-          const SizedBox(height: 24),
 
-          // --- Security Section ---
           _buildSectionTitle('Security', Icons.lock_outline_rounded),
           TextFormField(
             controller: _passwordController,
             obscureText: !_isPasswordVisible,
             textInputAction: TextInputAction.next,
+            style: const TextStyle(fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               labelText: 'Password',
               suffixIcon: IconButton(
@@ -861,7 +919,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   _isPasswordVisible
                       ? Icons.visibility_off_rounded
                       : Icons.visibility_rounded,
-                  size: 20,
                 ),
                 onPressed: () =>
                     setState(() => _isPasswordVisible = !_isPasswordVisible),
@@ -870,34 +927,34 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             validator: (value) =>
                 (value?.length ?? 0) < 6 ? 'Min 6 chars' : null,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           TextFormField(
             controller: _confirmPasswordController,
             obscureText: !_isPasswordVisible,
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => _handleRegister(),
+            style: const TextStyle(fontWeight: FontWeight.w600),
             decoration: const InputDecoration(labelText: 'Confirm Password'),
             validator: (value) =>
-                (value != _passwordController.text) ? 'No match' : null,
+                (value != _passwordController.text) ? 'Mismatch' : null,
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 48),
 
-          // --- Action Button ---
           Container(
-            height: 56,
+            height: 60,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
                   context.primary,
-                  context.primary.withValues(alpha: 0.7),
+                  context.primary.withValues(alpha: 0.8),
                 ],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: context.primary.withValues(alpha: 0.2),
+                  color: context.primary.withValues(alpha: 0.25),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 ),
@@ -909,33 +966,31 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 backgroundColor: AppColors.transparent,
                 shadowColor: AppColors.transparent,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                 ),
               ),
               child: _isLoading
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: EyeLoader(size: 24, color: AppColors.white),
-                    )
+                  ? const EyeLoader(size: 32, color: AppColors.white)
                   : const Text(
-                      'Create Account',
+                      'CREATE ACCOUNT',
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
                         color: AppColors.white,
+                        letterSpacing: 1.5,
                       ),
                     ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           const Text(
-            'By creating an account, you agree to our\nTerms of Service and Privacy Policy.',
+            'By creating an account, you agree to our Terms of Service\nand Privacy Policy.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               color: AppColors.textTertiary,
-              height: 1.4,
+              height: 1.5,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -959,44 +1014,57 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        duration: 300.ms,
+        width: 140,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
           color: isSelected
-              ? context.primary.withValues(alpha: 0.05)
-              : theme.cardColor,
-          borderRadius: BorderRadius.circular(16),
+              ? context.primary.withValues(alpha: 0.08)
+              : context.surface,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? context.primary
-                : theme.dividerColor.withValues(alpha: 0.5),
+                : context.dividerColor.withValues(alpha: 0.1),
             width: isSelected ? 2 : 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: context.primary.withValues(alpha: 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              size: 28,
-              color: isSelected
-                  ? context.primary
-                  : theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.visible,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
                 color: isSelected
                     ? context.primary
-                    : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
+                    : context.primary.withValues(alpha: 0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 24,
+                color: isSelected ? AppColors.white : context.primary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                color: isSelected ? context.primary : context.textSecondary,
+                letterSpacing: 0.5,
               ),
             ),
           ],

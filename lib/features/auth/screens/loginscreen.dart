@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/auth_service.dart';
@@ -50,7 +51,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (result.isSuccess && result.user != null) {
-        // Check for email verification
         if (!result.isEmailVerified) {
           if (mounted) {
             setState(() {
@@ -61,19 +61,15 @@ class _LoginScreenState extends State<LoginScreen> {
           return;
         }
 
-        // OPTIMIZATION: Prepare session service and check isPractitioner early
         final sessionService = SessionMonitorService();
         final isPractitioner = result.user!.role == UserRole.examiner;
         final identityString = result.user!.identityString;
 
-        // Save credentials securely for auto-login on next app launch
         await LocalStorageService().saveCredentials(
           _emailController.text.trim(),
           _passwordController.text,
         );
 
-        // OPTIMIZATION: For practitioners, skip session check entirely (multi-device allowed)
-        // For regular users, do the check but don't block on full await
         if (!isPractitioner) {
           final checkResult = await sessionService.checkExistingSession(
             identityString,
@@ -82,7 +78,6 @@ class _LoginScreenState extends State<LoginScreen> {
           if (checkResult.exists &&
               checkResult.isOnline &&
               !checkResult.isOurSession) {
-            // Active session elsewhere - Block Login for regular users
             await _authService.signOut();
             if (mounted) {
               setState(() {
@@ -95,27 +90,20 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         }
 
-        // OPTIMIZATION: Fire-and-forget session creation (don't await the full result)
-        // We only need to know it started, not that it completed
         final creationFuture = sessionService.createSession(
           result.user!.id,
           identityString,
           isPractitioner: isPractitioner,
         );
 
-        // OPTIMIZATION: Navigate immediately while session creates in background
-        // Wait just a tiny bit for initial session write
-        // OPTIMIZATION: Wait a bit longer for session creation to ensure storage persistence
-        // We need to be sure the session ID is written before the app is closed/reopened
         final creationResult = await creationFuture.timeout(
-          const Duration(seconds: 2), // Increased from 500ms
+          const Duration(seconds: 2),
           onTimeout: () {
             debugPrint('[Login] Session creation timed out but proceeding...');
             return SessionCreationResult(sessionId: 'pending');
           },
         );
 
-        // Only block if definite failure
         if (creationResult.error != null) {
           await _authService.signOut();
           if (mounted) {
@@ -129,7 +117,6 @@ class _LoginScreenState extends State<LoginScreen> {
           return;
         }
 
-        // OPTIMIZATION: Start monitoring in background (fire-and-forget)
         if (mounted) {
           sessionService.startMonitoring(
             identityString,
@@ -138,7 +125,6 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
 
-        // Navigate immediately
         if (!mounted) return;
         await NavigationUtils.navigateHome(context);
       } else {
@@ -217,31 +203,45 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Background Decoration
+          // Background Layering (Subtle Spheres)
           Positioned(
-            top: -100,
-            right: -100,
+                top: -120,
+                right: -120,
+                child: Container(
+                  width: 350,
+                  height: 350,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        context.primary.withValues(alpha: 0.1),
+                        context.primary.withValues(alpha: 0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+              .animate()
+              .fadeIn(duration: 800.ms)
+              .scale(begin: const Offset(0.8, 0.8)),
+          Positioned(
+            bottom: -80,
+            left: -80,
             child: Container(
-              width: 300,
-              height: 300,
+              width: 250,
+              height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: context.primary.withValues(alpha: 0.05),
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.secondary.withValues(alpha: 0.08),
+                    AppColors.secondary.withValues(alpha: 0.0),
+                  ],
+                ),
               ),
             ),
-          ),
-          Positioned(
-            bottom: -50,
-            left: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.secondary.withValues(alpha: 0.05),
-              ),
-            ),
-          ),
+          ).animate().fadeIn(duration: 800.ms, delay: 200.ms),
+
           SafeArea(
             child: OrientationBuilder(
               builder: (context, orientation) {
@@ -250,124 +250,43 @@ class _LoginScreenState extends State<LoginScreen> {
                 if (isLandscape) {
                   return Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1000),
+                      constraints: const BoxConstraints(maxWidth: 1100),
                       child: Row(
                         children: [
-                          // Left Side: Logo & Tagline
+                          // Left Side: Premium Branding
                           Expanded(
                             flex: 1,
                             child: SingleChildScrollView(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
+                                horizontal: 40,
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Container(
-                                    width: 100,
-                                    height: 100,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          context.primary,
-                                          context.primary.withValues(
-                                            alpha: 0.7,
-                                          ),
-                                        ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                      borderRadius: BorderRadius.circular(28),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: context.primary.withValues(
-                                            alpha: 0.3,
-                                          ),
-                                          blurRadius: 15,
-                                          offset: const Offset(0, 8),
-                                        ),
-                                      ],
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(28),
-                                      child: Image.asset(
-                                        'assets/images/icons/app_icon.png',
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 24),
-                                  Text(
-                                    'Visiaxx',
-                                    style: theme.textTheme.headlineLarge
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w900,
-                                          color: context.primary,
-                                          letterSpacing: -0.5,
-                                        ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Premium Digital Eye Care',
-                                    textAlign: TextAlign.center,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: AppColors.textSecondary,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 32),
-                                  // Move Sign Up here in landscape to save vertical space on the form
-                                  Column(
-                                    children: [
-                                      Text(
-                                        "Don't have an account?",
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(
-                                              color: AppColors.textSecondary,
-                                            ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      GestureDetector(
-                                        onTap: () {
-                                          if (!_isLoading) {
-                                            Navigator.pushNamed(
-                                              context,
-                                              '/register',
-                                            );
-                                          }
-                                        },
-                                        child: Text(
-                                          'Sign Up Now',
-                                          style: theme.textTheme.bodyMedium
-                                              ?.copyWith(
-                                                color: context.primary,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                  _buildBranding(isLandscape: true),
+                                  const SizedBox(height: 48),
+                                  _buildSignUpToggle(),
                                 ],
                               ),
                             ),
                           ),
-                          // Right Side: Form
+                          // Right Side: Luxury Form
                           Expanded(
                             flex: 1,
                             child: SingleChildScrollView(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 24.0,
-                                vertical: 16,
+                                horizontal: 40,
+                                vertical: 24,
                               ),
                               child: Form(
                                 key: _formKey,
-                                child: _buildLoginForm(),
+                                child: _buildLoginForm(isLandscape: true),
                               ),
                             ),
                           ),
                         ],
                       ),
-                    ),
+                    ).animate().fadeIn(duration: 600.ms).slideX(begin: 0.05),
                   );
                 }
 
@@ -376,109 +295,25 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 500),
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24.0,
+                        vertical: 32,
+                      ),
                       child: Form(
                         key: _formKey,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Logo Section
-                            Center(
-                              child: Column(
-                                children: [
-                                  Container(
-                                    width: 80,
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          context.primary,
-                                          context.primary.withValues(
-                                            alpha: 0.7,
-                                          ),
-                                        ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                      borderRadius: BorderRadius.circular(24),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: context.primary.withValues(
-                                            alpha: 0.3,
-                                          ),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 6),
-                                        ),
-                                      ],
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(24),
-                                      child: Image.asset(
-                                        'assets/images/icons/app_icon.png',
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 24),
-                                  Text(
-                                    'Visiaxx',
-                                    style: theme.textTheme.displaySmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w900,
-                                          color: context.primary,
-                                          letterSpacing: -0.5,
-                                        ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Premium Digital Eye Care',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: AppColors.textSecondary,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                            _buildBranding(isLandscape: false),
                             const SizedBox(height: 48),
-
-                            _buildLoginForm(),
-
+                            _buildLoginForm(isLandscape: false),
                             const SizedBox(height: 32),
-
-                            // Sign Up Section
-                            Wrap(
-                              alignment: WrapAlignment.center,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                Text(
-                                  "Don't have an account? ",
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    if (!_isLoading) {
-                                      Navigator.pushNamed(context, '/register');
-                                    }
-                                  },
-                                  child: Text(
-                                    'Sign Up',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: context.primary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
+                            _buildSignUpToggle(),
                           ],
                         ),
                       ),
-                    ),
+                    ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.05),
                   ),
                 );
               },
@@ -489,106 +324,247 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildLoginForm() {
+  Widget _buildBranding({required bool isLandscape}) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Container(
+          width: isLandscape ? 100 : 85,
+          height: isLandscape ? 100 : 85,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [context.primary, context.primary.withValues(alpha: 0.7)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(isLandscape ? 28 : 24),
+            boxShadow: [
+              BoxShadow(
+                color: context.primary.withValues(alpha: 0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(isLandscape ? 28 : 24),
+            child: Image.asset(
+              'assets/images/icons/app_icon.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+        ).animate().scale(
+          delay: 300.ms,
+          duration: 500.ms,
+          curve: Curves.easeOutBack,
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Visiaxx',
+          style:
+              (isLandscape
+                      ? theme.textTheme.headlineLarge
+                      : theme.textTheme.displaySmall)
+                  ?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: context.primary,
+                    letterSpacing: -1.2,
+                  ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            color: context.primary.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: context.primary.withValues(alpha: 0.1)),
+          ),
+          child: Text(
+            'PREMIUM DIGITAL EYE CARE',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: context.primary,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 2,
+              fontSize: 9,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSignUpToggle() {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Text(
+          "Don't have an account?",
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: context.textTertiary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            onTap: () {
+              if (!_isLoading) {
+                Navigator.pushNamed(context, '/register');
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: context.primary.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Text(
+                'Create New Account',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: context.primary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoginForm({required bool isLandscape}) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isLandscape ? 32 : 24),
       decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            context.primary.withValues(alpha: 0.08),
+            context.primary.withValues(alpha: 0.03),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+          color: context.primary.withValues(alpha: 0.15),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: theme.brightness == Brightness.light
-                ? AppColors.black.withValues(alpha: 0.05)
-                : AppColors.transparent,
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: context.primary.withValues(alpha: 0.05),
+            blurRadius: 25,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Welcome Back',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              fontSize: 22,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Please enter your details to sign in',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Welcome Back',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 24,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Sign in to your professional account',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: context.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.lock_person_rounded,
+                color: context.primary.withValues(alpha: 0.2),
+                size: 32,
+              ),
+            ],
           ),
           const SizedBox(height: 32),
 
-          // Error message
           if (_errorMessage != null) ...[
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+                color: AppColors.error.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppColors.error.withValues(alpha: 0.2),
+                ),
               ),
               child: Row(
                 children: [
                   const Icon(
-                    Icons.info_outline_rounded,
+                    Icons.error_outline_rounded,
                     color: AppColors.error,
-                    size: 18,
+                    size: 20,
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       _errorMessage!,
                       style: const TextStyle(
                         color: AppColors.error,
                         fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
           ],
 
-          // Email field
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
+            style: const TextStyle(fontWeight: FontWeight.w600),
+            decoration: InputDecoration(
               labelText: 'Email Address',
-              prefixIcon: Icon(Icons.alternate_email_rounded),
+              prefixIcon: const Icon(Icons.alternate_email_rounded),
+              filled: true,
+              fillColor: context.surface.withValues(alpha: 0.5),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) {
+              if (value == null || value.isEmpty)
                 return 'Please enter your email';
-              }
-              if (!RegExp(
-                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-              ).hasMatch(value)) {
-                return 'Enter a valid email address';
-              }
+              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value))
+                return 'Enter a valid email';
               return null;
             },
           ),
           const SizedBox(height: 20),
 
-          // Password field
           TextFormField(
             controller: _passwordController,
             obscureText: !_isPasswordVisible,
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => _handleLogin(),
+            style: const TextStyle(fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               labelText: 'Password',
               prefixIcon: const Icon(Icons.lock_outline_rounded),
+              filled: true,
+              fillColor: context.surface.withValues(alpha: 0.5),
               suffixIcon: IconButton(
                 icon: Icon(
                   _isPasswordVisible
@@ -596,53 +572,49 @@ class _LoginScreenState extends State<LoginScreen> {
                       : Icons.visibility_rounded,
                   size: 20,
                 ),
-                onPressed: () {
-                  setState(() {
-                    _isPasswordVisible = !_isPasswordVisible;
-                  });
-                },
+                onPressed: () =>
+                    setState(() => _isPasswordVisible = !_isPasswordVisible),
               ),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) {
+              if (value == null || value.isEmpty)
                 return 'Please enter your password';
-              }
               return null;
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
-          // Forgot Password
           Align(
             alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: _isLoading ? null : _handleForgotPassword,
-              style: TextButton.styleFrom(
-                minimumSize: Size.zero,
-                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: const Text(
-                'Forgot Password?',
-                style: TextStyle(fontWeight: FontWeight.w600),
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: TextButton(
+                onPressed: _isLoading ? null : _handleForgotPassword,
+                style: TextButton.styleFrom(
+                  foregroundColor: context.primary,
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
+                ),
+                child: const Text('Forgot Password?'),
               ),
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
-          // Login Button
           Container(
-            height: 56,
+            height: 60,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
                   context.primary,
-                  context.primary.withValues(alpha: 0.7),
+                  context.primary.withValues(alpha: 0.8),
                 ],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
                   color: context.primary.withValues(alpha: 0.25),
@@ -651,35 +623,40 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ],
             ),
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _handleLogin,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.transparent,
-                shadowColor: AppColors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _handleLogin,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.transparent,
+                  shadowColor: AppColors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
                 ),
-              ),
-              child: _isLoading
-                  ? const EyeLoader(size: 32, color: AppColors.white)
-                  : const Text(
-                      'Sign In',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.white,
+                child: _isLoading
+                    ? const EyeLoader(size: 32, color: AppColors.white)
+                    : const Text(
+                        'SIGN IN',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.white,
+                          letterSpacing: 1.5,
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           const Text(
             'By signing in, you agree to our Terms of Service\nand Privacy Policy.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               color: AppColors.textTertiary,
-              height: 1.4,
+              height: 1.5,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
