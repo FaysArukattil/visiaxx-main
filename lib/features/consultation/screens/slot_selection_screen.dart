@@ -40,16 +40,61 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
 
   Future<void> _loadSlots() async {
     setState(() => _isLoading = true);
-    // Fetch ALL slots for the date to show booked vs available
-    final slots = await _consultationService.getAllSlotsForDate(
+
+    // 1. Fetch booked slots from database
+    final bookedSlots = await _consultationService.getAllSlotsForDate(
       _doctor!.id,
       _selectedDate,
     );
+
+    // 2. Dynamically generate 20-minute slots from 10:00 AM to 10:00 PM
+    final generatedSlots = _generateDailySlots(_selectedDate);
+
+    // 3. Map status from database to generated slots
+    final finalSlots = generatedSlots.map((gen) {
+      final booked = bookedSlots
+          .where((b) => b.startTime == gen.startTime)
+          .firstOrNull;
+      if (booked != null) {
+        return booked; // Use database slot if it exists (likely booked)
+      }
+      return gen; // Otherwise use the available generated slot
+    }).toList();
+
     setState(() {
-      _slots = slots;
+      _slots = finalSlots;
       _isLoading = false;
       _selectedSlotId = null;
     });
+  }
+
+  List<TimeSlotModel> _generateDailySlots(DateTime date) {
+    final List<TimeSlotModel> slots = [];
+    final startTime = DateTime(date.year, date.month, date.day, 10); // 10:00 AM
+    final endTime = DateTime(date.year, date.month, date.day, 22); // 10:00 PM
+
+    DateTime current = startTime;
+    int index = 0;
+    while (current.isBefore(endTime)) {
+      final next = current.add(const Duration(minutes: 20));
+      final startTimeStr = DateFormat('h:mm a').format(current);
+      final endTimeStr = DateFormat('h:mm a').format(next);
+
+      slots.add(
+        TimeSlotModel(
+          id: 'gen_${date.millisecondsSinceEpoch}_$index',
+          doctorId: _doctor!.id,
+          date: date,
+          startTime: startTimeStr,
+          endTime: endTimeStr,
+          status: SlotStatus.available,
+        ),
+      );
+
+      current = next;
+      index++;
+    }
+    return slots;
   }
 
   @override
@@ -65,35 +110,35 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Decorative background circles
+          // Background Decorative Circles (Institutional Tints)
           Positioned(
-            top: -100,
-            right: -50,
-            child: _buildDecorativeCircle(color, 300, 0.03),
+            top: -120,
+            right: -60,
+            child: _buildDecorativeCircle(color, 400, 0.04),
           ),
           Positioned(
-            bottom: 150,
-            left: -50,
-            child: _buildDecorativeCircle(color, 250, 0.02),
+            bottom: 100,
+            left: -80,
+            child: _buildDecorativeCircle(color, 320, 0.03),
           ),
 
           SafeArea(
             child: Column(
               children: [
-                // Custom Header
+                // Simplified Header Row
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
                   child: Row(
                     children: [
+                      // Standard Back Button
                       IconButton(
                         onPressed: () => Navigator.pop(context),
+                        constraints: const BoxConstraints(),
+                        padding: EdgeInsets.zero,
                         icon: Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: context.surface,
+                            color: context.surface.withValues(alpha: 0.9),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -103,16 +148,37 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
                               ),
                             ],
                           ),
-                          child: const Icon(Icons.arrow_back_ios_new, size: 20),
+                          child: Icon(
+                            Icons.arrow_back_ios_new,
+                            size: 18,
+                            color: context.textPrimary,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Select Appointment Slot',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.5,
+                      const SizedBox(width: 20),
+                      // Essential Appointment Info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Appointment with',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: context.textTertiary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              'Dr. ${_doctor!.fullName}',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.6,
+                                height: 1.1,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -123,10 +189,6 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
                   child: Column(
                     children: [
                       _buildDatePicker(),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 24),
-                        child: Divider(height: 1),
-                      ),
                       Expanded(
                         child: _isLoading
                             ? const Center(child: CircularProgressIndicator())
@@ -150,51 +212,42 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
 
   Widget _buildDatePicker() {
     return Container(
-      height: 110,
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      height: 125,
+      padding: const EdgeInsets.symmetric(vertical: 20),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 24),
-        itemCount: 14, // Next 2 weeks
+        itemCount: 14,
         itemBuilder: (context, index) {
           final date = DateTime.now().add(Duration(days: index));
           final isSelected = DateUtils.isSameDay(date, _selectedDate);
           final color = context.primary;
 
           return Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.only(right: 14),
             child: InkWell(
               onTap: () {
                 setState(() => _selectedDate = date);
                 _loadSlots();
               },
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(22),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                width: 65,
+                width: 70,
                 decoration: BoxDecoration(
-                  gradient: isSelected
-                      ? LinearGradient(
-                          colors: [color, color.withValues(alpha: 0.8)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : null,
-                  color: isSelected ? null : context.surface,
-                  borderRadius: BorderRadius.circular(20),
+                  color: isSelected ? color : color.withValues(alpha: 0.03),
+                  borderRadius: BorderRadius.circular(22),
                   border: Border.all(
-                    color: isSelected
-                        ? color.withValues(alpha: 0.1)
-                        : context.dividerColor.withValues(alpha: 0.05),
-                    width: isSelected ? 2 : 1,
+                    color: isSelected ? color : color.withValues(alpha: 0.08),
+                    width: 1.5,
                   ),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: color.withValues(alpha: 0.25),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                            color: color.withValues(alpha: 0.15),
+                            blurRadius: 15,
+                            offset: const Offset(0, 6),
                           ),
                         ]
                       : null,
@@ -203,25 +256,24 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      DateFormat('E').format(date).toUpperCase(),
+                      DateFormat('EEE').format(date).toUpperCase(),
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
+                        letterSpacing: 0.8,
                         color: isSelected
-                            ? Colors.white.withValues(alpha: 0.8)
+                            ? Colors.white.withValues(alpha: 0.9)
                             : context.textTertiary,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 8),
                     Text(
-                      DateFormat('d').format(date),
+                      DateFormat('dd').format(date),
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
-                        color: isSelected
-                            ? Colors.white
-                            : context.textSecondary,
+                        color: isSelected ? Colors.white : context.textPrimary,
+                        letterSpacing: -0.5,
                       ),
                     ),
                   ],
@@ -235,93 +287,111 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
   }
 
   Widget _buildSlotGrid() {
-    return GridView.builder(
-      padding: const EdgeInsets.all(24),
-      physics: const BouncingScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 2.0,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemCount: _slots.length,
-      itemBuilder: (context, index) {
-        final slot = _slots[index];
-        final isSelected = _selectedSlotId == slot.id;
-        final isBooked = slot.status == SlotStatus.booked;
-        final isCompleted = slot.status == SlotStatus.completed;
-        final isUnavailable = isBooked || isCompleted;
-        final color = context.primary;
-
-        return InkWell(
-              onTap: isUnavailable
-                  ? null
-                  : () => setState(() => _selectedSlotId = slot.id),
-              borderRadius: BorderRadius.circular(16),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                alignment: Alignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(28, 12, 28, 16),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Available Time Slots',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? color.withValues(alpha: 0.1)
-                      : isUnavailable
-                      ? context.textTertiary.withValues(alpha: 0.05)
-                      : context.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
+                  color: context.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '10:00 AM - 10:00 PM',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    color: context.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: GridView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            physics: const BouncingScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              childAspectRatio: 2.4,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: _slots.length,
+            itemBuilder: (context, index) {
+              final slot = _slots[index];
+              final isSelected = _selectedSlotId == slot.id;
+              final isBooked = slot.status == SlotStatus.booked;
+              final isCompleted = slot.status == SlotStatus.completed;
+              final isUnavailable = isBooked || isCompleted;
+              final color = context.primary;
+
+              return InkWell(
+                onTap: isUnavailable
+                    ? null
+                    : () => setState(() => _selectedSlotId = slot.id),
+                borderRadius: BorderRadius.circular(16),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
                     color: isSelected
                         ? color
                         : isUnavailable
-                        ? Colors.transparent
-                        : context.dividerColor.withValues(alpha: 0.1),
-                    width: isSelected ? 2 : 1,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      slot.startTime,
-                      style: TextStyle(
-                        fontWeight: isSelected
-                            ? FontWeight.w900
-                            : FontWeight.w600,
-                        fontSize: 15,
-                        color: isSelected
-                            ? color
-                            : isUnavailable
-                            ? context.textTertiary
-                            : context.textSecondary,
-                        decoration: isUnavailable
-                            ? TextDecoration.lineThrough
-                            : null,
-                      ),
+                        ? context.dividerColor.withValues(alpha: 0.05)
+                        : color.withValues(alpha: 0.03),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected
+                          ? color
+                          : isUnavailable
+                          ? Colors.transparent
+                          : color.withValues(alpha: 0.1),
+                      width: 1.5,
                     ),
-                    if (isUnavailable)
-                      Text(
-                        isBooked ? 'Booked' : 'Done',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          color: context.textTertiary,
-                        ),
-                      ),
-                  ],
+                  ),
+                  child: Text(
+                    slot.startTime,
+                    style: TextStyle(
+                      fontWeight: isSelected
+                          ? FontWeight.w900
+                          : FontWeight.w700,
+                      fontSize: 13,
+                      color: isSelected
+                          ? Colors.white
+                          : isUnavailable
+                          ? context.textTertiary
+                          : context.textPrimary,
+                      decoration: isUnavailable
+                          ? TextDecoration.lineThrough
+                          : null,
+                    ),
+                  ),
                 ),
-              ),
-            )
-            .animate(target: isSelected ? 1 : 0)
-            .scale(begin: const Offset(1, 1), end: const Offset(1.05, 1.05));
-      },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

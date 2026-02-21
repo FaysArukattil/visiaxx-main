@@ -1,9 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/consultation_service.dart';
 import '../../../data/models/doctor_model.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/eye_loader.dart';
 
 class DoctorDetailScreen extends StatefulWidget {
@@ -55,37 +55,38 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
       backgroundColor: context.scaffoldBackground,
       body: Stack(
         children: [
-          // Background Parallels with Browse Screen Decorative Circles
+          // Background Decorative Circles (Institutional Primary Tints)
           Positioned(
-            top: -100,
-            right: -50,
-            child: _buildDecorativeCircle(color, 300, 0.03),
+            top: -120,
+            right: -60,
+            child: _buildDecorativeCircle(color, 380, 0.04),
           ),
           Positioned(
-            bottom: 150,
-            left: -80,
-            child: _buildDecorativeCircle(color, 250, 0.02),
+            bottom: 120,
+            left: -100,
+            child: _buildDecorativeCircle(color, 320, 0.03),
           ),
 
           SafeArea(
             child: CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
-                // Premium Header Region
+                // Integrated Physician Identity & Dashboard Content
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 8,
-                    ),
-                    child: Row(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 140),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // 1. Separate Top Navigation Row
                         IconButton(
                           onPressed: () => Navigator.pop(context),
+                          constraints: const BoxConstraints(),
+                          padding: EdgeInsets.zero,
                           icon: Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: context.surface,
+                              color: context.surface.withValues(alpha: 0.9),
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
@@ -95,54 +96,34 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
                                 ),
                               ],
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.arrow_back_ios_new,
-                              size: 20,
+                              size: 18,
+                              color: context.textPrimary,
                             ),
                           ),
                         ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: context.surface,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.more_vert_rounded,
-                            color: context.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                        const SizedBox(height: 24),
 
-                // Unified Dashboard Layout
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(28, 16, 28, 140),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Stylized Doctor Headshot & Basic Info
+                        // 2. Professional Identity Row
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Hero(
                               tag: _isFeatured
                                   ? 'doctor_img_${_doctor!.id}_featured'
                                   : 'doctor_img_${_doctor!.id}',
                               child: Container(
-                                width: 120,
-                                height: 140,
+                                width: 90,
+                                height: 110,
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(32),
+                                  borderRadius: BorderRadius.circular(24),
                                   color: Colors.white,
                                   boxShadow: [
                                     BoxShadow(
                                       color: color.withValues(alpha: 0.1),
                                       blurRadius: 20,
-                                      offset: const Offset(0, 8),
+                                      offset: const Offset(0, 10),
                                     ),
                                   ],
                                   image: _doctor!.photoUrl.isNotEmpty
@@ -157,146 +138,182 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
                                 child: _doctor!.photoUrl.isEmpty
                                     ? Icon(
                                         Icons.person_rounded,
-                                        size: 60,
+                                        size: 50,
                                         color: color.withValues(alpha: 0.2),
                                       )
                                     : null,
                               ),
                             ),
-                            const SizedBox(width: 24),
+                            const SizedBox(width: 20),
                             Expanded(
-                              child:
-                                  Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 4,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: color.withValues(
-                                                alpha: 0.1,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              _doctor!.degree.toUpperCase(),
-                                              style: TextStyle(
-                                                color: color,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w900,
-                                                letterSpacing: 1,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 12),
-                                          Text(
-                                            'Dr. ${_doctor!.fullName}',
-                                            style: const TextStyle(
-                                              fontSize: 26,
-                                              fontWeight: FontWeight.w900,
-                                              height: 1.1,
-                                              letterSpacing: -1,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            _doctor!.specialty,
-                                            style: TextStyle(
-                                              color: context.textSecondary,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                      )
-                                      .animate()
-                                      .fadeIn(duration: 600.ms)
-                                      .slideX(begin: 0.1, end: 0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: color.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      _doctor!.degree.toUpperCase(),
+                                      style: TextStyle(
+                                        color: color,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Dr. ${_doctor!.fullName}',
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.8,
+                                      height: 1.1,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    _doctor!.specialty,
+                                    style: TextStyle(
+                                      color: context.textSecondary,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
 
                         const SizedBox(height: 40),
 
-                        // Section: Clinical Overview
+                        // Section: Clinical Statistics (Glass Squircle)
                         const _SectionTitle(title: 'Overview'),
                         const SizedBox(height: 20),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildOverviewStat(
-                              Icons.history_rounded,
-                              '${_doctor!.experienceYears} Years',
-                              'Experience',
-                              color,
+                            _buildClinicalStat(
+                              icon: Icons.work_history_rounded,
+                              value: '${_doctor!.experienceYears} Years',
+                              label: 'Experience',
+                              color: color,
                             ),
-                            _buildOverviewStat(
-                              Icons.calendar_today_rounded,
-                              '42 Years',
-                              'Patient Age',
-                              Colors.teal,
+                            const SizedBox(width: 12),
+                            _buildClinicalStat(
+                              icon: Icons.calendar_today_rounded,
+                              value: '42 Years',
+                              label: 'Age',
+                              color: Colors.teal,
                             ),
-                            _buildOverviewStat(
-                              Icons.rate_review_rounded,
-                              '${_doctor!.rating}',
-                              'User Rating',
-                              Colors.amber,
+                            const SizedBox(width: 12),
+                            _buildClinicalStat(
+                              icon: Icons.star_rounded,
+                              value: '${_doctor!.rating}',
+                              label: 'Rating',
+                              color: Colors.amber,
                             ),
                           ],
                         ).animate().fadeIn(delay: 200.ms),
 
-                        const SizedBox(height: 12),
-                        // Professional Availability Row
-                        Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 14,
-                              ),
-                              decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.05),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: color.withValues(alpha: 0.1),
+                        const SizedBox(height: 28),
+                        // Elongated Glass Availability Bar
+                        ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(
+                                  sigmaX: 12,
+                                  sigmaY: 12,
                                 ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.access_time_filled_rounded,
-                                    color: color,
-                                    size: 20,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                    horizontal: 16,
                                   ),
-                                  const SizedBox(width: 12),
-                                  const Text(
-                                    'Available for 10-10 Mon-Fri',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: -0.2,
+                                  decoration: BoxDecoration(
+                                    color: color.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(
+                                      color: color.withValues(alpha: 0.12),
+                                      width: 1.5,
                                     ),
                                   ),
-                                ],
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today_rounded,
+                                        color: color,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            'MON - FRI',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w900,
+                                              color: color,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        height: 16,
+                                        width: 1.2,
+                                        color: color.withValues(alpha: 0.15),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Icon(
+                                        Icons.access_time_rounded,
+                                        color: context.textTertiary,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            '10:00 AM - 10:00 PM',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w900,
+                                              color: context.textPrimary,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             )
                             .animate()
                             .fadeIn(delay: 300.ms)
-                            .slideY(begin: 0.2, end: 0),
+                            .slideY(begin: 0.1, end: 0),
 
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 48),
 
                         // Section: Biography
-                        const _SectionTitle(title: 'Biography'),
+                        const _SectionTitle(title: 'Professional Bio'),
                         const SizedBox(height: 16),
                         Text(
                           _doctor!.bio,
                           style: TextStyle(
                             fontSize: 16,
                             color: context.textSecondary,
-                            height: 1.6,
+                            height: 1.7,
+                            letterSpacing: -0.1,
                           ),
                         ).animate().fadeIn(delay: 400.ms),
                       ],
@@ -307,7 +324,7 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
             ),
           ),
 
-          // Pinned Action Button (Professional floating style)
+          // Institutional Action Footer
           _buildBottomAction(color),
         ],
       ),
@@ -330,44 +347,61 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
     );
   }
 
-  Widget _buildOverviewStat(
-    IconData icon,
-    String value,
-    String label,
-    Color iconColor,
-  ) {
+  // Refined High-Precision Squircle Glass Stat
+  Widget _buildClinicalStat({
+    required IconData icon,
+    required String value,
+    required String label,
+    required Color color,
+  }) {
     return Expanded(
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
             decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.08),
-              shape: BoxShape.circle,
+              color: color.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: color.withValues(alpha: 0.12),
+                width: 1.2,
+              ),
             ),
-            child: Icon(icon, color: iconColor, size: 24),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.2,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: color, size: 22),
+                const SizedBox(height: 14),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      color: context.textTertiary,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            textAlign: TextAlign.center,
           ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: context.textTertiary,
-              letterSpacing: 0.2,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -378,7 +412,7 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(28, 20, 28, 36),
+        padding: const EdgeInsets.fromLTRB(28, 20, 28, 40),
         decoration: BoxDecoration(
           color: context.scaffoldBackground,
           border: Border(
@@ -406,25 +440,24 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: color,
               foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 64),
+              minimumSize: const Size(double.infinity, 66),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
-              elevation: 4,
-              shadowColor: color.withValues(alpha: 0.3),
+              elevation: 0,
             ),
             child: const Text(
-              'Book Appointment',
+              'Book Consultation',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
-                letterSpacing: 0.5,
+                letterSpacing: 0.4,
               ),
             ),
           ),
         ),
       ),
-    ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.3, end: 0);
+    ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.3, end: 0);
   }
 }
 
@@ -439,7 +472,7 @@ class _SectionTitle extends StatelessWidget {
       style: const TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w900,
-        letterSpacing: -0.5,
+        letterSpacing: -0.6,
       ),
     );
   }
