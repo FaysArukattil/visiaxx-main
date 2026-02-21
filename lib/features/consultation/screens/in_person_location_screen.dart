@@ -7,7 +7,8 @@ import '../../../core/extensions/theme_extension.dart';
 import '../../../core/utils/snackbar_utils.dart';
 
 class InPersonLocationScreen extends StatefulWidget {
-  const InPersonLocationScreen({super.key});
+  final bool pickerMode;
+  const InPersonLocationScreen({super.key, this.pickerMode = false});
 
   @override
   State<InPersonLocationScreen> createState() => _InPersonLocationScreenState();
@@ -150,6 +151,14 @@ class _InPersonLocationScreenState extends State<InPersonLocationScreen> {
     if (_selectedCity == null) return;
 
     if (_availableCities.contains(_selectedCity)) {
+      if (widget.pickerMode) {
+        Navigator.pop(context, {
+          'latitude': _latitude,
+          'longitude': _longitude,
+          'exactAddress': _exactAddress,
+        });
+        return;
+      }
       Navigator.pushNamed(
         context,
         '/doctor-browse',

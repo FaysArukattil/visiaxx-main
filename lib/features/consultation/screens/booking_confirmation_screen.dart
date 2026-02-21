@@ -11,6 +11,7 @@ import '../../../data/models/consultation_booking_model.dart';
 import '../../../core/services/test_result_service.dart';
 import '../../../data/models/test_result_model.dart';
 import '../../../core/widgets/eye_loader.dart';
+import 'in_person_location_screen.dart';
 
 class BookingConfirmationScreen extends StatefulWidget {
   const BookingConfirmationScreen({super.key});
@@ -60,6 +61,14 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
 
   Future<void> _finalizeBooking() async {
     if (_doctor == null || _slot == null || _date == null) return;
+
+    if (_type == ConsultationType.inPerson && _exactAddress == null) {
+      SnackbarUtils.showWarning(
+        context,
+        'Please select a visit address for in-person consultation.',
+      );
+      return;
+    }
 
     setState(() => _isSubmitting = true);
 
@@ -304,6 +313,14 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                           color,
                           onEdit: _showTypeSelectionSheet,
                         ),
+                        if (_type == ConsultationType.inPerson)
+                          _buildSummaryItem(
+                            Icons.home_filled,
+                            'Visit Address',
+                            _exactAddress ?? 'Address not selected',
+                            color,
+                            onEdit: _pickLocation,
+                          ),
                         _buildSummaryItem(
                           Icons.attach_file_rounded,
                           'Attached Results',
@@ -846,6 +863,23 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _pickLocation() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const InPersonLocationScreen(pickerMode: true),
+      ),
+    );
+
+    if (result != null && result is Map<String, dynamic>) {
+      setState(() {
+        _latitude = result['latitude'];
+        _longitude = result['longitude'];
+        _exactAddress = result['exactAddress'];
+      });
+    }
   }
 
   void _showResultsSelectionSheet() {
