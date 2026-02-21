@@ -58,11 +58,55 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                       padding: const EdgeInsets.all(24),
                       itemCount: _bookings.length,
                       itemBuilder: (context, index) {
-                        return _BookingListTile(booking: _bookings[index]);
+                        return _BookingListTile(
+                          booking: _bookings[index],
+                          onCancel: () => _cancelBooking(_bookings[index].id),
+                        );
                       },
                     ),
             ),
     );
+  }
+
+  Future<void> _cancelBooking(String bookingId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Request?'),
+        content: const Text(
+          'Are you sure you want to cancel this consultation request?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No, Keep It'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Yes, Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() => _isLoading = true);
+      try {
+        await _consultationService.updateBookingStatus(
+          bookingId,
+          BookingStatus.cancelled,
+        );
+        await _loadBookings();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to cancel booking: $e')),
+          );
+        }
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   Widget _buildEmptyState() {
@@ -99,7 +143,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
 
 class _BookingListTile extends StatelessWidget {
   final ConsultationBookingModel booking;
-  const _BookingListTile({required this.booking});
+  final VoidCallback? onCancel;
+  const _BookingListTile({required this.booking, this.onCancel});
 
   @override
   Widget build(BuildContext context) {
@@ -159,23 +204,45 @@ class _BookingListTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    _getStatusText(booking.status),
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        _getStatusText(booking.status),
+                        style: TextStyle(
+                          color: statusColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
+                    if (booking.status == BookingStatus.requested)
+                      TextButton(
+                        onPressed: onCancel,
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          foregroundColor: Colors.red,
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),

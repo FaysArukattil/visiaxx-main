@@ -50,6 +50,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   bool _isLoadingSlots = false;
   bool _isLoadingResults = false;
   bool _isSubmitting = false;
+  bool _isBooked = false;
 
   @override
   void didChangeDependencies() {
@@ -140,6 +141,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
 
       if (result != null) {
         if (mounted) {
+          setState(() => _isBooked = true);
           _showSuccessSheet();
         }
       } else {
@@ -691,7 +693,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
         ],
       ),
       child: ElevatedButton(
-        onPressed: _isSubmitting ? null : _finalizeBooking,
+        onPressed: (_isSubmitting || _isBooked) ? null : _finalizeBooking,
         style: ElevatedButton.styleFrom(
           backgroundColor: context.primary,
           foregroundColor: Colors.white,
@@ -703,9 +705,9 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
         ),
         child: _isSubmitting
             ? const EyeLoader(size: 40, color: Colors.white)
-            : const Text(
-                'Confirm & Request',
-                style: TextStyle(
+            : Text(
+                _isBooked ? 'Request Sent' : 'Confirm & Request',
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0.5,
