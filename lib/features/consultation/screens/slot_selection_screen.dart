@@ -213,6 +213,7 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
     return Padding(
       padding: const EdgeInsets.only(right: 24),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),

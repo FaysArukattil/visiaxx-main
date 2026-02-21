@@ -164,8 +164,9 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.only(right: 24),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
@@ -192,14 +193,39 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
             ),
           ),
           const SizedBox(width: 20),
-          const Expanded(
-            child: Text(
-              'Attach Results',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.8,
-              ),
+          Expanded(
+            child: Row(
+              children: [
+                const Text(
+                  'Attach Results',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.8,
+                  ),
+                ),
+                if (_selectedResultIds.isNotEmpty) ...[
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: context.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${_selectedResultIds.length}/10',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        color: context.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],
@@ -274,11 +300,12 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
 
     if (isLandscape) {
       return GridView.builder(
+        key: const PageStorageKey('results_grid'),
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
         physics: const BouncingScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 1.1,
+          childAspectRatio: 0.95,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
         ),
@@ -290,6 +317,7 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
     }
 
     return ListView.builder(
+      key: const PageStorageKey('results_list'),
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
       physics: const BouncingScrollPhysics(),
       itemCount: _results.length,
@@ -313,6 +341,13 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
             if (isSelected) {
               _selectedResultIds.remove(result.id);
             } else {
+              if (_selectedResultIds.length >= 10) {
+                SnackbarUtils.showWarning(
+                  context,
+                  'Maximum of 10 results can be attached at once.',
+                );
+                return;
+              }
               _selectedResultIds.add(result.id);
             }
           });
@@ -389,49 +424,93 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: context.scaffoldBackground.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: context.dividerColor.withValues(alpha: 0.05),
+              isLandscape
+                  ? Expanded(
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: context.scaffoldBackground.withValues(
+                            alpha: 0.5,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: context.dividerColor.withValues(alpha: 0.05),
+                          ),
+                        ),
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                _getTestsPerformedSummary(result),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: context.textSecondary,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.3,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                DateFormat(
+                                  'dd MMM yyyy',
+                                ).format(result.timestamp),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: context.textTertiary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              if (_hasAmslerIssues(result))
+                                _buildAmslerThumbnails(result),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  : Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: context.scaffoldBackground.withValues(
+                          alpha: 0.5,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: context.dividerColor.withValues(alpha: 0.05),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _getTestsPerformedSummary(result),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: context.textSecondary,
+                              fontWeight: FontWeight.w700,
+                              height: 1.3,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            DateFormat('dd MMM yyyy').format(result.timestamp),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: context.textTertiary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          if (_hasAmslerIssues(result))
+                            _buildAmslerThumbnails(result),
+                        ],
+                      ),
                     ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        _getTestsPerformedSummary(result),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.textSecondary,
-                          fontWeight: FontWeight.w700,
-                          height: 1.3,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        DateFormat('dd MMM yyyy').format(result.timestamp),
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: context.textTertiary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (_hasAmslerIssues(result) && !isLandscape) ...[
-                const SizedBox(height: 12),
-                _buildAmslerThumbnails(result),
-              ],
               const SizedBox(height: 8),
               Align(
                 alignment: Alignment.centerRight,
@@ -728,7 +807,9 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      isSelected ? 'Attach & Proceed' : 'Proceed',
+                      isSelected
+                          ? 'Attach & Proceed (${_selectedResultIds.length}/10)'
+                          : 'Proceed',
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w900,
