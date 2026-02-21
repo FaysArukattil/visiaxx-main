@@ -26,6 +26,7 @@ import 'features/consultation/screens/consultation_type_screen.dart';
 import 'features/consultation/screens/in_person_location_screen.dart';
 import 'features/consultation/screens/doctor_browse_screen.dart';
 import 'features/consultation/screens/doctor_detail_screen.dart';
+import 'features/consultation/screens/patient_selection_screen.dart';
 import 'features/consultation/screens/slot_selection_screen.dart';
 import 'features/consultation/screens/attach_results_screen.dart';
 import 'features/consultation/screens/booking_confirmation_screen.dart';
@@ -398,6 +399,7 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
                   const InPersonLocationScreen(),
               '/doctor-browse': (context) => const DoctorBrowseScreen(),
               '/doctor-detail': (context) => const DoctorDetailScreen(),
+              '/patient-selection': (context) => const PatientSelectionScreen(),
               '/slot-selection': (context) => const SlotSelectionScreen(),
               '/attach-results': (context) => const AttachResultsScreen(),
               '/booking-confirmation': (context) =>

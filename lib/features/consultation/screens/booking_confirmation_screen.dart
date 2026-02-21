@@ -36,6 +36,11 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   String? _flat;
   String? _landmark;
   String? _pincode;
+  String? _patientName;
+  int? _patientAge;
+  String? _patientGender;
+  bool _isForSelf = true;
+  String? _familyMemberId;
   ConsultationType? _type;
   List<TimeSlotModel> _availableSlots = [];
   List<TestResultModel> _previousResults = [];
@@ -60,6 +65,11 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
     _flat = args?['flat'];
     _landmark = args?['landmark'];
     _pincode = args?['pincode'];
+    _patientName = args?['patientName'];
+    _patientAge = args?['patientAge'];
+    _patientGender = args?['patientGender'];
+    _isForSelf = args?['isForSelf'] ?? true;
+    _familyMemberId = args?['familyMemberId'];
     _type = args?['type'] is String
         ? (args?['type'] == 'inPerson'
               ? ConsultationType.inPerson
@@ -91,7 +101,12 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
         patientId: user.uid,
         doctorId: _doctor!.id,
         doctorName: _doctor!.fullName,
-        patientName: '${userProfile.firstName} ${userProfile.lastName}',
+        patientName:
+            _patientName ?? '${userProfile.firstName} ${userProfile.lastName}',
+        patientAge: _patientAge,
+        patientGender: _patientGender,
+        isForSelf: _isForSelf,
+        familyMemberId: _familyMemberId,
         dateTime: _date!,
         timeSlot: _slot!.startTime,
         type: _type ?? ConsultationType.online,
@@ -335,6 +350,16 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                             color,
                             onEdit: _pickLocation,
                           ),
+                        _buildSummaryItem(
+                          Icons.person_outline_rounded,
+                          'Patient',
+                          '$_patientName ${_isForSelf ? '(Self)' : '(Family)'}',
+                          color,
+                          onEdit: () => Navigator.popUntil(
+                            context,
+                            ModalRoute.withName('/patient-selection'),
+                          ),
+                        ),
                         _buildSummaryItem(
                           Icons.attach_file_rounded,
                           'Attached Results',

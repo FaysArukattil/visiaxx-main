@@ -10,6 +10,10 @@ class ConsultationBookingModel {
   final String doctorId;
   final String doctorName; // Denormalized for quick display
   final String patientName; // Denormalized for quick display
+  final int? patientAge;
+  final String? patientGender;
+  final bool isForSelf;
+  final String? familyMemberId;
   final DateTime dateTime;
   final String timeSlot; // e.g., "10:00 AM"
   final ConsultationType type;
@@ -32,6 +36,9 @@ class ConsultationBookingModel {
     required this.doctorId,
     required this.doctorName,
     required this.patientName,
+    this.patientAge,
+    this.patientGender,
+    this.isForSelf = true,
     required this.dateTime,
     required this.timeSlot,
     required this.type,
@@ -45,6 +52,7 @@ class ConsultationBookingModel {
     this.latitude,
     this.longitude,
     this.exactAddress,
+    this.familyMemberId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -57,6 +65,9 @@ class ConsultationBookingModel {
       doctorId: data['doctorId'] ?? '',
       doctorName: data['doctorName'] ?? '',
       patientName: data['patientName'] ?? '',
+      patientAge: data['patientAge'],
+      patientGender: data['patientGender'],
+      isForSelf: data['isForSelf'] ?? true,
       dateTime: (data['dateTime'] as Timestamp).toDate(),
       timeSlot: data['timeSlot'] ?? '',
       type: ConsultationType.values.firstWhere(
@@ -76,6 +87,7 @@ class ConsultationBookingModel {
       latitude: data['latitude']?.toDouble(),
       longitude: data['longitude']?.toDouble(),
       exactAddress: data['exactAddress'],
+      familyMemberId: data['familyMemberId'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
     );
@@ -87,6 +99,9 @@ class ConsultationBookingModel {
       'doctorId': doctorId,
       'doctorName': doctorName,
       'patientName': patientName,
+      'patientAge': patientAge,
+      'patientGender': patientGender,
+      'isForSelf': isForSelf,
       'dateTime': Timestamp.fromDate(dateTime),
       'timeSlot': timeSlot,
       'type': type.toString(),
@@ -100,6 +115,7 @@ class ConsultationBookingModel {
       'latitude': latitude,
       'longitude': longitude,
       'exactAddress': exactAddress,
+      'familyMemberId': familyMemberId,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };

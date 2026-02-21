@@ -25,7 +25,14 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
   double? _latitude;
   double? _longitude;
   String? _exactAddress;
+  String? _flat;
+  String? _landmark;
+  String? _pincode;
   ConsultationType? _type;
+  String? _patientName;
+  int? _patientAge;
+  String? _patientGender;
+  bool _isForSelf = true;
 
   @override
   void didChangeDependencies() {
@@ -47,7 +54,14 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
     _latitude = args?['latitude'];
     _longitude = args?['longitude'];
     _exactAddress = args?['exactAddress'];
+    _flat = args?['flat'];
+    _landmark = args?['landmark'];
+    _pincode = args?['pincode'];
     _type = args?['type'];
+    _patientName = args?['patientName'];
+    _patientAge = args?['patientAge'];
+    _patientGender = args?['patientGender'];
+    _isForSelf = args?['isForSelf'] ?? true;
     if (_doctor != null) {
       _loadSlots();
     }
@@ -648,6 +662,13 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
                     'latitude': _latitude,
                     'longitude': _longitude,
                     'exactAddress': _exactAddress,
+                    'flat': _flat,
+                    'landmark': _landmark,
+                    'pincode': _pincode,
+                    'patientName': _patientName,
+                    'patientAge': _patientAge,
+                    'patientGender': _patientGender,
+                    'isForSelf': _isForSelf,
                   },
                 );
               },

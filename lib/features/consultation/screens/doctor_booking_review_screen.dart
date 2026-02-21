@@ -203,6 +203,16 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen> {
                     ),
                     const SizedBox(width: 12),
                     _infoChip(Icons.access_time, booking.timeSlot),
+                    if (booking.patientAge != null) ...[
+                      const SizedBox(width: 12),
+                      _infoChip(
+                        Icons.cake_outlined,
+                        '${booking.patientAge} yrs',
+                      ),
+                    ],
+                    if (booking.patientGender != null) ...[
+                      const SizedBox(width: 12),
+                    ],
                   ],
                 ),
                 if (booking.type == ConsultationType.inPerson &&

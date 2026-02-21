@@ -143,6 +143,14 @@ class _BookingListTile extends StatelessWidget {
                           fontSize: 12,
                         ),
                       ),
+                      Text(
+                        'Patient: ${booking.patientName}${booking.isForSelf ? ' (Self)' : ''}',
+                        style: TextStyle(
+                          color: context.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                 ),

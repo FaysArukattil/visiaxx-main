@@ -23,6 +23,9 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
   double? _latitude;
   double? _longitude;
   String? _exactAddress;
+  String? _flat;
+  String? _landmark;
+  String? _pincode;
 
   @override
   void didChangeDependencies() {
@@ -40,6 +43,9 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
     _latitude = args?['latitude'];
     _longitude = args?['longitude'];
     _exactAddress = args?['exactAddress'];
+    _flat = args?['flat'];
+    _landmark = args?['landmark'];
+    _pincode = args?['pincode'];
 
     if (doctorId != null) {
       _loadDoctorDetail(doctorId);
@@ -475,13 +481,16 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
             onPressed: () {
               Navigator.pushNamed(
                 context,
-                '/slot-selection',
+                '/patient-selection',
                 arguments: {
                   'doctor': _doctor,
                   'type': _type,
                   'latitude': _latitude,
                   'longitude': _longitude,
                   'exactAddress': _exactAddress,
+                  'flat': _flat,
+                  'landmark': _landmark,
+                  'pincode': _pincode,
                 },
               );
             },

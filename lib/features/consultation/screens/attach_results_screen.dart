@@ -29,7 +29,14 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
   double? _latitude;
   double? _longitude;
   String? _exactAddress;
+  String? _flat;
+  String? _landmark;
+  String? _pincode;
   ConsultationType? _type;
+  String? _patientName;
+  int? _patientAge;
+  String? _patientGender;
+  bool _isForSelf = true;
 
   List<TestResultModel> _results = [];
   final List<String> _selectedResultIds = [];
@@ -48,7 +55,14 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
     _latitude = args?['latitude'];
     _longitude = args?['longitude'];
     _exactAddress = args?['exactAddress'];
+    _flat = args?['flat'];
+    _landmark = args?['landmark'];
+    _pincode = args?['pincode'];
     _type = args?['type'];
+    _patientName = args?['patientName'];
+    _patientAge = args?['patientAge'];
+    _patientGender = args?['patientGender'];
+    _isForSelf = args?['isForSelf'] ?? true;
 
     // Handle pre-selected values for editability
     if (args?['preSelectedResultIds'] != null) {
@@ -894,7 +908,14 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
         'latitude': _latitude,
         'longitude': _longitude,
         'exactAddress': _exactAddress,
+        'flat': _flat,
+        'landmark': _landmark,
+        'pincode': _pincode,
         'type': _type,
+        'patientName': _patientName,
+        'patientAge': _patientAge,
+        'patientGender': _patientGender,
+        'isForSelf': _isForSelf,
       },
     );
   }
