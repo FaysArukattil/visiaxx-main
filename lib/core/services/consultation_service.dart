@@ -79,7 +79,7 @@ class ConsultationService {
   /// Request a new consultation booking
   Future<String?> requestBooking(
     ConsultationBookingModel booking,
-    String slotId,
+    TimeSlotModel slot,
   ) async {
     try {
       final batch = _firestore.batch();
@@ -93,26 +93,43 @@ class ConsultationService {
         updatedAt: DateTime.now(),
       );
 
+      print(
+        '[ConsultationService] Creating booking: ${bookingRef.id} for patient: ${finalBooking.patientId}',
+      );
       batch.set(bookingRef, finalBooking.toFirestore());
 
-      // 2. Update slot status to booked (optimistic locking/concurrency handling recommended in production)
+      // 2. Prepare slot data
       final dateKey =
           '${booking.dateTime.year}-${booking.dateTime.month.toString().padLeft(2, '0')}-${booking.dateTime.day.toString().padLeft(2, '0')}';
+      print(
+        '[ConsultationService] Updating slot: ${slot.id} on date: $dateKey',
+      );
       final slotRef = _firestore
           .collection(slotsCollection)
           .doc(booking.doctorId)
           .collection(dateKey)
-          .doc(slotId);
+          .doc(slot.id);
 
-      batch.update(slotRef, {
-        'status': SlotStatus.booked.toString(),
-        'bookingId': bookingRef.id,
-      });
+      // Create or update slot status to booked
+      final updatedSlot = TimeSlotModel(
+        id: slot.id,
+        doctorId: slot.doctorId,
+        date: slot.date,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        status: SlotStatus.booked,
+        bookingId: bookingRef.id,
+      );
 
+      batch.set(slotRef, updatedSlot.toFirestore());
+
+      print('[ConsultationService] Committing batch...');
       await batch.commit();
+      print('[ConsultationService] Batch committed successfully');
       return bookingRef.id;
-    } catch (e) {
+    } catch (e, stack) {
       print('[ConsultationService] Error creating booking: $e');
+      print(stack);
       return null;
     }
   }
@@ -122,17 +139,27 @@ class ConsultationService {
     String patientId,
   ) async {
     try {
+      print('[ConsultationService] Fetching bookings for patient: $patientId');
       final querySnapshot = await _firestore
           .collection(bookingsCollection)
           .where('patientId', isEqualTo: patientId)
-          .orderBy('dateTime', descending: true)
+          // Temporarily removed to check for index issues
+          // .orderBy('dateTime', descending: true)
           .get();
 
-      return querySnapshot.docs
+      print(
+        '[ConsultationService] Found ${querySnapshot.docs.length} bookings',
+      );
+      final list = querySnapshot.docs
           .map((doc) => ConsultationBookingModel.fromFirestore(doc))
           .toList();
-    } catch (e) {
+
+      // Sort in-memory to avoid index requirement during debugging
+      list.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+      return list;
+    } catch (e, stack) {
       print('[ConsultationService] Error fetching patient bookings: $e');
+      print(stack);
       return [];
     }
   }
@@ -142,17 +169,27 @@ class ConsultationService {
     String doctorId,
   ) async {
     try {
+      print('[ConsultationService] Fetching bookings for doctor: $doctorId');
       final querySnapshot = await _firestore
           .collection(bookingsCollection)
           .where('doctorId', isEqualTo: doctorId)
-          .orderBy('dateTime', descending: true)
+          // Temporarily removed to check for index issues
+          // .orderBy('dateTime', descending: true)
           .get();
 
-      return querySnapshot.docs
+      print(
+        '[ConsultationService] Found ${querySnapshot.docs.length} doctor bookings',
+      );
+      final list = querySnapshot.docs
           .map((doc) => ConsultationBookingModel.fromFirestore(doc))
           .toList();
-    } catch (e) {
+
+      // Sort in-memory
+      list.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+      return list;
+    } catch (e, stack) {
       print('[ConsultationService] Error fetching doctor bookings: $e');
+      print(stack);
       return [];
     }
   }

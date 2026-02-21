@@ -304,38 +304,49 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen> {
                   ),
                 ],
                 const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () =>
-                            _updateStatus(booking, BookingStatus.cancelled),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isLandscape =
+                        MediaQuery.of(context).orientation ==
+                        Orientation.landscape;
+                    final buttonHeight = isLandscape ? 44.0 : 54.0;
+
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () =>
+                                _updateStatus(booking, BookingStatus.cancelled),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red,
+                              side: const BorderSide(color: Colors.red),
+                              minimumSize: Size(double.infinity, buttonHeight),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Reject'),
                           ),
                         ),
-                        child: const Text('Reject'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () =>
-                            _updateStatus(booking, BookingStatus.confirmed),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: AppColors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () =>
+                                _updateStatus(booking, BookingStatus.confirmed),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: AppColors.white,
+                              minimumSize: Size(double.infinity, buttonHeight),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Confirm'),
                           ),
                         ),
-                        child: const Text('Confirm'),
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
               ],
             ),

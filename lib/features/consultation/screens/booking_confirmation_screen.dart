@@ -126,6 +126,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
         type: _type ?? ConsultationType.online,
         status: BookingStatus.requested,
         attachedResultIds: _attachedResultIds,
+        latitude: _latitude,
         longitude: _longitude,
         exactAddress: _exactAddress,
         clinicAddress: _type == ConsultationType.inPerson
@@ -135,10 +136,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
         updatedAt: DateTime.now(),
       );
 
-      final result = await _consultationService.requestBooking(
-        booking,
-        _slot!.id,
-      );
+      final result = await _consultationService.requestBooking(booking, _slot!);
 
       if (result != null) {
         if (mounted) {
@@ -148,7 +146,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
         if (mounted) {
           SnackbarUtils.showError(
             context,
-            'Failed to load user profile. Please try again.',
+            'Failed to request booking. Please try again.',
           );
         }
       }
@@ -156,7 +154,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
       if (mounted) {
         SnackbarUtils.showError(
           context,
-          'You must be logged in to request a booking.',
+          'Failed to load user profile. Please check your connection.',
         );
       }
     }
@@ -165,14 +163,28 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   }
 
   void _showSuccessSheet() {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     showModalBottomSheet(
       context: context,
       isDismissible: false,
       enableDrag: false,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) =>
           Container(
-            padding: const EdgeInsets.all(32),
+            constraints: BoxConstraints(
+              maxHeight:
+                  MediaQuery.of(context).size.height *
+                  (isLandscape ? 0.7 : 0.8),
+            ),
+            padding: EdgeInsets.fromLTRB(
+              isLandscape ? 40 : 32,
+              isLandscape ? 32 : 16,
+              isLandscape ? 40 : 32,
+              isLandscape ? 32 : 40,
+            ),
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
               borderRadius: const BorderRadius.vertical(
@@ -186,64 +198,153 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                 ),
               ],
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check_circle_rounded,
-                    color: Colors.green,
-                    size: 72,
-                  ).animate().scale(delay: 200.ms).rotate(duration: 400.ms),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Request Sent!',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Your consultation request has been sent to Dr. ${_doctor?.fullName}. You will be notified once it is confirmed.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: context.textSecondary,
-                    fontSize: 15,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context); // Close sheet
-                    Navigator.of(
-                      context,
-                    ).pushNamedAndRemoveUntil('/home', (route) => false);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.primary,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 60),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+            child: isLandscape
+                ? Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child:
+                              const Icon(
+                                    Icons.check_circle_rounded,
+                                    color: Colors.green,
+                                    size: 80,
+                                  )
+                                  .animate()
+                                  .scale(delay: 200.ms)
+                                  .rotate(duration: 400.ms),
+                        ),
+                      ),
+                      const SizedBox(width: 40),
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Request Sent!',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Your consultation request has been sent to Dr. ${_doctor?.fullName}. You will be notified once it is confirmed.',
+                              style: TextStyle(
+                                color: context.textSecondary,
+                                fontSize: 14,
+                                height: 1.4,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context); // Close sheet
+                                Navigator.of(context).pushNamedAndRemoveUntil(
+                                  '/home',
+                                  (route) => false,
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: context.primary,
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size(double.infinity, 50),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Text(
+                                'Back to Home',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                : SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildSheetHandle(),
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child:
+                              const Icon(
+                                    Icons.check_circle_rounded,
+                                    color: Colors.green,
+                                    size: 72,
+                                  )
+                                  .animate()
+                                  .scale(delay: 200.ms)
+                                  .rotate(duration: 400.ms),
+                        ),
+                        const SizedBox(height: 24),
+                        const Text(
+                          'Request Sent!',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Your consultation request has been sent to Dr. ${_doctor?.fullName}. You will be notified once it is confirmed.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: context.textSecondary,
+                            fontSize: 15,
+                            height: 1.3,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context); // Close sheet
+                            Navigator.of(context).pushNamedAndRemoveUntil(
+                              '/home',
+                              (route) => false,
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: context.primary,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 60),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Back to Home',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    elevation: 0,
                   ),
-                  child: const Text(
-                    'Back to Home',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                  ),
-                ),
-              ],
-            ),
           ).animate().slideY(
             begin: 1.0,
             end: 0,
@@ -574,8 +675,10 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   }
 
   Widget _buildBottomAction() {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, isLandscape ? 16 : 32),
       decoration: BoxDecoration(
         color: context.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
@@ -592,7 +695,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: context.primary,
           foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 60),
+          minimumSize: Size(double.infinity, isLandscape ? 44 : 60),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -1251,13 +1354,17 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
     }
   }
 
-  ButtonStyle _sheetButtonStyle(Color color) => ElevatedButton.styleFrom(
-    backgroundColor: color,
-    foregroundColor: Colors.white,
-    minimumSize: const Size(double.infinity, 60),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-    elevation: 0,
-  );
+  ButtonStyle _sheetButtonStyle(Color color) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+    return ElevatedButton.styleFrom(
+      backgroundColor: color,
+      foregroundColor: Colors.white,
+      minimumSize: Size(double.infinity, isLandscape ? 44 : 60),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 0,
+    );
+  }
 
   Widget _buildEmptyResultsState() => Center(
     child: Text(
@@ -1350,41 +1457,50 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: ElevatedButton(
                     onPressed: () async {
-                      if (!localIsForSelf && localFamilyMemberId == null) {
-                        SnackbarUtils.showWarning(
-                          context,
-                          'Please select a family member',
-                        );
-                        return;
-                      }
-
                       final nav = Navigator.of(context);
-                      final userProfile = await _authService
-                          .getCurrentUserProfile();
-
-                      if (!mounted) return;
-
-                      setState(() {
-                        _isForSelf = localIsForSelf;
-                        _familyMemberId = localIsForSelf
-                            ? null
-                            : localFamilyMemberId;
-
-                        if (_isForSelf) {
-                          if (userProfile != null) {
+                      if (localIsForSelf) {
+                        final userProfile = await _authService
+                            .getCurrentUserProfile();
+                        if (userProfile == null) {
+                          if (context.mounted) {
+                            SnackbarUtils.showError(
+                              context,
+                              'Failed to load user profile. Please try again.',
+                            );
+                          }
+                          return;
+                        }
+                        if (mounted) {
+                          setState(() {
+                            _isForSelf = true;
+                            _familyMemberId = null;
                             _patientName =
                                 '${userProfile.firstName} ${userProfile.lastName}';
                             _patientAge = userProfile.age;
                             _patientGender = userProfile.sex;
-                          }
-                        } else {
-                          final member = familyProvider.familyMembers
-                              .firstWhere((m) => m.id == localFamilyMemberId);
-                          _patientName = member.firstName;
-                          _patientAge = member.age;
-                          _patientGender = member.sex;
+                          });
                         }
-                      });
+                      } else {
+                        if (localFamilyMemberId == null) {
+                          SnackbarUtils.showWarning(
+                            context,
+                            'Please select a family member',
+                          );
+                          return;
+                        }
+                        final member = familyProvider.familyMembers.firstWhere(
+                          (m) => m.id == localFamilyMemberId,
+                        );
+                        if (mounted) {
+                          setState(() {
+                            _isForSelf = false;
+                            _familyMemberId = localFamilyMemberId;
+                            _patientName = member.firstName;
+                            _patientAge = member.age;
+                            _patientGender = member.sex;
+                          });
+                        }
+                      }
                       nav.pop();
                     },
                     style: _sheetButtonStyle(color),

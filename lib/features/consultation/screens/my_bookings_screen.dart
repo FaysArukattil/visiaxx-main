@@ -31,11 +31,16 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
     setState(() => _isLoading = true);
     final user = _authService.currentUser;
     if (user != null) {
+      print('[MyBookingsScreen] Loading bookings for UID: ${user.uid}');
       final bookings = await _consultationService.getPatientBookings(user.uid);
-      setState(() {
-        _bookings = bookings;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _bookings = bookings;
+          _isLoading = false;
+        });
+      }
+    } else {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
