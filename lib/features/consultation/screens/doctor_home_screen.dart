@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/models/consultation_booking_model.dart';
 import '../../../core/services/consultation_service.dart';
 import '../../../core/extensions/theme_extension.dart';
+import '../../../core/widgets/eye_loader.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
   const DoctorHomeScreen({super.key});
@@ -27,24 +29,25 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
 
   final List<Map<String, dynamic>> _carouselSlides = [
     {
-      'heading': 'Manage Consultations',
+      'heading': 'Professional Care',
       'content':
-          'Seamlessly connect with patients and manage your daily schedule.',
-      'supportText': 'Digital Healthcare',
-      'icon': Icons.video_call,
+          'Connect with patients globally and provide premium eye diagnostics.',
+      'supportText': 'DIGITAL CLINIC',
+      'icon': Icons.medical_services_rounded,
     },
     {
-      'heading': 'Patient Records',
+      'heading': 'Advanced Insights',
       'content':
-          'Access patient histories and test results instantly during calls.',
-      'supportText': 'Data-Driven Care',
-      'icon': Icons.folder_shared,
+          'Analyze comprehensive test results with our AI-driven diagnostic tools.',
+      'supportText': 'DATA INSIGHTS',
+      'icon': Icons.analytics_rounded,
     },
     {
-      'heading': 'Global Reach',
-      'content': 'Consult with patients from Mumbai and beyond with Visiaxx.',
-      'supportText': 'Expanding Access',
-      'icon': Icons.public,
+      'heading': 'Seamless Workflow',
+      'content':
+          'Manage your slots and consultation records in one consolidated dashboard.',
+      'supportText': 'EFFICIENCY',
+      'icon': Icons.auto_graph_rounded,
     },
   ];
 
@@ -64,100 +67,224 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         DateTime.now(),
       );
 
-      setState(() {
-        _user = user;
-        _totalPatients = patients.length;
-        _todaysSlots = todaySlots.length;
-        _completedConsultations = bookings
-            .where((b) => b.status == BookingStatus.completed)
-            .length;
-        _upcomingBookings = bookings
-            .where((b) => b.status == BookingStatus.confirmed)
-            .take(5)
-            .toList();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _user = user;
+          _totalPatients = patients.length;
+          _todaysSlots = todaySlots.length;
+          _completedConsultations = bookings
+              .where((b) => b.status == BookingStatus.completed)
+              .length;
+          _upcomingBookings = bookings
+              .where((b) => b.status == BookingStatus.confirmed)
+              .take(5)
+              .toList();
+          _isLoading = false;
+        });
+      }
     } else {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: EyeLoader(size: 40));
     }
 
-    return CustomScrollView(
-      slivers: [
-        SliverAppBar(
-          floating: true,
-          title: Text('Welcome, Dr. ${_user?.firstName ?? ''}'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () async {
-                final nav = Navigator.of(context);
-                await _authService.signOut();
-                nav.pushReplacementNamed('/login');
-              },
-            ),
-          ],
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.all(24),
-          sliver: SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildCarousel(),
-                const SizedBox(height: 32),
-                _buildStatsRow(),
-                const SizedBox(height: 32),
-                const Text(
-                  'Quick Actions',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                _buildQuickActionsGrid(),
-                const SizedBox(height: 32),
-                const Text(
-                  'Upcoming Consultations',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                _buildUpcomingConsultations(),
-                const SizedBox(height: 100),
-              ],
+    final theme = Theme.of(context);
+
+    return Stack(
+      children: [
+        // Background Decorations
+        Positioned(
+          top: -100,
+          right: -100,
+          child: Container(
+            width: 300,
+            height: 300,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  context.primary.withValues(alpha: 0.08),
+                  context.primary.withValues(alpha: 0.0),
+                ],
+              ),
             ),
           ),
         ),
+        Positioned(
+          bottom: 100,
+          left: -50,
+          child: Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  AppColors.secondary.withValues(alpha: 0.05),
+                  AppColors.secondary.withValues(alpha: 0.0),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverAppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              floating: true,
+              centerTitle: false,
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Welcome back,',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    'Dr. ${_user?.firstName ?? ''}',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: context.onSurface,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                _buildHeaderAction(Icons.notifications_none_rounded, () {}),
+                _buildHeaderAction(Icons.logout_rounded, () async {
+                  final nav = Navigator.of(context);
+                  await _authService.signOut();
+                  nav.pushReplacementNamed('/login');
+                }),
+                const SizedBox(width: 16),
+              ],
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCarousel(),
+                    const SizedBox(height: 32),
+                    _buildSectionTitle(
+                      'Live Analytics',
+                      Icons.insights_rounded,
+                    ),
+                    _buildStatsRow(),
+                    const SizedBox(height: 32),
+                    _buildSectionTitle('Quick Actions', Icons.bolt_rounded),
+                    _buildQuickActionsGrid(),
+                    const SizedBox(height: 32),
+                    _buildSectionTitle(
+                      'Upcoming Consultations',
+                      Icons.event_note_rounded,
+                    ),
+                    _buildUpcomingConsultations(),
+                    const SizedBox(height: 100),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ],
+    );
+  }
+
+  Widget _buildHeaderAction(IconData icon, VoidCallback onTap) {
+    return Container(
+      margin: const EdgeInsets.only(left: 8),
+      decoration: BoxDecoration(
+        color: context.surface,
+        shape: BoxShape.circle,
+        border: Border.all(color: context.dividerColor.withValues(alpha: 0.05)),
+      ),
+      child: IconButton(
+        icon: Icon(icon, size: 20, color: context.onSurface),
+        onPressed: onTap,
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: context.primary),
+          const SizedBox(width: 8),
+          Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
+              color: context.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Divider(color: context.dividerColor.withValues(alpha: 0.05)),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildUpcomingConsultations() {
     if (_upcomingBookings.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(32),
+        width: double.infinity,
+        padding: const EdgeInsets.all(40),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(24),
+          color: context.surface,
+          borderRadius: BorderRadius.circular(28),
           border: Border.all(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
+            color: context.dividerColor.withValues(alpha: 0.05),
           ),
         ),
         child: Column(
           children: [
-            Icon(
-              Icons.event_available,
-              size: 48,
-              color: AppColors.textTertiary.withValues(alpha: 0.3),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: context.primary.withValues(alpha: 0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.event_available_rounded,
+                size: 40,
+                color: context.primary.withValues(alpha: 0.5),
+              ),
             ),
             const SizedBox(height: 16),
             Text(
-              'No confirmed bookings for today.',
-              style: TextStyle(color: AppColors.textSecondary),
+              'No Consultations Today',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: context.onSurface,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Your schedule is clear for now.',
+              style: TextStyle(fontSize: 12, color: context.textSecondary),
             ),
           ],
         ),
@@ -170,46 +297,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       itemCount: _upcomingBookings.length,
       itemBuilder: (context, index) {
         final booking = _upcomingBookings[index];
-        return Card(
-          elevation: 0,
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
-            ),
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(16),
-            leading: CircleAvatar(
-              backgroundColor: context.primary.withValues(alpha: 0.1),
-              child: const Icon(Icons.person),
-            ),
-            title: Text(
-              booking.patientName,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              '${booking.timeSlot} • ${booking.type == ConsultationType.online ? 'Online' : 'In-Person'}',
-              style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
-            ),
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                'Confirmed',
-                style: TextStyle(
-                  color: Colors.green,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        );
+        return _BookingTile(booking: booking);
       },
     );
   }
@@ -219,10 +307,10 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       children: [
         CarouselSlider(
           options: CarouselOptions(
-            height: 160,
+            height: 180,
             autoPlay: true,
             enlargeCenterPage: true,
-            viewportFraction: 0.95,
+            viewportFraction: 0.92,
             onPageChanged: (index, reason) =>
                 setState(() => _currentCarouselIndex = index),
           ),
@@ -230,18 +318,20 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
               .map((slide) => _CarouselSlide(slide: slide))
               .toList(),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: _carouselSlides.asMap().entries.map((entry) {
-            return Container(
-              width: 8,
-              height: 8,
+            final isSelected = _currentCarouselIndex == entry.key;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: isSelected ? 20 : 6,
+              height: 6,
               margin: const EdgeInsets.symmetric(horizontal: 4),
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(3),
                 color: context.primary.withValues(
-                  alpha: _currentCarouselIndex == entry.key ? 0.8 : 0.2,
+                  alpha: isSelected ? 0.8 : 0.2,
                 ),
               ),
             );
@@ -255,23 +345,23 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     return Row(
       children: [
         _statCard(
-          'Total Patients',
+          'PATIENTS',
           _totalPatients.toString(),
-          Icons.people,
+          Icons.people_rounded,
           Colors.blue,
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 12),
         _statCard(
-          'Today\'s Slots',
+          'TODAY SLOTS',
           _todaysSlots.toString(),
-          Icons.timer,
+          Icons.schedule_rounded,
           Colors.orange,
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 12),
         _statCard(
-          'Completed',
+          'COMPLETED',
           _completedConsultations.toString(),
-          Icons.check_circle,
+          Icons.verified_rounded,
           Colors.green,
         ),
       ],
@@ -281,60 +371,87 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   Widget _statCard(String label, String value, IconData icon, Color color) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              color.withValues(alpha: 0.1),
+              color.withValues(alpha: 0.05),
+            ],
+          ),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: color.withValues(alpha: 0.1)),
+          border: Border.all(color: color.withValues(alpha: 0.15), width: 1.5),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color),
-            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: context.surface,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(height: 12),
             Text(
               value,
               style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: color,
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: context.onSurface,
+                letterSpacing: -1,
               ),
             ),
             Text(
               label,
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                color: context.textSecondary,
+                letterSpacing: 0.5,
+              ),
             ),
           ],
         ),
       ),
-    );
+    ).animate().fadeIn(duration: 500.ms).scale(delay: 100.ms);
   }
 
   Widget _buildQuickActionsGrid() {
+    final isWide = MediaQuery.of(context).size.width > 800;
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: MediaQuery.of(context).size.width > 600 ? 4 : 2,
+      crossAxisCount: isWide ? 4 : 2,
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
-      childAspectRatio: 1.5,
+      childAspectRatio: 1.4,
       children: [
         _actionCard(
           'Review Requests',
-          Icons.pending_actions,
+          Icons.pending_actions_rounded,
           Colors.orange,
           () => Navigator.pushNamed(context, '/doctor-booking-review'),
         ),
         _actionCard(
-          'Set Availability',
-          Icons.edit_calendar,
+          'Manage Slots',
+          Icons.calendar_view_day_rounded,
           Colors.blue,
           () => Navigator.pushNamed(context, '/doctor-slots'),
         ),
-        _actionCard('Start Meeting', Icons.video_call, Colors.green, () {}),
+        _actionCard('Tele-Health', Icons.videocam_rounded, Colors.green, () {}),
         _actionCard(
-          'Patient Records',
-          Icons.folder_shared,
+          'Patient Vault',
+          Icons.storage_rounded,
           Colors.purple,
           () {},
         ),
@@ -348,29 +465,49 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     Color color,
     VoidCallback onTap,
   ) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: context.dividerColor.withValues(alpha: 0.05),
             ),
-          ],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                  color: context.onSurface,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -388,9 +525,18 @@ class _CarouselSlide extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [context.primary.withValues(alpha: 0.8), context.primary],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [context.primary, context.primary.withValues(alpha: 0.8)],
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: context.primary.withValues(alpha: 0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -401,19 +547,20 @@ class _CarouselSlide extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
+                    horizontal: 10,
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     slide['supportText'],
                     style: const TextStyle(
                       color: AppColors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
                     ),
                   ),
                 ),
@@ -422,28 +569,145 @@ class _CarouselSlide extends StatelessWidget {
                   slide['heading'],
                   style: const TextStyle(
                     color: AppColors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    height: 1.1,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Text(
                   slide['content'],
                   style: TextStyle(
-                    color: AppColors.white.withValues(alpha: 0.8),
+                    color: AppColors.white.withValues(alpha: 0.9),
                     fontSize: 12,
+                    height: 1.3,
                   ),
                 ),
               ],
             ),
           ),
-          Icon(
-            slide['icon'],
-            size: 64,
-            color: AppColors.white.withValues(alpha: 0.2),
+          const SizedBox(width: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.white.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(slide['icon'], size: 40, color: AppColors.white),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _BookingTile extends StatelessWidget {
+  final ConsultationBookingModel booking;
+  const _BookingTile({required this.booking});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: context.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: context.dividerColor.withValues(alpha: 0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: context.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                Icons.person_rounded,
+                color: context.primary,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    booking.patientName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      _buildMiniInfoChip(
+                        Icons.schedule_rounded,
+                        booking.timeSlot,
+                        context,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildMiniInfoChip(
+                        booking.type == ConsultationType.online
+                            ? Icons.videocam_rounded
+                            : Icons.home_rounded,
+                        booking.type == ConsultationType.online
+                            ? 'Online'
+                            : 'In-Person',
+                        context,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'ACTIVE',
+                style: TextStyle(
+                  color: Colors.green,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMiniInfoChip(IconData icon, String text, BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 10, color: context.textSecondary),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: context.textSecondary,
+          ),
+        ),
+      ],
     );
   }
 }

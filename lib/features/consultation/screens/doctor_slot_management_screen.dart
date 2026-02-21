@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/consultation_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/consultation_booking_model.dart';
+import '../../../core/widgets/eye_loader.dart';
 import 'patient_results_view_screen.dart';
 import 'doctor_video_call_screen.dart';
-import '../../home/widgets/app_bar_widget.dart';
 
 class DoctorSlotManagementScreen extends StatefulWidget {
   const DoctorSlotManagementScreen({super.key});
@@ -37,10 +38,12 @@ class _DoctorSlotManagementScreenState
     if (uid != null) {
       await _consultationService.getAllSlotsForDate(uid, _selectedDate);
       final bookings = await _consultationService.getDoctorBookings(uid);
-      setState(() {
-        _bookings = bookings;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _bookings = bookings;
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -82,143 +85,255 @@ class _DoctorSlotManagementScreenState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      appBar: const AppBarWidget(title: 'Manage Slots'),
-      body: Column(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: Stack(
         children: [
-          _buildDatePicker(),
-          const Divider(),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _buildSlotsGrid(),
+          // Background Decorations
+          Positioned(
+            top: -150,
+            right: -100,
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    context.primary.withValues(alpha: 0.08),
+                    context.primary.withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverAppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                pinned: true,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                title: Text(
+                  'Manage Slots',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(child: _buildDatePicker()),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                sliver: SliverToBoxAdapter(
+                  child: _buildSectionHeader('Availability Timeline'),
+                ),
+              ),
+              if (_isLoading)
+                const SliverFillRemaining(
+                  child: Center(child: EyeLoader(size: 40)),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.all(24),
+                  sliver: _buildSlotsGrid(),
+                ),
+            ],
           ),
         ],
       ),
-      floatingActionButton: null, // Removed as we use the full 10-10 grid
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 16),
+      child: Row(
+        children: [
+          Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
+              color: context.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Divider(color: context.dividerColor.withValues(alpha: 0.05)),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildSlotsGrid() {
     final intervals = _generateTimeIntervals();
-    return GridView.builder(
-      padding: const EdgeInsets.all(24),
+    return SliverGrid(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: MediaQuery.of(context).size.width > 900 ? 3 : 1,
-        mainAxisExtent: 180,
+        mainAxisExtent: 200,
         mainAxisSpacing: 16,
         crossAxisSpacing: 16,
       ),
-      itemCount: intervals.length,
-      itemBuilder: (context, index) {
+      delegate: SliverChildBuilderDelegate((context, index) {
         final time = intervals[index];
         final booking = _getBookingForSlot(time);
+        return _buildSlotCard(time, booking, index);
+      }, childCount: intervals.length),
+    );
+  }
 
-        return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(
-              color: booking != null
-                  ? _getStatusColor(booking.status).withValues(alpha: 0.2)
-                  : context.dividerColor.withValues(alpha: 0.1),
-              width: booking != null ? 2 : 1,
+  Widget _buildSlotCard(
+    String time,
+    ConsultationBookingModel? booking,
+    int index,
+  ) {
+    final statusColor = booking != null
+        ? _getStatusColor(booking.status)
+        : Colors.green;
+    final isAvailable = booking == null;
+
+    return Container(
+          decoration: BoxDecoration(
+            color: context.surface,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: isAvailable
+                  ? context.dividerColor.withValues(alpha: 0.05)
+                  : statusColor.withValues(alpha: 0.2),
+              width: isAvailable ? 1 : 2,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: (isAvailable ? Colors.black : statusColor).withValues(
+                  alpha: 0.03,
+                ),
+                blurRadius: 15,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      time,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: context.primary.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        time,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                          color: context.primary,
+                        ),
                       ),
                     ),
-                    if (booking != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(
-                            booking.status,
-                          ).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          booking.status.name.toUpperCase(),
-                          style: TextStyle(
-                            color: _getStatusColor(booking.status),
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      )
-                    else
-                      const Text(
-                        'AVAILABLE',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                    _buildStatusBadge(
+                      isAvailable
+                          ? 'AVAILABLE'
+                          : booking.status.name.toUpperCase(),
+                      statusColor,
+                    ),
                   ],
                 ),
                 const Spacer(),
                 if (booking != null) ...[
-                  Text(
-                    booking.patientName,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: context.primary.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.person_rounded,
+                          size: 20,
+                          color: context.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              booking.patientName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              'Patient',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: context.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
                   if (booking.status == BookingStatus.requested)
                     Row(
                       children: [
                         Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => _updateBookingStatus(
+                          child: _buildSmallActionButton(
+                            'Reject',
+                            AppColors.error,
+                            false,
+                            () => _updateBookingStatus(
                               booking,
                               BookingStatus.cancelled,
                             ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.red,
-                              padding: EdgeInsets.zero,
-                              minimumSize: const Size(0, 36),
-                            ),
-                            child: const Text('Reject'),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: ElevatedButton(
-                            onPressed: () => _updateBookingStatus(
+                          child: _buildSmallActionButton(
+                            'Accept',
+                            Colors.green,
+                            true,
+                            () => _updateBookingStatus(
                               booking,
                               BookingStatus.confirmed,
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              padding: EdgeInsets.zero,
-                              minimumSize: const Size(0, 36),
-                            ),
-                            child: const Text(
-                              'Accept',
-                              style: TextStyle(color: Colors.white),
                             ),
                           ),
                         ),
                       ],
                     )
                   else if (booking.status == BookingStatus.confirmed)
-                    ElevatedButton.icon(
-                      onPressed: () {
+                    _buildSmallActionButton(
+                      'START MEETING',
+                      context.primary,
+                      true,
+                      () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -227,50 +342,108 @@ class _DoctorSlotManagementScreenState
                           ),
                         );
                       },
-                      icon: const Icon(
-                        Icons.videocam,
-                        size: 16,
-                        color: Colors.white,
-                      ),
-                      label: const Text(
-                        'Start Call',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: context.primary,
-                        minimumSize: const Size(double.infinity, 36),
-                      ),
-                    ),
-                  if (booking.attachedResultIds.isNotEmpty)
-                    TextButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PatientResultsViewScreen(
-                            resultIds: booking.attachedResultIds,
-                            patientName: booking.patientName,
+                      icon: Icons.videocam_rounded,
+                    )
+                  else if (booking.attachedResultIds.isNotEmpty)
+                    _buildSmallActionButton(
+                      'VIEW RESULTS',
+                      context.primary,
+                      false,
+                      () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PatientResultsViewScreen(
+                              resultIds: booking.attachedResultIds,
+                              patientName: booking.patientName,
+                            ),
                           ),
-                        ),
-                      ),
-                      child: const Text(
-                        'View Results',
-                        style: TextStyle(fontSize: 12),
-                      ),
+                        );
+                      },
+                      icon: Icons.visibility_rounded,
                     ),
-                ] else ...[
-                  const Text(
-                    'No booking yet',
+                ] else
+                  Text(
+                    'No current appointments scheduled for this time slot.',
                     style: TextStyle(
-                      color: AppColors.textTertiary,
-                      fontSize: 12,
+                      fontSize: 11,
+                      color: context.textSecondary,
+                      height: 1.4,
                     ),
                   ),
-                ],
               ],
             ),
           ),
-        );
-      },
+        )
+        .animate()
+        .fadeIn(duration: 400.ms, delay: (index % 10 * 50).ms)
+        .scale(begin: const Offset(0.95, 0.95));
+  }
+
+  Widget _buildSmallActionButton(
+    String label,
+    Color color,
+    bool isPrimary,
+    VoidCallback onTap, {
+    IconData? icon,
+  }) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isPrimary ? color : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: isPrimary
+                ? null
+                : Border.all(color: color.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 14,
+                  color: isPrimary ? AppColors.white : color,
+                ),
+                const SizedBox(width: 6),
+              ],
+              Text(
+                label.toUpperCase(),
+                style: TextStyle(
+                  color: isPrimary ? AppColors.white : color,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 10,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontSize: 9,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.5,
+        ),
+      ),
     );
   }
 
@@ -291,68 +464,86 @@ class _DoctorSlotManagementScreenState
 
   Widget _buildDatePicker() {
     return Container(
-      height: 100,
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      height: 120,
+      padding: const EdgeInsets.symmetric(vertical: 20),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: 30, // Next 30 days
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        itemCount: 30,
         itemBuilder: (context, index) {
           final date = DateTime.now().add(Duration(days: index));
           final isSelected = DateUtils.isSameDay(date, _selectedDate);
 
           return Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: InkWell(
-              onTap: () {
-                setState(() => _selectedDate = date);
-                _loadData();
-              },
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                width: 60,
-                decoration: BoxDecoration(
-                  color: isSelected ? context.primary : context.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected
-                        ? context.primary
-                        : context.dividerColor.withValues(alpha: 0.1),
+            padding: const EdgeInsets.only(right: 16),
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() => _selectedDate = date);
+                  _loadData();
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  width: 70,
+                  decoration: BoxDecoration(
+                    gradient: isSelected
+                        ? LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              context.primary,
+                              context.primary.withValues(alpha: 0.8),
+                            ],
+                          )
+                        : null,
+                    color: isSelected ? null : context.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected
+                          ? context.primary
+                          : context.dividerColor.withValues(alpha: 0.05),
+                      width: 1.5,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: context.primary.withValues(alpha: 0.25),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                            ),
+                          ]
+                        : null,
                   ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: context.primary.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      DateFormat('E').format(date),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isSelected
-                            ? AppColors.white
-                            : AppColors.textTertiary,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        DateFormat('EEE').format(date).toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                          color: isSelected
+                              ? AppColors.white
+                              : context.textSecondary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      DateFormat('d').format(date),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isSelected
-                            ? AppColors.white
-                            : AppColors.textSecondary,
+                      const SizedBox(height: 6),
+                      Text(
+                        DateFormat('d').format(date),
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                          color: isSelected
+                              ? AppColors.white
+                              : context.onSurface,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
