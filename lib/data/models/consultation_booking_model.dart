@@ -9,6 +9,7 @@ class ConsultationBookingModel {
   final String patientId;
   final String doctorId;
   final String doctorName; // Denormalized for quick display
+  final String? doctorPhotoUrl; // Denormalized for quick display
   final String patientName; // Denormalized for quick display
   final int? patientAge;
   final String? patientGender;
@@ -53,6 +54,7 @@ class ConsultationBookingModel {
     this.longitude,
     this.exactAddress,
     this.familyMemberId,
+    this.doctorPhotoUrl,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -64,6 +66,7 @@ class ConsultationBookingModel {
       patientId: data['patientId'] ?? '',
       doctorId: data['doctorId'] ?? '',
       doctorName: data['doctorName'] ?? '',
+      doctorPhotoUrl: data['doctorPhotoUrl'],
       patientName: data['patientName'] ?? '',
       patientAge: data['patientAge'],
       patientGender: data['patientGender'],
@@ -98,6 +101,7 @@ class ConsultationBookingModel {
       'patientId': patientId,
       'doctorId': doctorId,
       'doctorName': doctorName,
+      'doctorPhotoUrl': doctorPhotoUrl,
       'patientName': patientName,
       'patientAge': patientAge,
       'patientGender': patientGender,
@@ -126,6 +130,7 @@ class ConsultationBookingModel {
     String? patientId,
     String? doctorId,
     String? doctorName,
+    String? doctorPhotoUrl,
     String? patientName,
     int? patientAge,
     String? patientGender,
@@ -152,6 +157,7 @@ class ConsultationBookingModel {
       patientId: patientId ?? this.patientId,
       doctorId: doctorId ?? this.doctorId,
       doctorName: doctorName ?? this.doctorName,
+      doctorPhotoUrl: doctorPhotoUrl ?? this.doctorPhotoUrl,
       patientName: patientName ?? this.patientName,
       patientAge: patientAge ?? this.patientAge,
       patientGender: patientGender ?? this.patientGender,

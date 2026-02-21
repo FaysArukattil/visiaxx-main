@@ -116,6 +116,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
         patientId: user.uid,
         doctorId: _doctor!.id,
         doctorName: _doctor!.fullName,
+        doctorPhotoUrl: _doctor!.photoUrl,
         patientName:
             _patientName ?? '${userProfile.firstName} ${userProfile.lastName}',
         patientAge: _patientAge,

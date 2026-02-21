@@ -365,4 +365,15 @@ class ConsultationService {
       return false;
     }
   }
+
+  /// Delete a booking record
+  Future<bool> deleteBooking(String bookingId) async {
+    try {
+      await _firestore.collection(bookingsCollection).doc(bookingId).delete();
+      return true;
+    } catch (e) {
+      print('[ConsultationService] Error deleting booking: $e');
+      return false;
+    }
+  }
 }
