@@ -620,9 +620,7 @@ class SessionMonitorService with WidgetsBindingObserver {
   Future<void> updateLastActive() async {
     final prefs = await SharedPreferences.getInstance();
     String? identity = prefs.getString(_identityStringKey);
-    if (_currentSessionId == null) {
-      _currentSessionId = prefs.getString(_sessionIdKey);
-    }
+    _currentSessionId ??= prefs.getString(_sessionIdKey);
     if (identity == null || _currentSessionId == null) return;
 
     try {

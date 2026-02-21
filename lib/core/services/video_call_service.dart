@@ -38,12 +38,10 @@ class VideoCallService {
 
     // Handle ICE Candidates
     _peerConnection?.onIceCandidate = (candidate) {
-      if (candidate != null) {
-        _db
-            .ref('video_calls/$bookingId/doctorCandidates')
-            .push()
-            .set(candidate.toMap());
-      }
+      _db
+          .ref('video_calls/$bookingId/doctorCandidates')
+          .push()
+          .set(candidate.toMap());
     };
 
     // Create Offer
@@ -96,12 +94,10 @@ class VideoCallService {
     });
 
     _peerConnection?.onIceCandidate = (candidate) {
-      if (candidate != null) {
-        _db
-            .ref('video_calls/$bookingId/patientCandidates')
-            .push()
-            .set(candidate.toMap());
-      }
+      _db
+          .ref('video_calls/$bookingId/patientCandidates')
+          .push()
+          .set(candidate.toMap());
     };
 
     // Get Offer from Firebase

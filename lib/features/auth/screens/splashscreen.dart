@@ -153,11 +153,9 @@ class _SplashScreenState extends State<SplashScreen>
     var firebaseUser = _authService.currentUser;
 
     // If not immediately available, wait briefly for restoration
-    if (firebaseUser == null) {
-      firebaseUser = await AuthService().waitForAuth(
-        timeout: const Duration(seconds: 2),
-      );
-    }
+    firebaseUser ??= await AuthService().waitForAuth(
+      timeout: const Duration(seconds: 2),
+    );
 
     // STEP 1b: If Firebase session didn't restore, try silent re-auth
     if (firebaseUser == null) {

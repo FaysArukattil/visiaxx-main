@@ -3260,7 +3260,7 @@ class PdfExportService {
               ),
             ],
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -3550,7 +3550,7 @@ class PdfExportService {
                   );
                 }),
               ];
-            }).toList(),
+            }),
           ],
         ),
       ],

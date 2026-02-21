@@ -8,10 +8,10 @@ class VisualFieldGrayscaleMap extends StatelessWidget {
   final double size;
 
   const VisualFieldGrayscaleMap({
-    Key? key,
+    super.key,
     required this.result,
     this.size = 135, // Reduced size
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -60,10 +60,10 @@ class VisualFieldPatternDeviationMap extends StatelessWidget {
   final double size;
 
   const VisualFieldPatternDeviationMap({
-    Key? key,
+    super.key,
     required this.result,
     this.size = 135, // Reduced size
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

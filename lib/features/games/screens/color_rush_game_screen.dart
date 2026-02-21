@@ -529,11 +529,12 @@ class _ColorRushGameScreenState extends State<ColorRushGameScreen>
 
     Future.delayed(const Duration(milliseconds: 2000), () {
       _flickerTimer?.cancel();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _isInvulnerable = false;
           _invulnFlicker = 1.0;
         });
+      }
     });
   }
 

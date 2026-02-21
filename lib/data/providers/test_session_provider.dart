@@ -211,7 +211,7 @@ class TestSessionProvider extends ChangeNotifier {
     resetAllResults();
     startTest();
     debugPrint(
-      ' Ž¯ [TestSessionProvider] Started multi-test session with ${tests.length} tests. First: ${_individualTestType}',
+      ' Ž¯ [TestSessionProvider] Started multi-test session with ${tests.length} tests. First: $_individualTestType',
     );
   }
 

@@ -101,7 +101,7 @@ class CoverTestResult {
       deviations.add('Left eye: ${leftEyeStatus.description}');
     }
 
-    return deviations.join('. ') + '.';
+    return '${deviations.join('. ')}.';
   }
 
   String get recommendation {

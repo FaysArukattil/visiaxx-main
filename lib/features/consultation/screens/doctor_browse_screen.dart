@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/consultation_service.dart';
 import '../../../data/models/doctor_model.dart';
+import '../../../core/widgets/eye_loader.dart';
 
 class DoctorBrowseScreen extends StatefulWidget {
   const DoctorBrowseScreen({super.key});
@@ -79,12 +80,7 @@ class _DoctorBrowseScreenState extends State<DoctorBrowseScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(
-                color: context.primary,
-                strokeWidth: 3,
-              ),
-            )
+          ? const Center(child: EyeLoader.fullScreen())
           : Stack(
               children: [
                 // Background decorative circles

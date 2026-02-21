@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _authService = AuthService();
   UserModel? _user;
   bool _isLoading = true;
-  bool _isConsultationLoading = false;
+  final bool _isConsultationLoading = false;
   String _selectedLanguage = 'English';
 
   final List<Map<String, String>> _languages = [

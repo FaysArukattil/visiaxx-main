@@ -473,7 +473,7 @@ class TestResultModel {
       mobileRefractometry: mobileRefractometry ?? this.mobileRefractometry,
       shadowTest: shadowTest ?? this.shadowTest,
       stereopsis: stereopsis ?? this.stereopsis,
-      eyeHydration: eyeHydration ?? this.eyeHydration,
+      eyeHydration: eyeHydration ?? eyeHydration,
       visualFieldRight: visualFieldRight ?? this.visualFieldRight,
       visualFieldLeft: visualFieldLeft ?? this.visualFieldLeft,
       visualField: visualField ?? this.visualField,

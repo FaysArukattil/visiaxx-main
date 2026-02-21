@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter/services.dart';
 
 import '../../../core/extensions/theme_extension.dart';
 import '../../../data/models/faq_model.dart';

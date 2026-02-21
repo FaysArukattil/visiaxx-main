@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/consultation_service.dart';
 import '../../../data/models/doctor_model.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/eye_loader.dart';
 
 class DoctorDetailScreen extends StatefulWidget {
   const DoctorDetailScreen({super.key});
@@ -15,411 +16,430 @@ class DoctorDetailScreen extends StatefulWidget {
 class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
   final _consultationService = ConsultationService();
   DoctorModel? _doctor;
-  double? _latitude;
-  double? _longitude;
-  String? _exactAddress;
   bool _isLoading = true;
+  bool _isFeatured = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final doctorId = args?['doctorId'];
-    final isFeatured = args?['isFeatured'] ?? false;
-    _latitude = args?['latitude'];
-    _longitude = args?['longitude'];
-    _exactAddress = args?['exactAddress'];
+    final doctorId = args?['doctorId'] as String?;
+    _isFeatured = args?['isFeatured'] ?? false;
     if (doctorId != null) {
-      _loadDoctor(doctorId, isFeatured);
+      _loadDoctorDetail(doctorId);
     }
   }
 
-  Future<void> _loadDoctor(String doctorId, bool isFeatured) async {
+  Future<void> _loadDoctorDetail(String doctorId) async {
     setState(() => _isLoading = true);
     final doctor = await _consultationService.getDoctorById(doctorId);
     setState(() {
       _doctor = doctor;
       _isLoading = false;
-      _heroTag = isFeatured
-          ? 'doctor_img_${doctorId}_featured'
-          : 'doctor_img_$doctorId';
     });
   }
-
-  String _heroTag = '';
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
-        backgroundColor: context.surface,
-        body: Center(child: CircularProgressIndicator(color: context.primary)),
-      );
+      return const Scaffold(body: Center(child: EyeLoader.fullScreen()));
     }
-
     if (_doctor == null) {
       return const Scaffold(body: Center(child: Text('Doctor not found')));
     }
 
-    final theme = Theme.of(context);
     final color = context.primary;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: CustomScrollView(
-        slivers: [
-          // Header with overlap and Hero
-          SliverAppBar(
-            expandedHeight: 400,
-            pinned: true,
-            backgroundColor: color,
-            leading: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.white.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.arrow_back_ios_new,
-                  color: AppColors.white,
-                  size: 20,
-                ),
-              ),
-              onPressed: () => Navigator.pop(context),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [color, color.withValues(alpha: 0.8)],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
+      backgroundColor: context.scaffoldBackground,
+      body: Stack(
+        children: [
+          // Background Parallels with Browse Screen Decorative Circles
+          Positioned(
+            top: -100,
+            right: -50,
+            child: _buildDecorativeCircle(color, 300, 0.03),
+          ),
+          Positioned(
+            bottom: 150,
+            left: -80,
+            child: _buildDecorativeCircle(color, 250, 0.02),
+          ),
+
+          SafeArea(
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // Premium Header Region
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: context.surface,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.arrow_back_ios_new,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: context.surface,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.more_vert_rounded,
+                            color: context.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Positioned(
-                    top: 100,
-                    left: 0,
-                    right: 0,
-                    child:
-                        Center(
-                              child: Hero(
-                                tag: _heroTag,
-                                child: Container(
-                                  width: 200,
-                                  height: 240,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(48),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.15,
-                                        ),
-                                        blurRadius: 40,
-                                        offset: const Offset(0, 20),
-                                      ),
-                                    ],
-                                    image: _doctor!.photoUrl.isNotEmpty
-                                        ? DecorationImage(
-                                            image: NetworkImage(
-                                              _doctor!.photoUrl,
-                                            ),
-                                            fit: BoxFit.cover,
-                                          )
-                                        : null,
-                                    color: AppColors.white.withValues(
-                                      alpha: 0.2,
+                ),
+
+                // Unified Dashboard Layout
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(28, 16, 28, 140),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Stylized Doctor Headshot & Basic Info
+                        Row(
+                          children: [
+                            Hero(
+                              tag: _isFeatured
+                                  ? 'doctor_img_${_doctor!.id}_featured'
+                                  : 'doctor_img_${_doctor!.id}',
+                              child: Container(
+                                width: 120,
+                                height: 140,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(32),
+                                  color: Colors.white,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: color.withValues(alpha: 0.1),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 8),
                                     ),
-                                    border: Border.all(
-                                      color: AppColors.white.withValues(
-                                        alpha: 0.2,
-                                      ),
-                                      width: 3,
-                                    ),
-                                  ),
-                                  child: _doctor!.photoUrl.isEmpty
-                                      ? const Icon(
-                                          Icons.person_rounded,
-                                          size: 100,
-                                          color: AppColors.white,
+                                  ],
+                                  image: _doctor!.photoUrl.isNotEmpty
+                                      ? DecorationImage(
+                                          image: NetworkImage(
+                                            _doctor!.photoUrl,
+                                          ),
+                                          fit: BoxFit.cover,
                                         )
                                       : null,
                                 ),
+                                child: _doctor!.photoUrl.isEmpty
+                                    ? Icon(
+                                        Icons.person_rounded,
+                                        size: 60,
+                                        color: color.withValues(alpha: 0.2),
+                                      )
+                                    : null,
                               ),
-                            )
-                            .animate()
-                            .fadeIn(duration: 600.ms)
-                            .scale(begin: const Offset(0.9, 0.9)),
-                  ),
-                  Positioned(
-                    bottom: -1,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: theme.scaffoldBackgroundColor,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(48),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: color.withValues(alpha: 0.1),
-                              width: 1,
                             ),
-                          ),
-                          child: Text(
-                            _doctor!.degree.toUpperCase(),
-                            style: TextStyle(
-                              color: color,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 13,
-                              letterSpacing: 2,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Dr. ${_doctor!.fullName}',
-                          style: const TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -1,
-                            height: 1.1,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.verified_rounded,
-                              size: 18,
-                              color: color,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _doctor!.specialty,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: context.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            const SizedBox(width: 24),
+                            Expanded(
+                              child:
+                                  Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: color.withValues(
+                                                alpha: 0.1,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              _doctor!.degree.toUpperCase(),
+                                              style: TextStyle(
+                                                color: color,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w900,
+                                                letterSpacing: 1,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            'Dr. ${_doctor!.fullName}',
+                                            style: const TextStyle(
+                                              fontSize: 26,
+                                              fontWeight: FontWeight.w900,
+                                              height: 1.1,
+                                              letterSpacing: -1,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            _doctor!.specialty,
+                                            style: TextStyle(
+                                              color: context.textSecondary,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                      .animate()
+                                      .fadeIn(duration: 600.ms)
+                                      .slideX(begin: 0.1, end: 0),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 32),
-                        _buildStatsGrid(),
+
+                        const SizedBox(height: 40),
+
+                        // Section: Clinical Overview
+                        const _SectionTitle(title: 'Overview'),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildOverviewStat(
+                              Icons.history_rounded,
+                              '${_doctor!.experienceYears} Years',
+                              'Experience',
+                              color,
+                            ),
+                            _buildOverviewStat(
+                              Icons.calendar_today_rounded,
+                              '42 Years',
+                              'Patient Age',
+                              Colors.teal,
+                            ),
+                            _buildOverviewStat(
+                              Icons.rate_review_rounded,
+                              '${_doctor!.rating}',
+                              'User Rating',
+                              Colors.amber,
+                            ),
+                          ],
+                        ).animate().fadeIn(delay: 200.ms),
+
+                        const SizedBox(height: 12),
+                        // Professional Availability Row
+                        Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: color.withValues(alpha: 0.1),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.access_time_filled_rounded,
+                                    color: color,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Text(
+                                    'Available for 10-10 Mon-Fri',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                            .animate()
+                            .fadeIn(delay: 300.ms)
+                            .slideY(begin: 0.2, end: 0),
+
+                        const SizedBox(height: 40),
+
+                        // Section: Biography
+                        const _SectionTitle(title: 'Biography'),
+                        const SizedBox(height: 16),
+                        Text(
+                          _doctor!.bio,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: context.textSecondary,
+                            height: 1.6,
+                          ),
+                        ).animate().fadeIn(delay: 400.ms),
                       ],
                     ),
-                  ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.05, end: 0),
-
-                  const SizedBox(height: 40),
-
-                  const Text(
-                    'About Doctor',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _doctor!.bio.isEmpty
-                        ? 'Experienced eye specialist committed to providing the best vision care for all patients. Specializing in advanced diagnostic techniques and personalized treatment plans.'
-                        : _doctor!.bio,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: context.textSecondary,
-                      height: 1.6,
-                      letterSpacing: 0.1,
-                    ),
-                  ),
+                ),
+              ],
+            ),
+          ),
 
-                  const SizedBox(height: 120), // Spacer for bottom button
-                ],
+          // Pinned Action Button (Professional floating style)
+          _buildBottomAction(color),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDecorativeCircle(Color color, double size, double alpha) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            color.withValues(alpha: alpha),
+            color.withValues(alpha: 0),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverviewStat(
+    IconData icon,
+    String value,
+    String label,
+    Color iconColor,
+  ) {
+    return Expanded(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: iconColor, size: 24),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.2,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: context.textTertiary,
+              letterSpacing: 0.2,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomAction(Color color) {
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(28, 20, 28, 36),
+        decoration: BoxDecoration(
+          color: context.scaffoldBackground,
+          border: Border(
+            top: BorderSide(
+              color: context.dividerColor.withValues(alpha: 0.1),
+              width: 1,
+            ),
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.pushNamed(
+                context,
+                '/slot-selection',
+                arguments: {
+                  'doctor': _doctor,
+                  'latitude': args?['latitude'],
+                  'longitude': args?['longitude'],
+                  'exactAddress': args?['exactAddress'],
+                },
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 64),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              elevation: 4,
+              shadowColor: color.withValues(alpha: 0.3),
+            ),
+            child: const Text(
+              'Book Appointment',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
               ),
             ),
           ),
-        ],
-      ),
-      bottomNavigationBar: _buildBottomAction()
-          .animate()
-          .fadeIn(delay: 400.ms)
-          .slideY(begin: 0.5, end: 0),
-    );
-  }
-
-  Widget _buildStatsGrid() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: context.surface,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 30,
-            offset: const Offset(0, 15),
-          ),
-        ],
-        border: Border.all(
-          color: context.dividerColor.withValues(alpha: 0.05),
-          width: 1,
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _statItem(
-            'Experience',
-            '${_doctor!.experienceYears}y+',
-            Icons.work_history_rounded,
-            Colors.blue,
-          ),
-          _statDivider(),
-          _statItem(
-            'Rating',
-            '${_doctor!.rating}',
-            Icons.star_rounded,
-            Colors.amber,
-          ),
-          _statDivider(),
-          _statItem(
-            'Reviews',
-            '${_doctor!.reviewCount}',
-            Icons.chat_bubble_rounded,
-            Colors.green,
-          ),
-        ],
-      ),
-    );
+    ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.3, end: 0);
   }
+}
 
-  Widget _statDivider() {
-    return Container(
-      height: 40,
-      width: 1,
-      color: context.dividerColor.withValues(alpha: 0.1),
-    );
-  }
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  const _SectionTitle({required this.title});
 
-  Widget _statItem(String label, String value, IconData icon, Color color) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color.withValues(alpha: 0.1), width: 1),
-          ),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: context.textTertiary,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.2,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBottomAction() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
-      decoration: BoxDecoration(
-        color: context.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, -10),
-          ),
-        ],
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: context.primary.withValues(alpha: 0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: ElevatedButton(
-          onPressed: () => Navigator.pushNamed(
-            context,
-            '/slot-selection',
-            arguments: {
-              'doctor': _doctor,
-              'latitude': _latitude,
-              'longitude': _longitude,
-              'exactAddress': _exactAddress,
-            },
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: context.primary,
-            foregroundColor: AppColors.white,
-            minimumSize: const Size(double.infinity, 64),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-            ),
-            elevation: 0,
-          ),
-          child: const Text(
-            'Book Appointment',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ),
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w900,
+        letterSpacing: -0.5,
       ),
     );
   }

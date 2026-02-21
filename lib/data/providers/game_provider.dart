@@ -6,7 +6,7 @@ class GameProvider with ChangeNotifier {
   final GameService _gameService = GameService();
 
   Map<String, GameProgressModel> _gameProgress = {};
-  Map<String, List<GameProgressModel>> _leaderboards = {};
+  final Map<String, List<GameProgressModel>> _leaderboards = {};
   bool _isLoading = false;
 
   Map<String, GameProgressModel> get gameProgress => _gameProgress;

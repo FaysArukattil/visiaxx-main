@@ -12,7 +12,7 @@ import 'visual_field_cover_eye_screen.dart';
 
 class VisualFieldScreen extends StatefulWidget {
   final VisualFieldEye? eye;
-  const VisualFieldScreen({Key? key, this.eye}) : super(key: key);
+  const VisualFieldScreen({super.key, this.eye});
 
   @override
   State<VisualFieldScreen> createState() => _VisualFieldScreenState();

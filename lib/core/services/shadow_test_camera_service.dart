@@ -262,8 +262,9 @@ class ShadowTestCameraService {
       // Check for 'taking picture' or 'closed' status
       if (_controller == null ||
           !_controller!.value.isInitialized ||
-          _controller!.value.isTakingPicture)
+          _controller!.value.isTakingPicture) {
         return;
+      }
 
       _isProcessingImage = true;
       try {
