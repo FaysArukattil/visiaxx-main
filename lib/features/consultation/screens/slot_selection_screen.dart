@@ -41,24 +41,21 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
   Future<void> _loadSlots() async {
     setState(() => _isLoading = true);
 
-    // 1. Fetch booked slots from database
     final bookedSlots = await _consultationService.getAllSlotsForDate(
       _doctor!.id,
       _selectedDate,
     );
 
-    // 2. Dynamically generate 20-minute slots from 10:00 AM to 10:00 PM
     final generatedSlots = _generateDailySlots(_selectedDate);
 
-    // 3. Map status from database to generated slots
     final finalSlots = generatedSlots.map((gen) {
       final booked = bookedSlots
           .where((b) => b.startTime == gen.startTime)
           .firstOrNull;
       if (booked != null) {
-        return booked; // Use database slot if it exists (likely booked)
+        return booked;
       }
-      return gen; // Otherwise use the available generated slot
+      return gen;
     }).toList();
 
     setState(() {
@@ -70,8 +67,8 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
 
   List<TimeSlotModel> _generateDailySlots(DateTime date) {
     final List<TimeSlotModel> slots = [];
-    final startTime = DateTime(date.year, date.month, date.day, 10); // 10:00 AM
-    final endTime = DateTime(date.year, date.month, date.day, 22); // 10:00 PM
+    final startTime = DateTime(date.year, date.month, date.day, 10);
+    final endTime = DateTime(date.year, date.month, date.day, 22);
 
     DateTime current = startTime;
     int index = 0;
@@ -105,12 +102,14 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
 
     final theme = Theme.of(context);
     final color = context.primary;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Background Decorative Circles (Institutional Tints)
+          // Background Decorative Circles
           Positioned(
             top: -120,
             right: -60,
@@ -125,83 +124,75 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
           SafeArea(
             child: Column(
               children: [
-                // Simplified Header Row
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
-                  child: Row(
-                    children: [
-                      // Standard Back Button
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        constraints: const BoxConstraints(),
-                        padding: EdgeInsets.zero,
-                        icon: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: context.surface.withValues(alpha: 0.9),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
+                if (isLandscape)
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left Column: Header & Date Selection
+                        Expanded(
+                          flex: 2,
+                          child: SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(24, 12, 0, 12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildHeaderRow(context),
+                                const SizedBox(height: 32),
+                                Text(
+                                  'Select Date',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                    color: context.textPrimary,
+                                    letterSpacing: -0.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildDateList(isVertical: true),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // Right Column: Slots
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: _isLoading
+                                    ? const Center(
+                                        child: CircularProgressIndicator(),
+                                      )
+                                    : _slots.isEmpty
+                                    ? _buildEmptyState()
+                                    : _buildSlotGrid(crossAxisCount: 4),
                               ),
+                              _buildBottomAction(),
                             ],
                           ),
-                          child: Icon(
-                            Icons.arrow_back_ios_new,
-                            size: 18,
-                            color: context.textPrimary,
-                          ),
                         ),
-                      ),
-                      const SizedBox(width: 20),
-                      // Essential Appointment Info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Appointment with',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: context.textTertiary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              'Dr. ${_doctor!.fullName}',
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.6,
-                                height: 1.1,
-                              ),
-                            ),
-                          ],
+                      ],
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: Column(
+                      children: [
+                        _buildHeaderRow(context),
+                        _buildDatePicker(),
+                        Expanded(
+                          child: _isLoading
+                              ? const Center(child: CircularProgressIndicator())
+                              : _slots.isEmpty
+                              ? _buildEmptyState()
+                              : _buildSlotGrid(crossAxisCount: 3),
                         ),
-                      ),
-                    ],
+                        _buildBottomAction(),
+                      ],
+                    ),
                   ),
-                ),
-
-                Expanded(
-                  child: Column(
-                    children: [
-                      _buildDatePicker(),
-                      Expanded(
-                        child: _isLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            : _slots.isEmpty
-                            ? _buildEmptyState()
-                            : _buildSlotGrid(),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Bottom Action
-                _buildBottomAction(),
               ],
             ),
           ),
@@ -210,14 +201,78 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
     );
   }
 
+  Widget _buildHeaderRow(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 24),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            constraints: const BoxConstraints(),
+            padding: EdgeInsets.zero,
+            icon: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: context.surface.withValues(alpha: 0.9),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.arrow_back_ios_new,
+                size: 18,
+                color: context.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Appointment with',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: context.textTertiary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  'Dr. ${_doctor!.fullName}',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.6,
+                    height: 1.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDatePicker() {
     return Container(
       height: 125,
       padding: const EdgeInsets.symmetric(vertical: 20),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: _buildDateList(),
+    );
+  }
+
+  Widget _buildDateList({bool isVertical = false}) {
+    if (isVertical) {
+      return ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         itemCount: 14,
         itemBuilder: (context, index) {
           final date = DateTime.now().add(Duration(days: index));
@@ -225,55 +280,45 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
           final color = context.primary;
 
           return Padding(
-            padding: const EdgeInsets.only(right: 14),
+            padding: const EdgeInsets.only(bottom: 12),
             child: InkWell(
               onTap: () {
                 setState(() => _selectedDate = date);
                 _loadSlots();
               },
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(16),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                width: 70,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected ? color : color.withValues(alpha: 0.03),
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isSelected ? color : color.withValues(alpha: 0.08),
                     width: 1.5,
                   ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.15),
-                            blurRadius: 15,
-                            offset: const Offset(0, 6),
-                          ),
-                        ]
-                      : null,
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Row(
                   children: [
                     Text(
                       DateFormat('EEE').format(date).toUpperCase(),
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 12,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
-                        color: isSelected
-                            ? Colors.white.withValues(alpha: 0.9)
-                            : context.textTertiary,
+                        color: isSelected ? Colors.white : color,
+                        letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(width: 12),
                     Text(
-                      DateFormat('dd').format(date),
+                      DateFormat('d MMM').format(date),
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 16,
                         fontWeight: FontWeight.w900,
                         color: isSelected ? Colors.white : context.textPrimary,
-                        letterSpacing: -0.5,
                       ),
                     ),
                   ],
@@ -282,11 +327,80 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
             ),
           );
         },
-      ),
+      );
+    }
+
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      itemCount: 14,
+      itemBuilder: (context, index) {
+        final date = DateTime.now().add(Duration(days: index));
+        final isSelected = DateUtils.isSameDay(date, _selectedDate);
+        final color = context.primary;
+
+        return Padding(
+          padding: const EdgeInsets.only(right: 14),
+          child: InkWell(
+            onTap: () {
+              setState(() => _selectedDate = date);
+              _loadSlots();
+            },
+            borderRadius: BorderRadius.circular(22),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: 70,
+              decoration: BoxDecoration(
+                color: isSelected ? color : color.withValues(alpha: 0.03),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: isSelected ? color : color.withValues(alpha: 0.08),
+                  width: 1.5,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.15),
+                          blurRadius: 15,
+                          offset: const Offset(0, 6),
+                        ),
+                      ]
+                    : [],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    DateFormat('EEE').format(date).toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: isSelected
+                          ? Colors.white.withValues(alpha: 0.8)
+                          : color,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormat('d').format(date),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: isSelected ? Colors.white : context.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildSlotGrid() {
+  Widget _buildSlotGrid({int crossAxisCount = 3}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -330,8 +444,8 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
           child: GridView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 28),
             physics: const BouncingScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
               childAspectRatio: 2.4,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
@@ -348,7 +462,15 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
               return InkWell(
                 onTap: isUnavailable
                     ? null
-                    : () => setState(() => _selectedSlotId = slot.id),
+                    : () {
+                        setState(() {
+                          if (_selectedSlotId == slot.id) {
+                            _selectedSlotId = null;
+                          } else {
+                            _selectedSlotId = slot.id;
+                          }
+                        });
+                      },
                 borderRadius: BorderRadius.circular(16),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),

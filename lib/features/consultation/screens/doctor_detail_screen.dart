@@ -50,12 +50,14 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
     }
 
     final color = context.primary;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Scaffold(
       backgroundColor: context.scaffoldBackground,
       body: Stack(
         children: [
-          // Background Decorative Circles (Institutional Primary Tints)
+          // Background Decorative Circles
           Positioned(
             top: -120,
             right: -60,
@@ -71,14 +73,18 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
             child: CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
-                // Integrated Physician Identity & Dashboard Content
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 140),
+                    padding: EdgeInsets.fromLTRB(
+                      24,
+                      20,
+                      24,
+                      isLandscape ? 100 : 140,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 1. Separate Top Navigation Row
+                        // 1. Navigation Row
                         IconButton(
                           onPressed: () => Navigator.pop(context),
                           constraints: const BoxConstraints(),
@@ -105,217 +111,60 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        // 2. Professional Identity Row
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Hero(
-                              tag: _isFeatured
-                                  ? 'doctor_img_${_doctor!.id}_featured'
-                                  : 'doctor_img_${_doctor!.id}',
-                              child: Container(
-                                width: 90,
-                                height: 110,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(24),
-                                  color: Colors.white,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: color.withValues(alpha: 0.1),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 10),
-                                    ),
+                        if (isLandscape)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Left Column: Identity & Stats
+                              Expanded(
+                                flex: 4,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildIdentitySection(color),
+                                    const SizedBox(height: 32),
+                                    const _SectionTitle(title: 'Overview'),
+                                    const SizedBox(height: 20),
+                                    _buildStatsRow(color),
                                   ],
-                                  image: _doctor!.photoUrl.isNotEmpty
-                                      ? DecorationImage(
-                                          image: NetworkImage(
-                                            _doctor!.photoUrl,
-                                          ),
-                                          fit: BoxFit.cover,
-                                        )
-                                      : null,
-                                ),
-                                child: _doctor!.photoUrl.isEmpty
-                                    ? Icon(
-                                        Icons.person_rounded,
-                                        size: 50,
-                                        color: color.withValues(alpha: 0.2),
-                                      )
-                                    : null,
-                              ),
-                            ),
-                            const SizedBox(width: 20),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: color.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      _doctor!.degree.toUpperCase(),
-                                      style: TextStyle(
-                                        color: color,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 1.2,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'Dr. ${_doctor!.fullName}',
-                                    style: const TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: -0.8,
-                                      height: 1.1,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    _doctor!.specialty,
-                                    style: TextStyle(
-                                      color: context.textSecondary,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 40),
-
-                        // Section: Clinical Statistics (Glass Squircle)
-                        const _SectionTitle(title: 'Overview'),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            _buildClinicalStat(
-                              icon: Icons.work_history_rounded,
-                              value: '${_doctor!.experienceYears} Years',
-                              label: 'Experience',
-                              color: color,
-                            ),
-                            const SizedBox(width: 12),
-                            _buildClinicalStat(
-                              icon: Icons.calendar_today_rounded,
-                              value: '42 Years',
-                              label: 'Age',
-                              color: Colors.teal,
-                            ),
-                            const SizedBox(width: 12),
-                            _buildClinicalStat(
-                              icon: Icons.star_rounded,
-                              value: '${_doctor!.rating}',
-                              label: 'Rating',
-                              color: Colors.amber,
-                            ),
-                          ],
-                        ).animate().fadeIn(delay: 200.ms),
-
-                        const SizedBox(height: 28),
-                        // Elongated Glass Availability Bar
-                        ClipRRect(
-                              borderRadius: BorderRadius.circular(24),
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(
-                                  sigmaX: 12,
-                                  sigmaY: 12,
-                                ),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                    horizontal: 16,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: color.withValues(alpha: 0.08),
-                                    borderRadius: BorderRadius.circular(24),
-                                    border: Border.all(
-                                      color: color.withValues(alpha: 0.12),
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.calendar_today_rounded,
-                                        color: color,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Flexible(
-                                        child: FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Text(
-                                            'MON - FRI',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w900,
-                                              color: color,
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        height: 16,
-                                        width: 1.2,
-                                        color: color.withValues(alpha: 0.15),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Icon(
-                                        Icons.access_time_rounded,
-                                        color: context.textTertiary,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Flexible(
-                                        child: FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Text(
-                                            '10:00 AM - 10:00 PM',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w900,
-                                              color: context.textPrimary,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
                                 ),
                               ),
-                            )
-                            .animate()
-                            .fadeIn(delay: 300.ms)
-                            .slideY(begin: 0.1, end: 0),
-
-                        const SizedBox(height: 48),
-
-                        // Section: Biography
-                        const _SectionTitle(title: 'Professional Bio'),
-                        const SizedBox(height: 16),
-                        Text(
-                          _doctor!.bio,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: context.textSecondary,
-                            height: 1.7,
-                            letterSpacing: -0.1,
+                              const SizedBox(width: 48),
+                              // Right Column: Availability & Bio
+                              Expanded(
+                                flex: 5,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildAvailabilityBar(color),
+                                    const SizedBox(height: 32),
+                                    const _SectionTitle(
+                                      title: 'Professional Bio',
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildBioText(),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildIdentitySection(color),
+                              const SizedBox(height: 40),
+                              const _SectionTitle(title: 'Overview'),
+                              const SizedBox(height: 20),
+                              _buildStatsRow(color),
+                              const SizedBox(height: 28),
+                              _buildAvailabilityBar(color),
+                              const SizedBox(height: 48),
+                              const _SectionTitle(title: 'Professional Bio'),
+                              const SizedBox(height: 16),
+                              _buildBioText(),
+                            ],
                           ),
-                        ).animate().fadeIn(delay: 400.ms),
                       ],
                     ),
                   ),
@@ -324,11 +173,204 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
             ),
           ),
 
-          // Institutional Action Footer
           _buildBottomAction(color),
         ],
-      ),
+      ).animate().fadeIn(duration: 400.ms),
     );
+  }
+
+  Widget _buildIdentitySection(Color color) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Hero(
+          tag: _isFeatured
+              ? 'doctor_img_${_doctor!.id}_featured'
+              : 'doctor_img_${_doctor!.id}',
+          child: Container(
+            width: 90,
+            height: 110,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+              image: _doctor!.photoUrl.isNotEmpty
+                  ? DecorationImage(
+                      image: NetworkImage(_doctor!.photoUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+            ),
+            child: _doctor!.photoUrl.isEmpty
+                ? Icon(
+                    Icons.person_rounded,
+                    size: 50,
+                    color: color.withValues(alpha: 0.2),
+                  )
+                : null,
+          ),
+        ),
+        const SizedBox(width: 20),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _doctor!.degree.toUpperCase(),
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Dr. ${_doctor!.fullName}',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.8,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _doctor!.specialty,
+                style: TextStyle(
+                  color: context.textSecondary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatsRow(Color color) {
+    return Row(
+      children: [
+        _buildClinicalStat(
+          icon: Icons.work_history_rounded,
+          value: '${_doctor!.experienceYears} Years',
+          label: 'Experience',
+          color: color,
+        ),
+        const SizedBox(width: 12),
+        _buildClinicalStat(
+          icon: Icons.calendar_today_rounded,
+          value: '42 Years',
+          label: 'Age',
+          color: Colors.teal,
+        ),
+        const SizedBox(width: 12),
+        _buildClinicalStat(
+          icon: Icons.star_rounded,
+          value: '${_doctor!.rating}',
+          label: 'Rating',
+          color: Colors.amber,
+        ),
+      ],
+    ).animate().fadeIn(delay: 200.ms);
+  }
+
+  Widget _buildAvailabilityBar(Color color) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: color.withValues(alpha: 0.12),
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.calendar_today_rounded, color: color, size: 18),
+              const SizedBox(width: 6),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'MON - FRI',
+                    style: TextStyle(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w900,
+                      color: color,
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                height: 16,
+                width: 1.5,
+                color: color.withValues(alpha: 0.15),
+              ),
+              const SizedBox(width: 12),
+              Icon(
+                Icons.access_time_rounded,
+                color: context.textTertiary,
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                flex: 2,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '10:00 AM - 10:00 PM',
+                    style: TextStyle(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w900,
+                      color: context.textPrimary,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1, end: 0);
+  }
+
+  Widget _buildBioText() {
+    return Text(
+      _doctor!.bio,
+      style: TextStyle(
+        fontSize: 16,
+        color: context.textSecondary,
+        height: 1.7,
+        letterSpacing: -0.1,
+      ),
+    ).animate().fadeIn(delay: 400.ms);
   }
 
   Widget _buildDecorativeCircle(Color color, double size, double alpha) {
@@ -423,7 +465,6 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
           ),
         ),
         child: SafeArea(
-          top: false,
           child: ElevatedButton(
             onPressed: () {
               Navigator.pushNamed(
