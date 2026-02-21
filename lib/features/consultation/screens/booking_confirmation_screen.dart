@@ -42,6 +42,8 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_doctor != null) return;
+
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     _doctor = args?['doctor'];
@@ -553,6 +555,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   }
 
   void _showTypeSelectionSheet() {
+    ConsultationType localType = _type ?? ConsultationType.online;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -573,36 +576,17 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: context.dividerColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Update Consultation Type',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+                  _buildSheetHandle(),
+                  _buildSheetHeader('Update Consultation Type'),
                   _buildTypeOption(
                     'Online Consultation',
                     'Video Call',
                     'Connect with doctors via high-quality video call.',
                     Icons.video_camera_front_rounded,
-                    _type == ConsultationType.online,
-                    () {
-                      setSheetState(() => _type = ConsultationType.online);
-                      setState(() {});
-                    },
+                    localType == ConsultationType.online,
+                    () => setSheetState(
+                      () => localType = ConsultationType.online,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   _buildTypeOption(
@@ -610,31 +594,19 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                     'Home Visit',
                     'Our certified doctors visit your doorstep.',
                     Icons.home_work_rounded,
-                    _type == ConsultationType.inPerson,
-                    () {
-                      setSheetState(() => _type = ConsultationType.inPerson);
-                      setState(() {});
-                    },
+                    localType == ConsultationType.inPerson,
+                    () => setSheetState(
+                      () => localType = ConsultationType.inPerson,
+                    ),
                   ),
                   const SizedBox(height: 32),
                   ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: color,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 60),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'Confirm Change',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
+                    onPressed: () {
+                      setState(() => _type = localType);
+                      Navigator.pop(context);
+                    },
+                    style: _sheetButtonStyle(color),
+                    child: const Text('Confirm Change'),
                   ),
                 ],
               ),
@@ -659,7 +631,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
       borderRadius: BorderRadius.circular(24),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected ? color.withValues(alpha: 0.08) : context.surface,
           borderRadius: BorderRadius.circular(24),
@@ -695,16 +667,31 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                       color: isSelected ? color : context.textTertiary,
                     ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
                     title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 17,
+                      fontSize: 16,
                       fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    desc,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.textSecondary,
+                      height: 1.2,
                     ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             if (isSelected)
               Icon(Icons.check_circle_rounded, color: color, size: 24),
           ],
@@ -766,6 +753,8 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   void _showSlotSelectionSheet() {
     DateTime localDate = _date!;
     String? localSlotId = _slot?.id;
+    _availableSlots = []; // Reset to force reload for local date
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -964,25 +953,29 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   Widget _buildSheetHeader(String title, {String? subtitle}) => Padding(
     padding: const EdgeInsets.fromLTRB(28, 0, 20, 20),
     child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-            ),
-            if (subtitle != null)
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: context.primary,
-                  fontWeight: FontWeight.bold,
+                title,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-          ],
+              if (subtitle != null)
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+            ],
+          ),
         ),
         IconButton(
           onPressed: () => Navigator.pop(context),

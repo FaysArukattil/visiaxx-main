@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/services/consultation_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/utils/snackbar_utils.dart';
@@ -68,6 +69,19 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen> {
         );
       }
       _loadRequests();
+    }
+  }
+
+  Future<void> _navigateToLocation(double lat, double lng) async {
+    final url = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+    );
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        SnackbarUtils.showError(context, 'Could not launch maps.');
+      }
     }
   }
 
@@ -194,10 +208,50 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen> {
                 if (booking.type == ConsultationType.inPerson &&
                     booking.exactAddress != null) ...[
                   const SizedBox(height: 12),
-                  _infoChip(
-                    Icons.location_on,
-                    booking.exactAddress!,
-                    isLong: true,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _infoChip(
+                          Icons.location_on,
+                          booking.exactAddress!,
+                          isLong: true,
+                        ),
+                      ),
+                      if (booking.latitude != null &&
+                          booking.longitude != null) ...[
+                        const SizedBox(width: 8),
+                        TextButton.icon(
+                          onPressed: () => _navigateToLocation(
+                            booking.latitude!,
+                            booking.longitude!,
+                          ),
+                          icon: Icon(
+                            Icons.directions_rounded,
+                            size: 16,
+                            color: context.primary,
+                          ),
+                          label: Text(
+                            'Navigate',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: context.primary,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            backgroundColor: context.primary.withValues(
+                              alpha: 0.1,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
                 if (booking.attachedResultIds.isNotEmpty) ...[
