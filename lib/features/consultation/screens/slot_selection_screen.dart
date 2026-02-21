@@ -33,6 +33,15 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     _doctor = args?['doctor'];
+
+    // Handle pre-selected values for editability
+    if (args?['preSelectedDate'] != null) {
+      _selectedDate = args?['preSelectedDate'] as DateTime;
+    }
+    if (args?['preSelectedSlotId'] != null) {
+      _selectedSlotId = args?['preSelectedSlotId'] as String;
+    }
+
     _latitude = args?['latitude'];
     _longitude = args?['longitude'];
     _exactAddress = args?['exactAddress'];
@@ -240,6 +249,33 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
             ),
           ),
           const SizedBox(width: 20),
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              image: _doctor!.photoUrl.isNotEmpty
+                  ? DecorationImage(
+                      image: NetworkImage(_doctor!.photoUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: _doctor!.photoUrl.isEmpty
+                ? Icon(
+                    Icons.person_rounded,
+                    color: context.primary.withValues(alpha: 0.4),
+                  )
+                : null,
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

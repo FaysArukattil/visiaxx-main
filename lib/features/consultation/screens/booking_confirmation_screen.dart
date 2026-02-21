@@ -8,6 +8,9 @@ import '../../../core/utils/snackbar_utils.dart';
 import '../../../data/models/doctor_model.dart';
 import '../../../data/models/time_slot_model.dart';
 import '../../../data/models/consultation_booking_model.dart';
+import '../../../core/services/test_result_service.dart';
+import '../../../data/models/test_result_model.dart';
+import '../../../core/widgets/eye_loader.dart';
 
 class BookingConfirmationScreen extends StatefulWidget {
   const BookingConfirmationScreen({super.key});
@@ -20,6 +23,7 @@ class BookingConfirmationScreen extends StatefulWidget {
 class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   final _consultationService = ConsultationService();
   final _authService = AuthService();
+  final _testResultService = TestResultService();
 
   DoctorModel? _doctor;
   DateTime? _date;
@@ -28,6 +32,11 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
   double? _latitude;
   double? _longitude;
   String? _exactAddress;
+  ConsultationType? _type;
+  List<TimeSlotModel> _availableSlots = [];
+  List<TestResultModel> _previousResults = [];
+  bool _isLoadingSlots = false;
+  bool _isLoadingResults = false;
   bool _isSubmitting = false;
 
   @override
@@ -42,11 +51,12 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
     _latitude = args?['latitude'];
     _longitude = args?['longitude'];
     _exactAddress = args?['exactAddress'];
+    _type = args?['type'] == 'inPerson'
+        ? ConsultationType.inPerson
+        : ConsultationType.online;
   }
 
   Future<void> _finalizeBooking() async {
-    final args =
-        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     if (_doctor == null || _slot == null || _date == null) return;
 
     setState(() => _isSubmitting = true);
@@ -63,9 +73,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
         patientName: '${userProfile.firstName} ${userProfile.lastName}',
         dateTime: _date!,
         timeSlot: _slot!.startTime,
-        type: args?['type'] == 'inPerson'
-            ? ConsultationType.inPerson
-            : ConsultationType.online,
+        type: _type ?? ConsultationType.online,
         status: BookingStatus.requested,
         attachedResultIds: _attachedResultIds,
         latitude: _latitude,
@@ -276,26 +284,30 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                           'Date',
                           DateFormat('EEEE, dd MMM yyyy').format(_date!),
                           color,
+                          onEdit: _showSlotSelectionSheet,
                         ),
                         _buildSummaryItem(
                           Icons.access_time_rounded,
                           'Time',
                           _slot!.startTime,
                           color,
+                          onEdit: _showSlotSelectionSheet,
                         ),
                         _buildSummaryItem(
                           Icons.location_on_rounded,
                           'Type',
-                          _slot!.status == SlotStatus.booked
-                              ? 'Online Consultation'
-                              : 'In-Person Visit',
+                          _type == ConsultationType.inPerson
+                              ? 'In-Person Visit'
+                              : 'Online Consultation',
                           color,
+                          onEdit: _showTypeSelectionSheet,
                         ),
                         _buildSummaryItem(
                           Icons.attach_file_rounded,
                           'Attached Results',
                           '${_attachedResultIds.length} items',
                           color,
+                          onEdit: _showResultsSelectionSheet,
                         ),
                         const SizedBox(height: 32),
                         Container(
@@ -348,8 +360,9 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
     IconData icon,
     String label,
     String value,
-    Color color,
-  ) {
+    Color color, {
+    VoidCallback? onEdit,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -369,26 +382,40 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: context.textTertiary,
-                  fontWeight: FontWeight.w600,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.textTertiary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          if (onEdit != null)
+            TextButton(
+              onPressed: onEdit,
+              style: TextButton.styleFrom(
+                foregroundColor: color,
+                visualDensity: VisualDensity.compact,
+              ),
+              child: const Text(
+                'Edit',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+              ),
+            ),
         ],
       ),
     );
@@ -418,6 +445,12 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
             decoration: BoxDecoration(
               color: context.surface,
               borderRadius: BorderRadius.circular(20),
+              image: _doctor!.photoUrl.isNotEmpty
+                  ? DecorationImage(
+                      image: NetworkImage(_doctor!.photoUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.05),
@@ -426,11 +459,13 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                 ),
               ],
             ),
-            child: Icon(
-              Icons.person_rounded,
-              color: color.withValues(alpha: 0.5),
-              size: 36,
-            ),
+            child: _doctor!.photoUrl.isEmpty
+                ? Icon(
+                    Icons.person_rounded,
+                    color: color.withValues(alpha: 0.5),
+                    size: 36,
+                  )
+                : null,
           ),
           const SizedBox(width: 20),
           Expanded(
@@ -488,14 +523,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
           elevation: 0,
         ),
         child: _isSubmitting
-            ? const SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 3,
-                ),
-              )
+            ? const EyeLoader(size: 40, color: Colors.white)
             : const Text(
                 'Confirm & Request',
                 style: TextStyle(
@@ -523,4 +551,631 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
       ),
     );
   }
+
+  void _showTypeSelectionSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final color = context.primary;
+            return Container(
+              padding: const EdgeInsets.fromLTRB(28, 16, 28, 40),
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(32),
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: context.dividerColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Update Consultation Type',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildTypeOption(
+                    'Online Consultation',
+                    'Video Call',
+                    'Connect with doctors via high-quality video call.',
+                    Icons.video_camera_front_rounded,
+                    _type == ConsultationType.online,
+                    () {
+                      setSheetState(() => _type = ConsultationType.online);
+                      setState(() {});
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildTypeOption(
+                    'In-Person Visit',
+                    'Home Visit',
+                    'Our certified doctors visit your doorstep.',
+                    Icons.home_work_rounded,
+                    _type == ConsultationType.inPerson,
+                    () {
+                      setSheetState(() => _type = ConsultationType.inPerson);
+                      setState(() {});
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 60),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Confirm Change',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildTypeOption(
+    String title,
+    String subtitle,
+    String desc,
+    IconData icon,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    final color = context.primary;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withValues(alpha: 0.08) : context.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isSelected ? color : color.withValues(alpha: 0.1),
+            width: isSelected ? 2 : 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSelected ? color : color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? Colors.white : color,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    subtitle.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      color: isSelected ? color : context.textTertiary,
+                    ),
+                  ),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle_rounded, color: color, size: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _loadAvailableSlots(
+    DateTime date,
+    Function setSheetState,
+  ) async {
+    setSheetState(() => _isLoadingSlots = true);
+    try {
+      final bookedSlots = await _consultationService.getAllSlotsForDate(
+        _doctor!.id,
+        date,
+      );
+      final generatedSlots = _generateDailySlots(date);
+      final finalSlots = generatedSlots.map((gen) {
+        final booked = bookedSlots
+            .where((b) => b.startTime == gen.startTime)
+            .firstOrNull;
+        return booked ?? gen;
+      }).toList();
+      setSheetState(() {
+        _availableSlots = finalSlots;
+        _isLoadingSlots = false;
+      });
+    } catch (e) {
+      setSheetState(() => _isLoadingSlots = false);
+    }
+  }
+
+  List<TimeSlotModel> _generateDailySlots(DateTime date) {
+    final List<TimeSlotModel> slots = [];
+    final startTime = DateTime(date.year, date.month, date.day, 10);
+    final endTime = DateTime(date.year, date.month, date.day, 22);
+    DateTime current = startTime;
+    int index = 0;
+    while (current.isBefore(endTime)) {
+      final next = current.add(const Duration(minutes: 20));
+      slots.add(
+        TimeSlotModel(
+          id: 'gen_${date.millisecondsSinceEpoch}_$index',
+          doctorId: _doctor!.id,
+          date: date,
+          startTime: DateFormat('h:mm a').format(current),
+          endTime: DateFormat('h:mm a').format(next),
+          status: SlotStatus.available,
+        ),
+      );
+      current = next;
+      index++;
+    }
+    return slots;
+  }
+
+  void _showSlotSelectionSheet() {
+    DateTime localDate = _date!;
+    String? localSlotId = _slot?.id;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          final color = context.primary;
+          if (_availableSlots.isEmpty && !_isLoadingSlots) {
+            _loadAvailableSlots(localDate, setSheetState);
+          }
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.8,
+            padding: const EdgeInsets.fromLTRB(0, 16, 0, 32),
+            decoration: BoxDecoration(
+              color: context.scaffoldBackground,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(32),
+              ),
+            ),
+            child: Column(
+              children: [
+                _buildSheetHandle(),
+                _buildSheetHeader('Update Schedule'),
+                SizedBox(
+                  height: 90,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    itemCount: 14,
+                    itemBuilder: (context, index) {
+                      final date = DateTime.now().add(Duration(days: index));
+                      final isSelected = DateUtils.isSameDay(date, localDate);
+                      return _buildDateItem(date, isSelected, color, () {
+                        setSheetState(() {
+                          localDate = date;
+                          localSlotId = null;
+                          _availableSlots = [];
+                        });
+                        _loadAvailableSlots(date, setSheetState);
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Expanded(
+                  child: _isLoadingSlots
+                      ? const Center(child: EyeLoader(size: 40))
+                      : GridView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 28),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                childAspectRatio: 2.2,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 10,
+                              ),
+                          itemCount: _availableSlots.length,
+                          itemBuilder: (context, index) {
+                            final slot = _availableSlots[index];
+                            final isSel = localSlotId == slot.id;
+                            final isUn = slot.status != SlotStatus.available;
+                            return _buildSlotItem(slot, isSel, isUn, color, () {
+                              setSheetState(() => localSlotId = slot.id);
+                            });
+                          },
+                        ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: ElevatedButton(
+                    onPressed: localSlotId == null
+                        ? null
+                        : () {
+                            setState(() {
+                              _date = localDate;
+                              _slot = _availableSlots.firstWhere(
+                                (s) => s.id == localSlotId,
+                              );
+                            });
+                            Navigator.pop(context);
+                          },
+                    style: _sheetButtonStyle(color),
+                    child: const Text('Confirm Appointment'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showResultsSelectionSheet() {
+    List<String> localSelections = List.from(_attachedResultIds);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          final color = context.primary;
+          if (_previousResults.isEmpty && !_isLoadingResults) {
+            _loadPreviousResults(setSheetState);
+          }
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.8,
+            padding: const EdgeInsets.fromLTRB(0, 16, 0, 32),
+            decoration: BoxDecoration(
+              color: context.scaffoldBackground,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(32),
+              ),
+            ),
+            child: Column(
+              children: [
+                _buildSheetHandle(),
+                _buildSheetHeader(
+                  'Attach Results',
+                  subtitle: '${localSelections.length}/10 selected',
+                ),
+                Expanded(
+                  child: _isLoadingResults
+                      ? const Center(child: EyeLoader(size: 40))
+                      : _previousResults.isEmpty
+                      ? _buildEmptyResultsState()
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          itemCount: _previousResults.length,
+                          itemBuilder: (context, index) {
+                            final res = _previousResults[index];
+                            final isSel = localSelections.contains(res.id);
+                            return _buildResultItem(res, isSel, color, () {
+                              setSheetState(() {
+                                if (isSel)
+                                  localSelections.remove(res.id);
+                                else if (localSelections.length < 10)
+                                  localSelections.add(res.id);
+                                else
+                                  SnackbarUtils.showWarning(
+                                    context,
+                                    'Limit: 10 results',
+                                  );
+                              });
+                            });
+                          },
+                        ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() => _attachedResultIds = localSelections);
+                      Navigator.pop(context);
+                    },
+                    style: _sheetButtonStyle(color),
+                    child: const Text('Confirm Attachments'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _loadPreviousResults(Function setSheetState) async {
+    setSheetState(() => _isLoadingResults = true);
+    final user = _authService.currentUser;
+    if (user != null) {
+      try {
+        final results = await _testResultService.getTestResults(user.uid);
+        setSheetState(() {
+          _previousResults = results;
+          _isLoadingResults = false;
+        });
+      } catch (e) {
+        setSheetState(() => _isLoadingResults = false);
+      }
+    }
+  }
+
+  Widget _buildSheetHandle() => Center(
+    child: Container(
+      width: 40,
+      height: 4,
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: context.dividerColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(2),
+      ),
+    ),
+  );
+
+  Widget _buildSheetHeader(String title, {String? subtitle}) => Padding(
+    padding: const EdgeInsets.fromLTRB(28, 0, 20, 20),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+            ),
+            if (subtitle != null)
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: context.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+          ],
+        ),
+        IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.close_rounded),
+        ),
+      ],
+    ),
+  );
+
+  Widget _buildDateItem(
+    DateTime date,
+    bool isSelected,
+    Color color,
+    VoidCallback onTap,
+  ) => Padding(
+    padding: const EdgeInsets.only(right: 12),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: 65,
+        decoration: BoxDecoration(
+          color: isSelected ? color : color.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isSelected ? color : color.withValues(alpha: 0.1),
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              DateFormat('EEE').format(date).toUpperCase(),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: isSelected ? Colors.white : color,
+              ),
+            ),
+            Text(
+              DateFormat('d').format(date),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: isSelected ? Colors.white : context.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildSlotItem(
+    TimeSlotModel slot,
+    bool isSel,
+    bool isUn,
+    Color color,
+    VoidCallback onTap,
+  ) => InkWell(
+    onTap: isUn ? null : onTap,
+    borderRadius: BorderRadius.circular(14),
+    child: Container(
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: isSel
+            ? color
+            : isUn
+            ? context.dividerColor.withValues(alpha: 0.05)
+            : color.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isSel
+              ? color
+              : isUn
+              ? Colors.transparent
+              : color.withValues(alpha: 0.1),
+          width: 1.5,
+        ),
+      ),
+      child: Text(
+        slot.startTime,
+        style: TextStyle(
+          fontWeight: isSel ? FontWeight.w900 : FontWeight.w700,
+          fontSize: 13,
+          color: isSel
+              ? Colors.white
+              : isUn
+              ? context.textTertiary
+              : context.textPrimary,
+          decoration: isUn ? TextDecoration.lineThrough : null,
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildResultItem(
+    TestResultModel res,
+    bool isSel,
+    Color color,
+    VoidCallback onTap,
+  ) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSel ? color.withValues(alpha: 0.08) : context.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSel ? color : color.withValues(alpha: 0.1),
+            width: isSel ? 2 : 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: _getStatusColor(
+                  res.overallStatus,
+                ).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _getStatusIcon(res.overallStatus),
+                color: _getStatusColor(res.overallStatus),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    res.profileName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                    ),
+                  ),
+                  Text(
+                    DateFormat('dd MMM yyyy').format(res.timestamp),
+                    style: TextStyle(fontSize: 11, color: context.textTertiary),
+                  ),
+                ],
+              ),
+            ),
+            if (isSel) Icon(Icons.check_circle_rounded, color: color, size: 24),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  Color _getStatusColor(TestStatus status) {
+    switch (status) {
+      case TestStatus.normal:
+        return context.success;
+      case TestStatus.review:
+        return context.warning;
+      case TestStatus.urgent:
+        return context.error;
+    }
+  }
+
+  IconData _getStatusIcon(TestStatus status) {
+    switch (status) {
+      case TestStatus.normal:
+        return Icons.check_circle_rounded;
+      case TestStatus.review:
+        return Icons.info_rounded;
+      case TestStatus.urgent:
+        return Icons.warning_rounded;
+    }
+  }
+
+  ButtonStyle _sheetButtonStyle(Color color) => ElevatedButton.styleFrom(
+    backgroundColor: color,
+    foregroundColor: Colors.white,
+    minimumSize: const Size(double.infinity, 60),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    elevation: 0,
+  );
+
+  Widget _buildEmptyResultsState() => Center(
+    child: Text(
+      'No results found.',
+      style: TextStyle(color: context.textTertiary),
+    ),
+  );
 }
