@@ -12,6 +12,9 @@ import '../../../core/services/test_result_service.dart';
 import '../../../data/models/test_result_model.dart';
 import '../../../core/widgets/eye_loader.dart';
 import 'in_person_location_screen.dart';
+import 'package:provider/provider.dart';
+import '../../../data/models/family_member_model.dart';
+import '../../../data/providers/family_member_provider.dart';
 
 class BookingConfirmationScreen extends StatefulWidget {
   const BookingConfirmationScreen({super.key});
@@ -76,6 +79,17 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
               : ConsultationType.online)
         : args?['type'] ?? ConsultationType.online;
     // Default to online if completely missing, but propagation should prevent this now
+    _loadFamilyMembers();
+  }
+
+  Future<void> _loadFamilyMembers() async {
+    final user = _authService.currentUser;
+    if (user != null) {
+      await Provider.of<FamilyMemberProvider>(
+        context,
+        listen: false,
+      ).loadFamilyMembers(user.uid);
+    }
   }
 
   Future<void> _finalizeBooking() async {
@@ -355,10 +369,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
                           'Patient',
                           '$_patientName ${_isForSelf ? '(Self)' : '(Family)'}',
                           color,
-                          onEdit: () => Navigator.popUntil(
-                            context,
-                            ModalRoute.withName('/patient-selection'),
-                          ),
+                          onEdit: _showPatientSelectionSheet,
                         ),
                         _buildSummaryItem(
                           Icons.attach_file_rounded,
@@ -1245,6 +1256,314 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
     child: Text(
       'No results found.',
       style: TextStyle(color: context.textTertiary),
+    ),
+  );
+
+  void _showPatientSelectionSheet() {
+    bool localIsForSelf = _isForSelf;
+    String? localFamilyMemberId = _familyMemberId;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          final color = context.primary;
+          final familyProvider = Provider.of<FamilyMemberProvider>(context);
+
+          return Container(
+            padding: const EdgeInsets.fromLTRB(0, 16, 0, 40),
+            decoration: BoxDecoration(
+              color: context.scaffoldBackground,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(32),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildSheetHandle(),
+                _buildSheetHeader('Select Patient'),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildPatientTypeCard(
+                          'Myself',
+                          Icons.person_rounded,
+                          localIsForSelf,
+                          () => setSheetState(() => localIsForSelf = true),
+                          color,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildPatientTypeCard(
+                          'Family',
+                          Icons.family_restroom_rounded,
+                          !localIsForSelf,
+                          () => setSheetState(() => localIsForSelf = false),
+                          color,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                if (localIsForSelf)
+                  _buildPatientSelfDetails(color)
+                else if (familyProvider.familyMembers.isEmpty)
+                  _buildEmptyFamilyState()
+                else
+                  SizedBox(
+                    height: 250,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      itemCount: familyProvider.familyMembers.length,
+                      itemBuilder: (context, index) {
+                        final member = familyProvider.familyMembers[index];
+                        final isSelected = localFamilyMemberId == member.id;
+                        return _buildFamilyMemberItem(
+                          member,
+                          isSelected,
+                          color,
+                          () {
+                            setSheetState(
+                              () => localFamilyMemberId = member.id,
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                const SizedBox(height: 32),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (!localIsForSelf && localFamilyMemberId == null) {
+                        SnackbarUtils.showWarning(
+                          context,
+                          'Please select a family member',
+                        );
+                        return;
+                      }
+
+                      final nav = Navigator.of(context);
+                      final userProfile = await _authService
+                          .getCurrentUserProfile();
+
+                      if (!mounted) return;
+
+                      setState(() {
+                        _isForSelf = localIsForSelf;
+                        _familyMemberId = localIsForSelf
+                            ? null
+                            : localFamilyMemberId;
+
+                        if (_isForSelf) {
+                          if (userProfile != null) {
+                            _patientName =
+                                '${userProfile.firstName} ${userProfile.lastName}';
+                            _patientAge = userProfile.age;
+                            _patientGender = userProfile.sex;
+                          }
+                        } else {
+                          final member = familyProvider.familyMembers
+                              .firstWhere((m) => m.id == localFamilyMemberId);
+                          _patientName = member.firstName;
+                          _patientAge = member.age;
+                          _patientGender = member.sex;
+                        }
+                      });
+                      nav.pop();
+                    },
+                    style: _sheetButtonStyle(color),
+                    child: const Text('Confirm Patient'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPatientTypeCard(
+    String title,
+    IconData icon,
+    bool isSelected,
+    VoidCallback onTap,
+    Color color,
+  ) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: isSelected ? color : context.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? color
+                : context.dividerColor.withValues(alpha: 0.1),
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: isSelected ? Colors.white : color, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: isSelected ? Colors.white : context.textSecondary,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPatientSelfDetails(Color color) {
+    return FutureBuilder(
+      future: _authService.getCurrentUserProfile(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: EyeLoader(size: 30));
+        final user = snapshot.data!;
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: context.dividerColor.withValues(alpha: 0.1),
+            ),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: color.withValues(alpha: 0.1),
+                child: Icon(Icons.person, color: color),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${user.firstName} ${user.lastName}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      '${user.age} yrs • ${user.sex}',
+                      style: TextStyle(
+                        color: context.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFamilyMemberItem(
+    FamilyMemberModel member,
+    bool isSelected,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isSelected ? color.withValues(alpha: 0.05) : context.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isSelected
+                  ? color
+                  : context.dividerColor.withValues(alpha: 0.1),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: isSelected
+                    ? color
+                    : color.withValues(alpha: 0.1),
+                child: Icon(
+                  Icons.person_outline,
+                  color: isSelected ? Colors.white : color,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      member.firstName,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: isSelected ? color : context.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      '${member.age} yrs • ${member.sex} • ${member.relationship}',
+                      style: TextStyle(
+                        color: context.textSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isSelected)
+                Icon(Icons.check_circle_rounded, color: color, size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyFamilyState() => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          Icon(Icons.people_outline, size: 40, color: context.textTertiary),
+          const SizedBox(height: 12),
+          Text(
+            'No family members found.',
+            style: TextStyle(color: context.textSecondary, fontSize: 13),
+          ),
+        ],
+      ),
     ),
   );
 }

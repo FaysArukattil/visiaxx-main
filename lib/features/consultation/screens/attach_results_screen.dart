@@ -591,7 +591,7 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
           ),
         ),
       ),
-    ).animate().fadeIn(delay: (index * 100).ms).slideX(begin: 0.05, end: 0);
+    ).animate().fadeIn(delay: (index % 6 * 100).ms).slideX(begin: 0.05, end: 0);
   }
 
   bool _hasAmslerIssues(TestResultModel result) {
