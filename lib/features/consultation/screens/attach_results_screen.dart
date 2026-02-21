@@ -810,7 +810,7 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -844,7 +844,9 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
           Expanded(
             flex: 2,
             child: ElevatedButton(
-              onPressed: () => _navigateToConfirmation(),
+              onPressed: _isLoading || (_results.isNotEmpty && !isSelected)
+                  ? null
+                  : () => _navigateToConfirmation(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: context.primary,
                 foregroundColor: Colors.white,
@@ -859,9 +861,13 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      isSelected
+                      _isLoading
+                          ? 'Searching...'
+                          : isSelected
                           ? 'Attach & Proceed (${_selectedResultIds.length}/10)'
-                          : 'Proceed',
+                          : (_results.isNotEmpty
+                                ? 'Select a Result'
+                                : 'Proceed'),
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w900,

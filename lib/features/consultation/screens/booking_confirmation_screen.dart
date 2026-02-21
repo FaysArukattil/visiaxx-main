@@ -96,7 +96,7 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
     if (_doctor == null || _slot == null || _date == null) return;
 
     if (_type == ConsultationType.inPerson &&
-        (_latitude == null || _longitude == null || _flat == null)) {
+        (_latitude == null || _longitude == null || _exactAddress == null)) {
       SnackbarUtils.showWarning(
         context,
         'Please select a valid visit location and provide your address.',
