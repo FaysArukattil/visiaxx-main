@@ -27,6 +27,9 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Guard against redundant initialization on orientation changes
+    if (_doctor != null) return;
+
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     _doctor = args?['doctor'];
@@ -61,7 +64,7 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
     setState(() {
       _slots = finalSlots;
       _isLoading = false;
-      _selectedSlotId = null;
+      // selection is now managed explicitly by interactions
     });
   }
 
@@ -283,7 +286,10 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
             padding: const EdgeInsets.only(bottom: 12),
             child: InkWell(
               onTap: () {
-                setState(() => _selectedDate = date);
+                setState(() {
+                  _selectedDate = date;
+                  _selectedSlotId = null; // Clear selection on date change
+                });
                 _loadSlots();
               },
               borderRadius: BorderRadius.circular(16),
@@ -344,7 +350,10 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
           padding: const EdgeInsets.only(right: 14),
           child: InkWell(
             onTap: () {
-              setState(() => _selectedDate = date);
+              setState(() {
+                _selectedDate = date;
+                _selectedSlotId = null; // Clear selection on date change
+              });
               _loadSlots();
             },
             borderRadius: BorderRadius.circular(22),
