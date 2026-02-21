@@ -5,6 +5,7 @@ import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/consultation_service.dart';
 import '../../../data/models/doctor_model.dart';
 import '../../../data/models/time_slot_model.dart';
+import '../../../core/widgets/eye_loader.dart';
 
 class SlotSelectionScreen extends StatefulWidget {
   const SlotSelectionScreen({super.key});
@@ -165,9 +166,7 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
                             children: [
                               Expanded(
                                 child: _isLoading
-                                    ? const Center(
-                                        child: CircularProgressIndicator(),
-                                      )
+                                    ? const Center(child: EyeLoader(size: 60))
                                     : _slots.isEmpty
                                     ? _buildEmptyState()
                                     : _buildSlotGrid(crossAxisCount: 4),
@@ -187,7 +186,7 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
                         _buildDatePicker(),
                         Expanded(
                           child: _isLoading
-                              ? const Center(child: CircularProgressIndicator())
+                              ? const Center(child: EyeLoader(size: 60))
                               : _slots.isEmpty
                               ? _buildEmptyState()
                               : _buildSlotGrid(crossAxisCount: 3),
