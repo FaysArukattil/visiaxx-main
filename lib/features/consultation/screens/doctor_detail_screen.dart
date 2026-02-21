@@ -79,7 +79,7 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
                       24,
                       20,
                       24,
-                      isLandscape ? 100 : 140,
+                      isLandscape ? 80 : 140,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,40 +112,31 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
                         const SizedBox(height: 24),
 
                         if (isLandscape)
-                          Row(
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Left Column: Identity & Stats
-                              Expanded(
-                                flex: 4,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildIdentitySection(color),
-                                    const SizedBox(height: 32),
-                                    const _SectionTitle(title: 'Overview'),
-                                    const SizedBox(height: 20),
-                                    _buildStatsRow(color),
-                                  ],
-                                ),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    flex: 4,
+                                    child: _buildIdentitySection(color),
+                                  ),
+                                  const SizedBox(width: 48),
+                                  Expanded(
+                                    flex: 5,
+                                    child: _buildAvailabilityBar(color),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 48),
-                              // Right Column: Availability & Bio
-                              Expanded(
-                                flex: 5,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildAvailabilityBar(color),
-                                    const SizedBox(height: 32),
-                                    const _SectionTitle(
-                                      title: 'Professional Bio',
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _buildBioText(),
-                                  ],
-                                ),
-                              ),
+                              const SizedBox(height: 32),
+                              const _SectionTitle(title: 'Clinical Expertise'),
+                              const SizedBox(height: 20),
+                              _buildStatsRow(color),
+                              const SizedBox(height: 32),
+                              const _SectionTitle(title: 'Professional Bio'),
+                              const SizedBox(height: 16),
+                              _buildBioText(),
                             ],
                           )
                         else
@@ -173,7 +164,7 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
             ),
           ),
 
-          _buildBottomAction(color),
+          _buildBottomAction(color, isLandscape),
         ],
       ).animate().fadeIn(duration: 400.ms),
     );
@@ -448,13 +439,13 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
     );
   }
 
-  Widget _buildBottomAction(Color color) {
+  Widget _buildBottomAction(Color color, bool isLandscape) {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(28, 20, 28, 40),
+        padding: EdgeInsets.fromLTRB(28, 16, 28, isLandscape ? 12 : 40),
         decoration: BoxDecoration(
           color: context.scaffoldBackground,
           border: Border(
@@ -481,7 +472,7 @@ class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: color,
               foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 66),
+              minimumSize: Size(double.infinity, isLandscape ? 48 : 66),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),

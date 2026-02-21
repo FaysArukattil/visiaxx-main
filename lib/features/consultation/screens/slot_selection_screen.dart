@@ -132,32 +132,48 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
                           children: [
                             Expanded(
                               flex: 2,
-                              child: SingleChildScrollView(
-                                physics: const BouncingScrollPhysics(),
-                                padding: const EdgeInsets.fromLTRB(
-                                  24,
-                                  12,
-                                  0,
-                                  12,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildHeaderRow(context),
-                                    const SizedBox(height: 32),
-                                    Text(
-                                      'Select Date',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w900,
-                                        color: context.textPrimary,
-                                        letterSpacing: -0.4,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      24,
+                                      12,
+                                      0,
+                                      12,
+                                    ),
+                                    child: _buildHeaderRow(context),
+                                  ),
+                                  Expanded(
+                                    child: SingleChildScrollView(
+                                      physics: const BouncingScrollPhysics(),
+                                      padding: const EdgeInsets.fromLTRB(
+                                        24,
+                                        0,
+                                        0,
+                                        12,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            'Select Date',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w900,
+                                              color: context.textPrimary,
+                                              letterSpacing: -0.4,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          _buildDateList(isVertical: true),
+                                        ],
                                       ),
                                     ),
-                                    const SizedBox(height: 16),
-                                    _buildDateList(isVertical: true),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                             Expanded(
@@ -559,8 +575,10 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
   }
 
   Widget _buildBottomAction() {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, isLandscape ? 12 : 32),
       decoration: BoxDecoration(
         color: context.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
@@ -595,7 +613,7 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: context.primary,
           foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 64),
+          minimumSize: Size(double.infinity, isLandscape ? 48 : 64),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),

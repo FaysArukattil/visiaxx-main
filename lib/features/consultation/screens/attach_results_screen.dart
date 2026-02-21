@@ -100,33 +100,27 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
           SafeArea(
             child: Column(
               children: [
+                _buildHeader(context),
                 Expanded(
                   child: isLandscape
                       ? Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
-                              flex: 2,
+                              flex: 1,
                               child: SingleChildScrollView(
                                 physics: const BouncingScrollPhysics(),
                                 padding: const EdgeInsets.fromLTRB(
                                   24,
-                                  12,
+                                  0,
                                   0,
                                   12,
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildHeader(context),
-                                    const SizedBox(height: 32),
-                                    _buildContextInfo(),
-                                  ],
-                                ),
+                                child: _buildContextInfo(),
                               ),
                             ),
                             Expanded(
-                              flex: 3,
+                              flex: 2,
                               child: _isLoading
                                   ? const Center(child: EyeLoader(size: 60))
                                   : _results.isEmpty
@@ -137,7 +131,6 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
                         )
                       : Column(
                           children: [
-                            _buildHeader(context),
                             Padding(
                               padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
                               child: Text(
@@ -276,178 +269,198 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
   }
 
   Widget _buildResultsList() {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    if (isLandscape) {
+      return GridView.builder(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        physics: const BouncingScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 1.1,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+        ),
+        itemCount: _results.length,
+        itemBuilder: (context, index) {
+          return _buildResultCard(_results[index], index);
+        },
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
       physics: const BouncingScrollPhysics(),
       itemCount: _results.length,
       itemBuilder: (context, index) {
-        final result = _results[index];
-        final isSelected = _selectedResultIds.contains(result.id);
-        final color = context.primary;
+        return _buildResultCard(_results[index], index);
+      },
+    );
+  }
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: InkWell(
-            onTap: () {
-              setState(() {
-                if (isSelected) {
-                  _selectedResultIds.remove(result.id);
-                } else {
-                  _selectedResultIds.add(result.id);
-                }
-              });
-            },
+  Widget _buildResultCard(TestResultModel result, int index) {
+    final isSelected = _selectedResultIds.contains(result.id);
+    final color = context.primary;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLandscape ? 0 : 16),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            if (isSelected) {
+              _selectedResultIds.remove(result.id);
+            } else {
+              _selectedResultIds.add(result.id);
+            }
+          });
+        },
+        borderRadius: BorderRadius.circular(24),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.surface,
             borderRadius: BorderRadius.circular(24),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: context.surface,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: isSelected ? color : color.withValues(alpha: 0.08),
-                  width: isSelected ? 2 : 1.5,
-                ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: color.withValues(alpha: 0.1),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ]
-                    : [],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(
-                            result.overallStatus,
-                          ).withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _getStatusIcon(result.overallStatus),
-                          color: _getStatusColor(result.overallStatus),
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              result.profileName,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.4,
-                              ),
-                            ),
-                            Text(
-                              _getProfileSubtitle(result),
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: context.textTertiary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _buildSelectedIndicator(isSelected),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: context.scaffoldBackground.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: context.dividerColor.withValues(alpha: 0.05),
-                      ),
+            border: Border.all(
+              color: isSelected ? color : color.withValues(alpha: 0.08),
+              width: isSelected ? 2 : 1.5,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
+                  ]
+                : [],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(
+                        result.overallStatus,
+                      ).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _getStatusIcon(result.overallStatus),
+                      color: _getStatusColor(result.overallStatus),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _getTestsPerformedSummary(result),
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: context.textSecondary,
-                            fontWeight: FontWeight.w700,
-                            height: 1.4,
+                          result.profileName,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.4,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 8),
                         Text(
-                          DateFormat(
-                            'dd MMMM yyyy • h:mm a',
-                          ).format(result.timestamp),
+                          _getProfileSubtitle(result),
                           style: TextStyle(
                             fontSize: 11,
                             color: context.textTertiary,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                   ),
-
-                  // Amsler Image thumbnail if issues detected
-                  if (_hasAmslerIssues(result)) ...[
-                    const SizedBox(height: 16),
-                    _buildAmslerThumbnails(result),
-                  ],
-
-                  const SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                  _buildSelectedIndicator(isSelected),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: context.scaffoldBackground.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: context.dividerColor.withValues(alpha: 0.05),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      TextButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => QuickTestResultScreen(
-                                historicalResult: result,
-                              ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(
-                          Icons.remove_red_eye_rounded,
-                          size: 16,
+                      Text(
+                        _getTestsPerformedSummary(result),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.textSecondary,
+                          fontWeight: FontWeight.w700,
+                          height: 1.3,
                         ),
-                        label: const Text(
-                          'Quick Preview',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        style: TextButton.styleFrom(
-                          foregroundColor: context.primary,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        DateFormat('dd MMM yyyy').format(result.timestamp),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: context.textTertiary,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
+              if (_hasAmslerIssues(result) && !isLandscape) ...[
+                const SizedBox(height: 12),
+                _buildAmslerThumbnails(result),
+              ],
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            QuickTestResultScreen(historicalResult: result),
+                      ),
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: context.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    minimumSize: const Size(0, 32),
+                  ),
+                  child: const Text(
+                    'Quick Preview',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ).animate().fadeIn(delay: (index * 100).ms).slideX(begin: 0.05, end: 0);
-      },
-    );
+        ),
+      ),
+    ).animate().fadeIn(delay: (index * 100).ms).slideX(begin: 0.05, end: 0);
   }
 
   bool _hasAmslerIssues(TestResultModel result) {
@@ -656,9 +669,11 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
 
   Widget _buildBottomAction() {
     final isSelected = _selectedResultIds.isNotEmpty;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, isLandscape ? 12 : 32),
       decoration: BoxDecoration(
         color: context.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
@@ -677,7 +692,7 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
             child: OutlinedButton(
               onPressed: () => _navigateToConfirmation(),
               style: OutlinedButton.styleFrom(
-                minimumSize: const Size(0, 64),
+                minimumSize: Size(0, isLandscape ? 48 : 64),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -702,7 +717,7 @@ class _AttachResultsScreenState extends State<AttachResultsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: context.primary,
                 foregroundColor: Colors.white,
-                minimumSize: const Size(0, 64),
+                minimumSize: Size(0, isLandscape ? 48 : 64),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
