@@ -1068,25 +1068,31 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   Widget _buildStatsRow(BoxConstraints constraints) {
     final isWide = constraints.maxWidth > 600;
     final content = [
-      _statCard(
-        'TOTAL PATIENTS',
-        _totalPatients.toString(),
-        Icons.people_rounded,
-        Colors.blue,
+      Expanded(
+        child: _statCard(
+          'TOTAL PATIENTS',
+          _totalPatients.toString(),
+          Icons.people_rounded,
+          Colors.blue,
+        ),
       ),
       const SizedBox(width: 12),
-      _statCard(
-        'TODAY SLOTS',
-        _todaysSlots.toString(),
-        Icons.schedule_rounded,
-        Colors.orange,
+      Expanded(
+        child: _statCard(
+          'TODAY SLOTS',
+          _todaysSlots.toString(),
+          Icons.schedule_rounded,
+          Colors.orange,
+        ),
       ),
       const SizedBox(width: 12),
-      _statCard(
-        'COMPLETED',
-        _completedConsultations.toString(),
-        Icons.verified_rounded,
-        Colors.green,
+      Expanded(
+        child: _statCard(
+          'COMPLETED',
+          _completedConsultations.toString(),
+          Icons.verified_rounded,
+          Colors.green,
+        ),
       ),
     ];
 
@@ -1099,59 +1105,54 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   }
 
   Widget _statCard(String label, String value, IconData icon, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              color.withValues(alpha: 0.1),
-              color.withValues(alpha: 0.05),
-            ],
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: color.withValues(alpha: 0.15), width: 1.5),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: context.surface,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: color, size: 18),
           ),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: color.withValues(alpha: 0.15), width: 1.5),
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: context.surface,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Icon(icon, color: color, size: 18),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              color: context.onSurface,
+              letterSpacing: -1,
             ),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                color: context.onSurface,
-                letterSpacing: -1,
-              ),
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+              color: context.textSecondary,
+              letterSpacing: 0.5,
             ),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                color: context.textSecondary,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     ).animate().fadeIn(duration: 500.ms).scale(delay: 100.ms);
   }
