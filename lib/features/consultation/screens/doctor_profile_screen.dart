@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/consultation_service.dart';
+import '../../../core/services/aws_s3_storage_service.dart';
 import '../../../data/models/doctor_model.dart';
 import '../../../data/models/user_model.dart';
 import '../../../core/widgets/eye_loader.dart';
@@ -16,14 +19,21 @@ class DoctorProfileScreen extends StatefulWidget {
 }
 
 class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
-  final _authService = AuthService();
-  final _consultationService = ConsultationService();
+  final AuthService _authService = AuthService();
+  final ConsultationService _consultationService = ConsultationService();
+  final AWSS3StorageService _s3Service = AWSS3StorageService();
+  final ImagePicker _picker = ImagePicker();
+
   UserModel? _user;
   DoctorModel? _doctor;
   bool _isLoading = true;
   bool _isEditing = false;
   bool _isSaving = false;
+  File? _imageFile;
 
+  // Controllers
+  late TextEditingController _firstNameController;
+  late TextEditingController _lastNameController;
   late TextEditingController _bioController;
   late TextEditingController _expController;
   late TextEditingController _specialtyController;
@@ -33,16 +43,30 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _firstNameController = TextEditingController();
+    _lastNameController = TextEditingController();
     _bioController = TextEditingController();
     _expController = TextEditingController();
     _specialtyController = TextEditingController();
     _degreeController = TextEditingController();
     _phoneController = TextEditingController();
-    _loadProfile();
+
+    // Proactively check cache
+    final cachedUser = _authService.cachedUser;
+    if (cachedUser != null) {
+      _user = cachedUser;
+      _firstNameController.text = _user?.firstName ?? '';
+      _lastNameController.text = _user?.lastName ?? '';
+      _phoneController.text = _user?.phone ?? '';
+      _isLoading = false;
+    }
+    _loadData();
   }
 
   @override
   void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _bioController.dispose();
     _expController.dispose();
     _specialtyController.dispose();
@@ -51,21 +75,30 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _loadProfile() async {
-    final user = await _authService.getCurrentUserProfile();
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        _imageFile = File(image.path);
+      });
+    }
+  }
+
+  Future<void> _loadData() async {
+    final user = _user ?? await _authService.getCurrentUserProfile();
     if (user != null) {
       final doctor = await _consultationService.getDoctorById(user.id);
       if (mounted) {
         setState(() {
           _user = user;
           _doctor = doctor;
-          if (doctor != null) {
-            _bioController.text = doctor.bio;
-            _expController.text = doctor.experienceYears.toString();
-            _specialtyController.text = doctor.specialty;
-            _degreeController.text = doctor.degree;
-          }
-          _phoneController.text = user.phone;
+          _firstNameController.text = _user?.firstName ?? '';
+          _lastNameController.text = _user?.lastName ?? '';
+          _bioController.text = _doctor?.bio ?? '';
+          _expController.text = _doctor?.experienceYears.toString() ?? '0';
+          _specialtyController.text = _doctor?.specialty ?? '';
+          _degreeController.text = _doctor?.degree ?? '';
+          _phoneController.text = _user?.phone ?? '';
           _isLoading = false;
         });
       }
@@ -82,40 +115,64 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     setState(() => _isSaving = true);
 
     try {
+      String photoUrl = _user!.photoUrl;
+
+      // 1. Upload new image to AWS S3 if picked
+      if (_imageFile != null) {
+        final uploadedUrl = await _s3Service.uploadProfileImage(
+          userId: _user!.id,
+          role: 'Doctors',
+          imageFile: _imageFile!,
+        );
+        if (uploadedUrl != null) {
+          photoUrl = uploadedUrl;
+        }
+      }
+
       final experienceYears =
           int.tryParse(_expController.text) ?? _doctor!.experienceYears;
+      final firstName = _firstNameController.text.trim();
+      final lastName = _lastNameController.text.trim();
 
-      // Update Professional Profile (DoctorModel)
+      // 2. Update Professional Profile (DoctorModel)
       final updatedDoctor = _doctor!.copyWith(
+        firstName: firstName,
+        lastName: lastName,
         bio: _bioController.text.trim(),
         experienceYears: experienceYears,
         specialty: _specialtyController.text.trim(),
         degree: _degreeController.text.trim(),
+        photoUrl: photoUrl,
       );
 
-      final success = await _consultationService.updateDoctorProfile(
+      final docSuccess = await _consultationService.updateDoctorProfile(
         updatedDoctor,
       );
 
-      if (success) {
-        // Update Basic Profile (UserModel - Phone) if changed
-        if (_user!.phone != _phoneController.text.trim()) {
-          final updatedUser = _user!.copyWith(
-            phone: _phoneController.text.trim(),
-          );
-          await _authService.updateUserProfile(updatedUser);
-          _user = updatedUser;
-        }
+      if (docSuccess) {
+        // 3. Update Basic Profile (UserModel)
+        final updatedUser = _user!.copyWith(
+          firstName: firstName,
+          lastName: lastName,
+          phone: _phoneController.text.trim(),
+          photoUrl: photoUrl,
+        );
 
-        if (mounted) {
+        final userSuccess = await _authService.updateUserProfile(updatedUser);
+
+        if (userSuccess && mounted) {
           setState(() {
+            _user = updatedUser;
             _doctor = updatedDoctor;
             _isEditing = false;
             _isSaving = false;
+            _imageFile = null; // Clear picked image
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Profile updated successfully!')),
           );
+        } else if (!userSuccess) {
+          throw Exception('Failed to update user profile');
         }
       } else {
         throw Exception('Failed to update doctor profile');
@@ -137,7 +194,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: _isLoading
-          ? const Center(child: EyeLoader(size: 40))
+          ? const Center(child: EyeLoader(size: 60))
           : _user == null
           ? const Center(child: Text('User not found'))
           : Stack(
@@ -301,14 +358,21 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: context.primary.withValues(alpha: 0.1),
-                image: _user?.photoUrl != null
+                image: _imageFile != null
+                    ? DecorationImage(
+                        image: FileImage(_imageFile!),
+                        fit: BoxFit.cover,
+                      )
+                    : _user?.photoUrl != null && _user!.photoUrl.isNotEmpty
                     ? DecorationImage(
                         image: NetworkImage(_user!.photoUrl),
                         fit: BoxFit.cover,
                       )
                     : null,
               ),
-              child: _user?.photoUrl == null
+              child:
+                  (_imageFile == null &&
+                      (_user?.photoUrl == null || _user!.photoUrl.isEmpty))
                   ? Center(
                       child: Text(
                         (_user!.firstName.isNotEmpty
@@ -326,36 +390,73 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                     )
                   : null,
             ),
-            Positioned(
-              right: 4,
-              bottom: 4,
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: context.primary,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: context.surface, width: 3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: context.primary.withValues(alpha: 0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+            if (_isEditing)
+              Positioned(
+                right: 4,
+                bottom: 4,
+                child: GestureDetector(
+                  onTap: _pickImage,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: context.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: context.surface, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: context.primary.withValues(alpha: 0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.edit_rounded,
-                  color: Colors.white,
-                  size: 16,
+                    child: const Icon(
+                      Icons.camera_alt_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
                 ),
               ),
-            ),
           ],
         ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
         const SizedBox(height: 20),
         if (_isEditing)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildFullWidthTextField(
+                    _firstNameController,
+                    'First Name',
+                    hint: 'First Name',
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildFullWidthTextField(
+                    _lastNameController,
+                    'Last Name',
+                    hint: 'Last Name',
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          Text(
+            'Dr. ${_user!.fullName}',
+            style: const TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
+            ),
+          ),
+        if (_isEditing)
           Column(
             children: [
+              const SizedBox(height: 12),
               _buildFullWidthTextField(
                 _specialtyController,
                 'Specialty',
@@ -372,14 +473,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
         else
           Column(
             children: [
-              Text(
-                'Dr. ${_user!.fullName}',
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.5,
-                ),
-              ),
               const SizedBox(height: 6),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -459,9 +552,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
           ),
           _buildDivider(),
           _buildInfoTile(
-            'Registration Number',
-            _doctor?.registrationNumber ?? 'Not set',
-            Icons.badge_rounded,
+            'Gender / Sex',
+            _user!.sex.toUpperCase(),
+            Icons.person_pin_rounded,
           ),
         ],
       ),

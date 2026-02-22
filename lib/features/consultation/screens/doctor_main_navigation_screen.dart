@@ -35,25 +35,26 @@ class _DoctorMainNavigationScreenState
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _currentIndex);
+
+    // Proactively check cache
+    final cachedUser = _authService.cachedUser;
+    if (cachedUser != null) {
+      _user = cachedUser;
+      _isLoading = false;
+    }
     _loadUserData();
   }
 
   Future<void> _loadUserData() async {
     try {
-      if (_authService.currentUserId != null) {
-        final user = await _authService.getUserData(
-          _authService.currentUserId!,
-        );
-        if (mounted && user != null) {
-          setState(() {
-            _user = user;
-            _isLoading = false;
-          });
-        } else if (mounted) {
-          setState(() => _isLoading = false);
-        }
-      } else {
-        if (mounted) setState(() => _isLoading = false);
+      final user = _user ?? await _authService.getCurrentUserProfile();
+      if (mounted && user != null) {
+        setState(() {
+          _user = user;
+          _isLoading = false;
+        });
+      } else if (mounted) {
+        setState(() => _isLoading = false);
       }
     } catch (e) {
       debugPrint('[DoctorMainNavigation] ❌ Error loading user data: $e');

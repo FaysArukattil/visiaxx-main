@@ -62,18 +62,30 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   @override
   void initState() {
     super.initState();
+    // Proactively check if user is already in cache to avoid full-screen loader flicker
+    final cachedUser = _authService.cachedUser;
+    if (cachedUser != null) {
+      _user = cachedUser;
+      _isLoading = false;
+    }
     _loadData();
   }
 
   Future<void> _loadData() async {
-    final user = await _authService.getCurrentUserProfile();
+    // If we don't have a user yet, try to get it
+    final user = _user ?? await _authService.getCurrentUserProfile();
+
     if (user != null) {
-      final patients = await _consultationService.getDoctorPatients(user.id);
-      final bookings = await _consultationService.getDoctorBookings(user.id);
-      final todaySlots = await _consultationService.getAvailableSlots(
-        user.id,
-        DateTime.now(),
-      );
+      // Parallel fetch for better performance
+      final results = await Future.wait([
+        _consultationService.getDoctorPatients(user.id),
+        _consultationService.getDoctorBookings(user.id),
+        _consultationService.getAvailableSlots(user.id, DateTime.now()),
+      ]);
+
+      final patients = results[0] as List;
+      final bookings = results[1] as List<ConsultationBookingModel>;
+      final todaySlots = results[2] as List;
 
       if (mounted) {
         setState(() {
@@ -100,7 +112,13 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: EyeLoader(size: 40));
+      return const Scaffold(
+        body: Center(
+          child: EyeLoader(
+            size: 60,
+          ), // Increased base size, will scale to 120 on laptop
+        ),
+      );
     }
 
     return LayoutBuilder(

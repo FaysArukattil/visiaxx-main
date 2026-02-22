@@ -20,6 +20,16 @@ class EyeLoader extends StatefulWidget {
     this.value,
   });
 
+  /// Responsive constructor that scales based on screen size
+  const EyeLoader.adaptive({
+    super.key,
+    this.size = 40.0,
+    this.color,
+    this.scleraColor,
+    this.pupilColor,
+    this.value,
+  });
+
   /// Constructor for button usage - larger and more visible
   const EyeLoader.button({super.key, this.color})
     : size = 28.0, // Larger for buttons
@@ -76,9 +86,21 @@ class _EyeLoaderState extends State<EyeLoader>
     final fallbackSclera = AppColors.white;
     final fallbackPupil = AppColors.black;
 
+    // Responsive sizing: Scale up on laptop/desktop screens (>900px)
+    final screenWidth = MediaQuery.of(context).size.width;
+    double effectiveSize = widget.size;
+    if (screenWidth > 900) {
+      // If fullScreen, make it even more prominent on desktop
+      if (widget.size >= 80) {
+        effectiveSize = 160.0;
+      } else if (widget.size > 30) {
+        effectiveSize = widget.size * 2.0;
+      }
+    }
+
     return SizedBox(
-      width: widget.size,
-      height: widget.size,
+      width: effectiveSize,
+      height: effectiveSize,
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
@@ -227,4 +249,3 @@ class _EyePainter extends CustomPainter {
       oldDelegate.scleraColor != scleraColor ||
       oldDelegate.pupilColor != pupilColor;
 }
-
