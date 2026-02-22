@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -26,6 +27,7 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
   List<ConsultationBookingModel> _filteredBookings = [];
   bool _isLoading = true;
   late TabController _tabController;
+  StreamSubscription<List<ConsultationBookingModel>>? _bookingsSubscription;
 
   static const _tabs = ['Pending', 'Confirmed', 'Completed', 'Cancelled'];
   static const _tabStatuses = [
@@ -40,11 +42,12 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
     super.initState();
     _tabController = TabController(length: _tabs.length, vsync: this);
     _tabController.addListener(_onTabChanged);
-    _loadRequests();
+    _startListening();
   }
 
   @override
   void dispose() {
+    _bookingsSubscription?.cancel();
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
@@ -65,22 +68,32 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
     });
   }
 
-  Future<void> _loadRequests() async {
-    setState(() => _isLoading = true);
+  void _startListening() {
     final uid = _authService.currentUserId;
     if (uid != null) {
-      // Auto-expire old pending bookings first
-      await _consultationService.autoExpireBookings(uid);
-
-      final allBookings = await _consultationService.getDoctorBookings(uid);
-      if (mounted) {
-        setState(() {
-          _allBookings = allBookings;
-          _isLoading = false;
-        });
-        _filterBookings();
-      }
+      // Auto-expire old pending bookings first, then start stream
+      _consultationService.autoExpireBookings(uid).then((_) {
+        _bookingsSubscription?.cancel();
+        _bookingsSubscription = _consultationService
+            .getDoctorBookingsStream(uid)
+            .listen((allBookings) {
+              if (mounted) {
+                setState(() {
+                  _allBookings = allBookings;
+                  _isLoading = false;
+                });
+                _filterBookings();
+              }
+            });
+      });
     }
+  }
+
+  Future<void> _loadRequests() async {
+    // Kept for pull-to-refresh; re-subscribes to the stream
+    _bookingsSubscription?.cancel();
+    setState(() => _isLoading = true);
+    _startListening();
   }
 
   Future<void> _updateStatus(
@@ -107,7 +120,7 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
           'Booking ${newStatus == BookingStatus.confirmed ? 'confirmed' : 'rejected'}.',
         );
       }
-      _loadRequests();
+      // No need to manually reload — the stream handles it
     }
   }
 

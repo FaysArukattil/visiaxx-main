@@ -640,6 +640,20 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       child: Column(
         children: [
           _buildEditableTile(
+            'Specialty',
+            _specialtyController,
+            Icons.medical_services_rounded,
+            isEditable: _isEditing,
+          ),
+          _buildDivider(),
+          _buildEditableTile(
+            'Degree',
+            _degreeController,
+            Icons.school_rounded,
+            isEditable: _isEditing,
+          ),
+          _buildDivider(),
+          _buildEditableTile(
             'Years of Experience',
             _expController,
             Icons.work_history_rounded,
@@ -786,10 +800,13 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                   )
                 else
                   Text(
-                    controller.text,
-                    style: const TextStyle(
+                    controller.text.isNotEmpty ? controller.text : 'Not set',
+                    style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 15,
+                      color: controller.text.isNotEmpty
+                          ? null
+                          : context.textSecondary.withValues(alpha: 0.5),
                     ),
                   ),
               ],

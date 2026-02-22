@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -31,6 +32,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   int _completedConsultations = 0;
   int _pendingRequests = 0;
   List<ConsultationBookingModel> _upcomingBookings = [];
+  List<ConsultationBookingModel> _pendingBookings = [];
+  StreamSubscription<List<ConsultationBookingModel>>? _bookingsSubscription;
 
   final List<Map<String, dynamic>> _carouselSlides = [
     {
@@ -75,6 +78,12 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     _loadData();
   }
 
+  @override
+  void dispose() {
+    _bookingsSubscription?.cancel();
+    super.dispose();
+  }
+
   Future<void> _loadData() async {
     // If we don't have a user yet, try to get it
     final user = _user ?? await _authService.getCurrentUserProfile();
@@ -83,16 +92,14 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       // Auto-expire past-due pending bookings first
       await _consultationService.autoExpireBookings(user.id);
 
-      // Parallel fetch for better performance
+      // Parallel fetch for non-booking stats
       final results = await Future.wait([
         _consultationService.getDoctorPatients(user.id),
-        _consultationService.getDoctorBookings(user.id),
         _consultationService.getAvailableSlots(user.id, DateTime.now()),
       ]);
 
       final patients = results[0] as List;
-      final bookings = results[1] as List<ConsultationBookingModel>;
-      final todaySlots = results[2] as List;
+      final todaySlots = results[1] as List;
       final doctor = await _consultationService.getDoctorById(user.id);
 
       if (mounted) {
@@ -101,19 +108,34 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
           _doctor = doctor;
           _totalPatients = patients.length;
           _todaysSlots = todaySlots.length;
-          _completedConsultations = bookings
-              .where((b) => b.status == BookingStatus.completed)
-              .length;
-          _pendingRequests = bookings
-              .where((b) => b.status == BookingStatus.requested)
-              .length;
-          _upcomingBookings = bookings
-              .where((b) => b.status == BookingStatus.confirmed)
-              .take(5)
-              .toList();
           _isLoading = false;
         });
       }
+
+      // Subscribe to real-time bookings stream for instant updates
+      _bookingsSubscription?.cancel();
+      _bookingsSubscription = _consultationService
+          .getDoctorBookingsStream(user.id)
+          .listen((bookings) {
+            if (mounted) {
+              setState(() {
+                _completedConsultations = bookings
+                    .where((b) => b.status == BookingStatus.completed)
+                    .length;
+                _pendingRequests = bookings
+                    .where((b) => b.status == BookingStatus.requested)
+                    .length;
+                _pendingBookings = bookings
+                    .where((b) => b.status == BookingStatus.requested)
+                    .take(5)
+                    .toList();
+                _upcomingBookings = bookings
+                    .where((b) => b.status == BookingStatus.confirmed)
+                    .take(5)
+                    .toList();
+              });
+            }
+          });
     } else {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -216,6 +238,14 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                 const SizedBox(height: 32),
                 _buildSectionTitle('Quick Actions', Icons.bolt_rounded),
                 _buildQuickActionsGrid(constraints),
+                if (_pendingBookings.isNotEmpty) ...[
+                  const SizedBox(height: 32),
+                  _buildSectionTitle(
+                    'Pending Requests ($_pendingRequests)',
+                    Icons.pending_actions_rounded,
+                  ),
+                  _buildPendingRequestsList(),
+                ],
                 const SizedBox(height: 32),
                 _buildSectionTitle(
                   'Upcoming Consultations',
@@ -731,6 +761,99 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPendingRequestsList() {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _pendingBookings.length,
+      itemBuilder: (context, index) {
+        final booking = _pendingBookings[index];
+        return GestureDetector(
+          onTap: () => Navigator.pushNamed(context, '/doctor-booking-review'),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: context.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.orange.withValues(alpha: 0.2),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.orange.withValues(alpha: 0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.person_rounded,
+                    color: Colors.orange,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        booking.patientName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${booking.timeSlot} · ${booking.type == ConsultationType.online ? 'Online' : 'In-Person'}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: context.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    'REVIEW',
+                    style: TextStyle(
+                      color: Colors.orange,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
