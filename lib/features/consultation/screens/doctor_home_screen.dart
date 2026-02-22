@@ -204,8 +204,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    final logoWidth = (screenWidth * 0.25).clamp(110.0, 150.0);
-    final logoHeight = (screenHeight * 0.06).clamp(50.0, 65.0);
+    final logoWidth = (screenWidth * 0.3).clamp(120.0, 160.0);
+    final logoHeight = (screenHeight * 0.07).clamp(60.0, 75.0);
 
     return Container(
       padding: EdgeInsets.fromLTRB(horizontalPadding, 16, horizontalPadding, 0),
@@ -214,7 +214,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         children: [
           Row(
             children: [
-              if (constraints.maxWidth <= 900)
+              if (screenWidth <= 900)
                 Container(
                   width: logoWidth,
                   height: logoHeight,
