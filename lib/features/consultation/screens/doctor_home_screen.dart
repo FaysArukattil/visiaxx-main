@@ -89,19 +89,31 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     final user = _user ?? await _authService.getCurrentUserProfile();
 
     if (user != null) {
-      // Auto-expire past-due pending bookings first
+      debugPrint('[DoctorHomeScreen] ⏳ Auto-expiring bookings...');
       await _consultationService.autoExpireBookings(user.id);
 
-      // Parallel fetch for non-booking stats
-      final results = await Future.wait([
-        _consultationService.getDoctorPatients(user.id),
-        _consultationService.getAvailableSlots(user.id, DateTime.now()),
-      ]);
+      debugPrint('[DoctorHomeScreen] ⏳ Fetching patients and slots...');
+      final results =
+          await Future.wait([
+            _consultationService.getDoctorPatients(user.id),
+            _consultationService.getAvailableSlots(user.id, DateTime.now()),
+          ]).timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              debugPrint('[DoctorHomeScreen] ⚠️ Data fetch timed out!');
+              return [[], []];
+            },
+          );
 
       final patients = results[0] as List;
       final todaySlots = results[1] as List;
-      final doctor = await _consultationService.getDoctorById(user.id);
 
+      debugPrint('[DoctorHomeScreen] ⏳ Fetching doctor details...');
+      final doctor = await _consultationService
+          .getDoctorById(user.id)
+          .timeout(const Duration(seconds: 5), onTimeout: () => null);
+
+      debugPrint('[DoctorHomeScreen] ✅ Data fetch complete. Updating state.');
       if (mounted) {
         setState(() {
           _user = user;
@@ -392,32 +404,45 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             ),
           ),
           // Featured Portrait Image in Hero for Web
-          if (_doctor?.photoUrl != null && _doctor!.photoUrl.isNotEmpty)
-            Container(
-              width: 200,
-              height: 200,
-              margin: const EdgeInsets.only(left: 40),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: context.primary.withValues(alpha: 0.2),
-                  width: 4,
-                ),
-                image: DecorationImage(
-                  image: NetworkImage(_doctor!.photoUrl),
-                  fit: BoxFit.cover,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: context.primary.withValues(alpha: 0.1),
-                    blurRadius: 32,
-                    offset: const Offset(0, 16),
-                  ),
-                ],
+          Container(
+            width: 200,
+            height: 200,
+            margin: const EdgeInsets.only(left: 40),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(32),
+              color: context.primary.withValues(alpha: 0.1),
+              border: Border.all(
+                color: context.primary.withValues(alpha: 0.2),
+                width: 4,
               ),
-            )
-          else
-            SizedBox(width: 400, child: _buildCarousel(const BoxConstraints())),
+              boxShadow: [
+                BoxShadow(
+                  color: context.primary.withValues(alpha: 0.1),
+                  blurRadius: 32,
+                  offset: const Offset(0, 16),
+                ),
+              ],
+            ),
+            child:
+                ((_doctor?.photoUrl == null || _doctor!.photoUrl.isEmpty) &&
+                    (_user?.photoUrl == null || _user!.photoUrl.isEmpty))
+                ? Center(
+                    child: Text(
+                      (_user?.firstName.isNotEmpty == true
+                              ? _user!.firstName[0]
+                              : '') +
+                          (_user?.lastName.isNotEmpty == true
+                              ? _user!.lastName[0]
+                              : ''),
+                      style: TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.w900,
+                        color: context.primary,
+                      ),
+                    ),
+                  )
+                : null,
+          ),
         ],
       ),
     );
@@ -636,25 +661,57 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                   ),
                 ),
               const Spacer(),
-              if (_doctor?.photoUrl != null && _doctor!.photoUrl.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: context.primary.withValues(alpha: 0.15),
-                        width: 2,
-                      ),
-                      image: DecorationImage(
-                        image: NetworkImage(_doctor!.photoUrl),
-                        fit: BoxFit.cover,
-                      ),
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: context.primary.withValues(alpha: 0.1),
+                    border: Border.all(
+                      color: context.primary.withValues(alpha: 0.15),
+                      width: 2,
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(22),
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: Text(
+                            (_user?.firstName.isNotEmpty == true
+                                    ? _user!.firstName[0]
+                                    : '') +
+                                (_user?.lastName.isNotEmpty == true
+                                    ? _user!.lastName[0]
+                                    : ''),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: context.primary,
+                            ),
+                          ),
+                        ),
+                        if ((_doctor?.photoUrl != null &&
+                                _doctor!.photoUrl.isNotEmpty) ||
+                            (_user?.photoUrl != null &&
+                                _user!.photoUrl.isNotEmpty))
+                          Positioned.fill(
+                            child: Image.network(
+                              _doctor?.photoUrl.isNotEmpty == true
+                                  ? _doctor!.photoUrl
+                                  : _user!.photoUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const SizedBox.shrink(),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
+              ),
               _buildHeaderAction(Icons.notifications_none_rounded, () {}),
               if (constraints.maxWidth <= 900)
                 _buildHeaderAction(Icons.logout_rounded, () async {

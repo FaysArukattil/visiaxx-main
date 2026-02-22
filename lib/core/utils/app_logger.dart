@@ -1,5 +1,6 @@
 ﻿import 'dart:io';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -10,6 +11,12 @@ class AppLogger {
 
   static Future initialize() async {
     if (_isInitialized) return;
+
+    if (kIsWeb) {
+      debugPrint('[AppLogger] Web detected. Skipping file-based logging.');
+      _isInitialized = true;
+      return;
+    }
 
     try {
       final directory = await getApplicationDocumentsDirectory();
@@ -28,9 +35,9 @@ class AppLogger {
       );
 
       _isInitialized = true;
-      debugPrint('[AppLogger] … Initialized. Log file: ${_logFile!.path}');
+      debugPrint('[AppLogger] Initialized. Log file: ${_logFile!.path}');
     } catch (e) {
-      debugPrint('[AppLogger] Œ Initialization failed: $e');
+      debugPrint('[AppLogger] Initialization failed: $e');
     }
   }
 
