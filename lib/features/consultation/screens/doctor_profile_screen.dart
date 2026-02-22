@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
@@ -30,7 +31,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   bool _isLoading = true;
   bool _isEditing = false;
   bool _isSaving = false;
-  File? _imageFile;
+  XFile? _pickedFile;
+  Uint8List? _webImageBytes;
 
   // Controllers
   late TextEditingController _firstNameController;
@@ -77,11 +79,26 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   }
 
   Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      setState(() {
-        _imageFile = File(image.path);
-      });
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70,
+      );
+      if (image != null) {
+        if (kIsWeb) {
+          final bytes = await image.readAsBytes();
+          setState(() {
+            _pickedFile = image;
+            _webImageBytes = bytes;
+          });
+        } else {
+          setState(() {
+            _pickedFile = image;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('[DoctorProfile] ❌ Error picking image: $e');
     }
   }
 
@@ -119,11 +136,11 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       String photoUrl = _user!.photoUrl;
 
       // 1. Upload new image to AWS S3 if picked
-      if (_imageFile != null) {
+      if (_pickedFile != null) {
         final uploadedUrl = await _s3Service.uploadProfileImage(
           userId: _user!.id,
           role: 'Doctors',
-          imageFile: _imageFile!,
+          imageFile: _pickedFile!,
         );
         if (uploadedUrl != null) {
           photoUrl = uploadedUrl;
@@ -167,7 +184,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
             _doctor = updatedDoctor;
             _isEditing = false;
             _isSaving = false;
-            _imageFile = null; // Clear picked image
+            _pickedFile = null; // Clear picked image
+            _webImageBytes = null;
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Profile updated successfully!')),
@@ -252,35 +270,12 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         ),
                       ),
                       actions: [
-                        if (_user != null)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 16),
-                            child: IconButton(
-                              onPressed: _isSaving
-                                  ? null
-                                  : () {
-                                      if (_isEditing) {
-                                        _saveProfile();
-                                      } else {
-                                        setState(() => _isEditing = true);
-                                      }
-                                    },
-                              icon: _isSaving
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : Icon(
-                                      _isEditing
-                                          ? Icons.check_circle_rounded
-                                          : Icons.edit_note_rounded,
-                                      color: _isEditing
-                                          ? Colors.green
-                                          : context.primary,
-                                    ),
+                        if (!_isEditing)
+                          IconButton(
+                            onPressed: () => setState(() => _isEditing = true),
+                            icon: Icon(
+                              Icons.edit_note_rounded,
+                              color: context.primary,
                             ),
                           ),
                       ],
@@ -308,8 +303,94 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                     ),
                   ],
                 ),
+                if (_isEditing) _buildProfessionalSaveButton(),
               ],
             ),
+    );
+  }
+
+  Widget _buildProfessionalSaveButton() {
+    return Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  context.surface.withValues(alpha: 0.0),
+                  context.surface.withValues(alpha: 0.9),
+                  context.surface,
+                ],
+              ),
+            ),
+            child: _buildActionButton(
+              label: 'Save Changes',
+              onTap: _saveProfile,
+              isLoading: _isSaving,
+              color: context.primary,
+              icon: Icons.check_circle_outline_rounded,
+            ),
+          ),
+        )
+        .animate()
+        .fadeIn(duration: 400.ms)
+        .slideY(begin: 0.2, curve: Curves.easeOut);
+  }
+
+  Widget _buildActionButton({
+    required String label,
+    required VoidCallback onTap,
+    bool isLoading = false,
+    required Color color,
+    required IconData icon,
+  }) {
+    return GestureDetector(
+      onTap: isLoading ? null : onTap,
+      child: Container(
+        height: 56,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Center(
+          child: isLoading
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2.5,
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, color: Colors.white, size: 20),
+                    const SizedBox(width: 12),
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
     );
   }
 
@@ -359,9 +440,14 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: context.primary.withValues(alpha: 0.1),
-                image: _imageFile != null
+                image: kIsWeb && _webImageBytes != null
                     ? DecorationImage(
-                        image: FileImage(_imageFile!),
+                        image: MemoryImage(_webImageBytes!),
+                        fit: BoxFit.cover,
+                      )
+                    : !kIsWeb && _pickedFile != null
+                    ? DecorationImage(
+                        image: FileImage(File(_pickedFile!.path)),
                         fit: BoxFit.cover,
                       )
                     : _user?.photoUrl != null && _user!.photoUrl.isNotEmpty
@@ -372,7 +458,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                     : null,
               ),
               child:
-                  (_imageFile == null &&
+                  (_pickedFile == null &&
+                      _webImageBytes == null &&
                       (_user?.photoUrl == null || _user!.photoUrl.isEmpty))
                   ? Center(
                       child: Text(
@@ -581,14 +668,25 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
               ? TextField(
                   controller: _bioController,
                   maxLines: 5,
+                  textAlignVertical: TextAlignVertical.top,
+                  cursorColor: context.primary,
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.normal,
+                  ),
+                  strutStyle: const StrutStyle(
+                    fontSize: 15,
+                    height: 1.6,
+                    forceStrutHeight: true,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Describe your expertise and background...',
                     hintStyle: TextStyle(
                       color: context.textSecondary.withValues(alpha: 0.5),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 0,
+                      vertical: 16,
                     ),
                     border: InputBorder.none,
                   ),
@@ -642,19 +740,26 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                     color: context.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 4),
                 if (isEditable)
                   TextField(
                     controller: controller,
                     keyboardType: keyboardType,
+                    textAlignVertical: TextAlignVertical.center,
+                    cursorColor: context.primary,
+                    cursorHeight: 18,
                     style: const TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 15,
                     ),
+                    strutStyle: const StrutStyle(
+                      fontSize: 15,
+                      height: 1.6,
+                      forceStrutHeight: true,
+                    ),
                     decoration: const InputDecoration(
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
+                      contentPadding: EdgeInsets.symmetric(vertical: 14),
                       border: InputBorder.none,
+                      isCollapsed: false,
                     ),
                   )
                 else
@@ -669,10 +774,15 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
             ),
           ),
           if (isEditable)
-            Icon(
-              Icons.edit_rounded,
-              size: 14,
-              color: context.primary.withValues(alpha: 0.5),
+            GestureDetector(
+              onTap: () {
+                // Handle edit action if needed, though the TextField is already editable
+              },
+              child: Icon(
+                Icons.edit_rounded,
+                size: 14,
+                color: context.primary.withValues(alpha: 0.8),
+              ),
             ),
         ],
       ),
@@ -704,12 +814,20 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
           ),
           TextField(
             controller: controller,
+            textAlignVertical: TextAlignVertical.center,
+            cursorColor: context.primary,
+            cursorHeight: 20,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            strutStyle: const StrutStyle(
+              fontSize: 16,
+              height: 1.6,
+              forceStrutHeight: true,
+            ),
             decoration: InputDecoration(
               hintText: hint,
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(vertical: 12),
               border: InputBorder.none,
+              isCollapsed: false,
             ),
           ),
         ],

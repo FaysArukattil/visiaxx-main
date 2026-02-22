@@ -1,5 +1,4 @@
-﻿import 'dart:io';
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,6 +6,7 @@ import '../../data/models/user_model.dart';
 import 'session_monitor_service.dart';
 import 'local_storage_service.dart';
 import 'aws_s3_storage_service.dart';
+import 'package:image_picker/image_picker.dart';
 
 /// Firebase Authentication Service
 class AuthService {
@@ -275,7 +275,7 @@ class AuthService {
     required UserRole role,
     String? practitionerCode,
     Map<String, dynamic>? doctorData,
-    File? profileImage,
+    XFile? profileImage,
   }) async {
     try {
       // 1. Backend Validation

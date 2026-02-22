@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:minio/minio.dart';
+import 'package:image_picker/image_picker.dart';
 import 'aws_credentials_manager.dart';
 
 /// AWS S3 Storage Service for uploading and downloading test results
@@ -613,7 +614,7 @@ class AWSS3StorageService {
   Future<String?> uploadProfileImage({
     required String userId,
     required String role, // e.g., 'Doctors'
-    required File imageFile,
+    required XFile imageFile,
   }) async {
     if (!isAvailable) return null;
 

@@ -4,8 +4,10 @@ import 'package:visiaxx/data/models/user_model.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/consultation_service.dart'; // Added
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/utils/ui_utils.dart';
+import '../../../data/models/doctor_model.dart'; // Added
 import 'doctor_home_screen.dart';
 import 'doctor_patients_screen.dart';
 import 'doctor_slot_management_screen.dart';
@@ -29,7 +31,9 @@ class _DoctorMainNavigationScreenState
   double _dragAccumX = 0;
 
   final _authService = AuthService();
+  final _consultationService = ConsultationService();
   UserModel? _user;
+  DoctorModel? _doctor;
   bool _isLoading = true;
 
   @override
@@ -43,19 +47,28 @@ class _DoctorMainNavigationScreenState
       _user = cachedUser;
       _isLoading = false;
     }
-    _loadUserData();
+    _loadData(); // Changed to _loadData
   }
 
-  Future<void> _loadUserData() async {
+  Future<void> _loadData() async {
+    // Renamed from _loadUserData to _loadData
     try {
       final user = _user ?? await _authService.getCurrentUserProfile();
-      if (mounted && user != null) {
-        setState(() {
-          _user = user;
-          _isLoading = false;
-        });
-      } else if (mounted) {
-        setState(() => _isLoading = false);
+      if (user != null) {
+        final doctor = await _consultationService.getDoctorById(
+          user.id,
+        ); // Fetch DoctorModel
+        if (mounted) {
+          setState(() {
+            _user = user;
+            _doctor = doctor; // Set _doctor
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     } catch (e) {
       debugPrint('[DoctorMainNavigation] ❌ Error loading user data: $e');
@@ -269,23 +282,43 @@ class _DoctorMainNavigationScreenState
               children: [
                 if (isProfile && _user != null)
                   Container(
-                    width: 28,
-                    height: 28,
+                    width: 28, // Changed from 70
+                    height: 28, // Changed from 70
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isSelected
+                      color:
+                          isSelected // Kept original logic for color
                           ? primaryColor
                           : primaryColor.withValues(alpha: 0.1),
+                      image:
+                          _doctor?.photoUrl != null &&
+                              _doctor!.photoUrl.isNotEmpty
+                          ? DecorationImage(
+                              image: NetworkImage(_doctor!.photoUrl),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
                     ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      _user!.firstName.substring(0, 1).toUpperCase(),
-                      style: TextStyle(
-                        color: isSelected ? AppColors.white : primaryColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
+                    child:
+                        (_doctor?.photoUrl == null || _doctor!.photoUrl.isEmpty)
+                        ? Center(
+                            child: Text(
+                              _user?.firstName.isNotEmpty ==
+                                      true // Changed from fullName to firstName
+                                  ? _user!.firstName
+                                        .substring(0, 1)
+                                        .toUpperCase() // Kept original logic for initial
+                                  : 'D',
+                              style: TextStyle(
+                                fontSize: 12, // Changed from 24
+                                fontWeight: FontWeight.w900,
+                                color: isSelected
+                                    ? AppColors.white
+                                    : primaryColor, // Kept original logic for color
+                              ),
+                            ),
+                          )
+                        : null,
                   )
                 else
                   Icon(

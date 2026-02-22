@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../data/models/user_model.dart';
+import '../../../data/models/doctor_model.dart';
 import '../../../data/models/consultation_booking_model.dart';
 import '../../../core/services/consultation_service.dart';
 import '../../../core/extensions/theme_extension.dart';
@@ -23,6 +24,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   final _authService = AuthService();
   final _consultationService = ConsultationService();
   UserModel? _user;
+  DoctorModel? _doctor;
   bool _isLoading = true;
   int _totalPatients = 0;
   int _todaysSlots = 0;
@@ -87,10 +89,12 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       final patients = results[0] as List;
       final bookings = results[1] as List<ConsultationBookingModel>;
       final todaySlots = results[2] as List;
+      final doctor = await _consultationService.getDoctorById(user.id);
 
       if (mounted) {
         setState(() {
           _user = user;
+          _doctor = doctor;
           _totalPatients = patients.length;
           _todaysSlots = todaySlots.length;
           _completedConsultations = bookings
@@ -295,6 +299,19 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                     color: context.primary.withValues(alpha: 0.7),
                   ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  _doctor?.specialty.isNotEmpty == true
+                      ? _doctor!.specialty.toUpperCase()
+                      : 'CERTIFIED DOCTOR',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: context.primary,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Text(
                   'Dr. ${_user?.fullName ?? ""}',
                   style: TextStyle(
@@ -337,13 +354,33 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
               ],
             ),
           ),
-          // Featured Carousel in Hero for Web
-          SizedBox(
-            width: 400,
-            child: _buildCarousel(
-              const BoxConstraints(),
-            ), // Pass empty constraints, carousel handles it
-          ),
+          // Featured Portrait Image in Hero for Web
+          if (_doctor?.photoUrl != null && _doctor!.photoUrl.isNotEmpty)
+            Container(
+              width: 200,
+              height: 200,
+              margin: const EdgeInsets.only(left: 40),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: context.primary.withValues(alpha: 0.2),
+                  width: 4,
+                ),
+                image: DecorationImage(
+                  image: NetworkImage(_doctor!.photoUrl),
+                  fit: BoxFit.cover,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: context.primary.withValues(alpha: 0.1),
+                    blurRadius: 32,
+                    offset: const Offset(0, 16),
+                  ),
+                ],
+              ),
+            )
+          else
+            SizedBox(width: 400, child: _buildCarousel(const BoxConstraints())),
         ],
       ),
     );
@@ -562,6 +599,25 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                   ),
                 ),
               const Spacer(),
+              if (_doctor?.photoUrl != null && _doctor!.photoUrl.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: context.primary.withValues(alpha: 0.15),
+                        width: 2,
+                      ),
+                      image: DecorationImage(
+                        image: NetworkImage(_doctor!.photoUrl),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
               _buildHeaderAction(Icons.notifications_none_rounded, () {}),
               if (constraints.maxWidth <= 900)
                 _buildHeaderAction(Icons.logout_rounded, () async {
@@ -1654,15 +1710,8 @@ class _WideServiceCard extends StatelessWidget {
 class _WebGlassCard extends StatefulWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
-  final double blur;
-  final double borderRadius;
 
-  const _WebGlassCard({
-    required this.child,
-    this.padding,
-    this.blur = 20,
-    this.borderRadius = 24,
-  });
+  const _WebGlassCard({required this.child, this.padding});
 
   @override
   State<_WebGlassCard> createState() => _WebGlassCardState();
@@ -1683,7 +1732,7 @@ class _WebGlassCardState extends State<_WebGlassCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(widget.borderRadius),
+            borderRadius: BorderRadius.circular(24),
             boxShadow: [
               if (_isHovered)
                 BoxShadow(
@@ -1695,19 +1744,16 @@ class _WebGlassCardState extends State<_WebGlassCard> {
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(widget.borderRadius),
+            borderRadius: BorderRadius.circular(24),
             child: BackdropFilter(
-              filter: ImageFilter.blur(
-                sigmaX: widget.blur,
-                sigmaY: widget.blur,
-              ),
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
               child: Container(
                 padding: widget.padding,
                 decoration: BoxDecoration(
                   color: context.surface.withValues(
                     alpha: _isHovered ? 0.6 : 0.4,
                   ),
-                  borderRadius: BorderRadius.circular(widget.borderRadius),
+                  borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: _isHovered
                         ? context.primary.withValues(alpha: 0.3)

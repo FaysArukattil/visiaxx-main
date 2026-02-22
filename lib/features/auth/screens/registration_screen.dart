@@ -1,4 +1,5 @@
 ﻿import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -40,7 +41,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   bool _isPasswordVisible = false;
   bool _isLoading = false;
   String? _errorMessage;
-  File? _profileImage;
+  XFile? _profileImage;
   final ImagePicker _picker = ImagePicker();
 
   Future<void> _pickImage(ImageSource source) async {
@@ -54,7 +55,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
       if (pickedFile != null) {
         setState(() {
-          _profileImage = File(pickedFile.path);
+          _profileImage = pickedFile;
         });
       }
     } catch (e) {
@@ -657,10 +658,19 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                 color: context.primary.withValues(alpha: 0.05),
                                 shape: BoxShape.circle,
                                 image: _profileImage != null
-                                    ? DecorationImage(
-                                        image: FileImage(_profileImage!),
-                                        fit: BoxFit.cover,
-                                      )
+                                    ? (kIsWeb
+                                          ? DecorationImage(
+                                              image: NetworkImage(
+                                                _profileImage!.path,
+                                              ), // Blob on web
+                                              fit: BoxFit.cover,
+                                            )
+                                          : DecorationImage(
+                                              image: FileImage(
+                                                File(_profileImage!.path),
+                                              ),
+                                              fit: BoxFit.cover,
+                                            ))
                                     : null,
                               ),
                               child: _profileImage == null
