@@ -3,6 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/consultation_service.dart';
+import '../../../data/models/doctor_model.dart';
 import '../../../data/models/user_model.dart';
 import '../../../core/widgets/eye_loader.dart';
 
@@ -15,22 +17,116 @@ class DoctorProfileScreen extends StatefulWidget {
 
 class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   final _authService = AuthService();
+  final _consultationService = ConsultationService();
   UserModel? _user;
+  DoctorModel? _doctor;
   bool _isLoading = true;
+  bool _isEditing = false;
+  bool _isSaving = false;
+
+  late TextEditingController _bioController;
+  late TextEditingController _expController;
+  late TextEditingController _specialtyController;
+  late TextEditingController _degreeController;
+  late TextEditingController _phoneController;
 
   @override
   void initState() {
     super.initState();
+    _bioController = TextEditingController();
+    _expController = TextEditingController();
+    _specialtyController = TextEditingController();
+    _degreeController = TextEditingController();
+    _phoneController = TextEditingController();
     _loadProfile();
+  }
+
+  @override
+  void dispose() {
+    _bioController.dispose();
+    _expController.dispose();
+    _specialtyController.dispose();
+    _degreeController.dispose();
+    _phoneController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProfile() async {
     final user = await _authService.getCurrentUserProfile();
-    if (mounted) {
-      setState(() {
-        _user = user;
-        _isLoading = false;
-      });
+    if (user != null) {
+      final doctor = await _consultationService.getDoctorById(user.id);
+      if (mounted) {
+        setState(() {
+          _user = user;
+          _doctor = doctor;
+          if (doctor != null) {
+            _bioController.text = doctor.bio;
+            _expController.text = doctor.experienceYears.toString();
+            _specialtyController.text = doctor.specialty;
+            _degreeController.text = doctor.degree;
+          }
+          _phoneController.text = user.phone;
+          _isLoading = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    if (_user == null || _doctor == null) return;
+
+    setState(() => _isSaving = true);
+
+    try {
+      final experienceYears =
+          int.tryParse(_expController.text) ?? _doctor!.experienceYears;
+
+      // Update Professional Profile (DoctorModel)
+      final updatedDoctor = _doctor!.copyWith(
+        bio: _bioController.text.trim(),
+        experienceYears: experienceYears,
+        specialty: _specialtyController.text.trim(),
+        degree: _degreeController.text.trim(),
+      );
+
+      final success = await _consultationService.updateDoctorProfile(
+        updatedDoctor,
+      );
+
+      if (success) {
+        // Update Basic Profile (UserModel - Phone) if changed
+        if (_user!.phone != _phoneController.text.trim()) {
+          final updatedUser = _user!.copyWith(
+            phone: _phoneController.text.trim(),
+          );
+          await _authService.updateUserProfile(updatedUser);
+          _user = updatedUser;
+        }
+
+        if (mounted) {
+          setState(() {
+            _doctor = updatedDoctor;
+            _isEditing = false;
+            _isSaving = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile updated successfully!')),
+          );
+        }
+      } else {
+        throw Exception('Failed to update doctor profile');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 
@@ -97,6 +193,39 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                           letterSpacing: -0.5,
                         ),
                       ),
+                      actions: [
+                        if (_user != null)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 16),
+                            child: IconButton(
+                              onPressed: _isSaving
+                                  ? null
+                                  : () {
+                                      if (_isEditing) {
+                                        _saveProfile();
+                                      } else {
+                                        setState(() => _isEditing = true);
+                                      }
+                                    },
+                              icon: _isSaving
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Icon(
+                                      _isEditing
+                                          ? Icons.check_circle_rounded
+                                          : Icons.edit_note_rounded,
+                                      color: _isEditing
+                                          ? Colors.green
+                                          : context.primary,
+                                    ),
+                            ),
+                          ),
+                      ],
                     ),
                     SliverPadding(
                       padding: const EdgeInsets.symmetric(
@@ -107,6 +236,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         child: Column(
                           children: [
                             _buildProfileHeader(),
+                            const SizedBox(height: 32),
+                            _buildBioSection(),
                             const SizedBox(height: 40),
                             _buildSectionHeader('Professional Information'),
                             _buildInfoSection(),
@@ -222,31 +353,69 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
           ],
         ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
         const SizedBox(height: 20),
-        Text(
-          'Dr. ${_user!.fullName}',
-          style: const TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.5,
+        if (_isEditing)
+          Column(
+            children: [
+              _buildFullWidthTextField(
+                _specialtyController,
+                'Specialty',
+                hint: 'e.g. Ophthalmology',
+              ),
+              const SizedBox(height: 12),
+              _buildFullWidthTextField(
+                _degreeController,
+                'Degree',
+                hint: 'e.g. MBBS, MS',
+              ),
+            ],
+          )
+        else
+          Column(
+            children: [
+              Text(
+                'Dr. ${_user!.fullName}',
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: context.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  _doctor?.specialty.isNotEmpty == true
+                      ? _doctor!.specialty.toUpperCase()
+                      : 'CERTIFIED DOCTOR',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    color: context.primary,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+              if (_doctor?.degree.isNotEmpty == true)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    _doctor!.degree,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: context.textSecondary,
+                    ),
+                  ),
+                ),
+            ],
           ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          decoration: BoxDecoration(
-            color: context.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            'CERTIFIED DOCTOR',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              color: context.primary,
-              letterSpacing: 1,
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -267,10 +436,20 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       ),
       child: Column(
         children: [
-          _buildInfoTile(
-            'Full Name',
-            _user!.fullName,
-            Icons.person_outline_rounded,
+          _buildEditableTile(
+            'Years of Experience',
+            _expController,
+            Icons.work_history_rounded,
+            isEditable: _isEditing,
+            keyboardType: TextInputType.number,
+          ),
+          _buildDivider(),
+          _buildEditableTile(
+            'Phone Number',
+            _phoneController,
+            Icons.phone_android_rounded,
+            isEditable: _isEditing,
+            keyboardType: TextInputType.phone,
           ),
           _buildDivider(),
           _buildInfoTile(
@@ -280,19 +459,168 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
           ),
           _buildDivider(),
           _buildInfoTile(
-            'Phone Number',
-            _user!.phone,
-            Icons.phone_android_rounded,
-          ),
-          _buildDivider(),
-          _buildInfoTile(
-            'Profile Stats',
-            '${_user!.age} Years • ${_user!.sex.toUpperCase()}',
-            Icons.query_stats_rounded,
+            'Registration Number',
+            _doctor?.registrationNumber ?? 'Not set',
+            Icons.badge_rounded,
           ),
         ],
       ),
     ).animate().fadeIn(duration: 500.ms, delay: 200.ms).slideY(begin: 0.05);
+  }
+
+  Widget _buildBioSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('Professional Bio'),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: context.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: context.dividerColor.withValues(alpha: 0.05),
+            ),
+          ),
+          child: _isEditing
+              ? TextField(
+                  controller: _bioController,
+                  maxLines: 5,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Describe your expertise and background...',
+                    hintStyle: TextStyle(
+                      color: context.textSecondary.withValues(alpha: 0.5),
+                    ),
+                    border: InputBorder.none,
+                  ),
+                )
+              : Text(
+                  _doctor?.bio.isNotEmpty == true
+                      ? _doctor!.bio
+                      : 'No bio added yet. Tell patients about your expertise!',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: _doctor?.bio.isNotEmpty == true
+                        ? context.onSurface
+                        : context.textSecondary.withValues(alpha: 0.5),
+                    height: 1.5,
+                  ),
+                ),
+        ),
+      ],
+    ).animate().fadeIn(duration: 500.ms, delay: 100.ms);
+  }
+
+  Widget _buildEditableTile(
+    String label,
+    TextEditingController controller,
+    IconData icon, {
+    bool isEditable = false,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: context.primary.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: context.primary, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: context.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                if (isEditable)
+                  TextField(
+                    controller: controller,
+                    keyboardType: keyboardType,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                    ),
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                      border: InputBorder.none,
+                    ),
+                  )
+                else
+                  Text(
+                    controller.text,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (isEditable)
+            Icon(
+              Icons.edit_rounded,
+              size: 14,
+              color: context.primary.withValues(alpha: 0.5),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFullWidthTextField(
+    TextEditingController controller,
+    String label, {
+    String? hint,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: context.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.primary.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: context.primary,
+            ),
+          ),
+          TextField(
+            controller: controller,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            decoration: InputDecoration(
+              hintText: hint,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 8),
+              border: InputBorder.none,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildInfoTile(String label, String value, IconData icon) {

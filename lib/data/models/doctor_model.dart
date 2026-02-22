@@ -84,4 +84,38 @@ class DoctorModel {
       'metadata': metadata,
     };
   }
+
+  DoctorModel copyWith({
+    String? id,
+    String? firstName,
+    String? lastName,
+    String? specialty,
+    String? degree,
+    String? registrationNumber,
+    String? bio,
+    String? photoUrl,
+    String? location,
+    double? rating,
+    int? reviewCount,
+    int? experienceYears,
+    List<String>? availableServices,
+    Map<String, dynamic>? metadata,
+  }) {
+    return DoctorModel(
+      id: id ?? this.id,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      specialty: specialty ?? this.specialty,
+      degree: degree ?? this.degree,
+      registrationNumber: registrationNumber ?? this.registrationNumber,
+      bio: bio ?? this.bio,
+      photoUrl: photoUrl ?? this.photoUrl,
+      location: location ?? this.location,
+      rating: rating ?? this.rating,
+      reviewCount: reviewCount ?? this.reviewCount,
+      experienceYears: experienceYears ?? this.experienceYears,
+      availableServices: availableServices ?? this.availableServices,
+      metadata: metadata ?? this.metadata,
+    );
+  }
 }

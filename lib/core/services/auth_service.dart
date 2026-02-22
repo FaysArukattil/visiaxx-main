@@ -628,6 +628,36 @@ class AuthService {
     return userData?.role;
   }
 
+  /// Update user profile in Firestore and local cache
+  Future<bool> updateUserProfile(UserModel user) async {
+    try {
+      final lookupDoc = await _firestore
+          .collection('all_users_lookup')
+          .doc(user.id)
+          .get();
+
+      if (lookupDoc.exists && lookupDoc.data() != null) {
+        final collection = lookupDoc.data()!['collection'] as String;
+        final identityString = lookupDoc.data()!['identityString'] as String;
+
+        await _firestore
+            .collection(collection)
+            .doc(identityString)
+            .update(user.toMap());
+
+        // Update local cache
+        await LocalStorageService().saveUserProfile(user);
+        _cachedUser = user;
+
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('[AuthService] Error updating user profile: $e');
+      return false;
+    }
+  }
+
   /// Update user's agreement to terms and conditions status
   Future<bool> updateAgreementStatus(String uid, bool agreed) async {
     try {

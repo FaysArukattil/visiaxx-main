@@ -46,6 +46,20 @@ class ConsultationService {
     }
   }
 
+  /// Update doctor professional profile
+  Future<bool> updateDoctorProfile(DoctorModel doctor) async {
+    try {
+      await _firestore
+          .collection(doctorsCollection)
+          .doc(doctor.id)
+          .update(doctor.toFirestore());
+      return true;
+    } catch (e) {
+      print('[ConsultationService] Error updating doctor profile: $e');
+      return false;
+    }
+  }
+
   // --- Slot Operations ---
 
   /// Fetch available time slots for a doctor on a specific date
