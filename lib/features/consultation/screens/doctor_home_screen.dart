@@ -145,46 +145,51 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
           SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                return CustomScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  slivers: [
-                    SliverToBoxAdapter(child: _buildHeader(constraints)),
-                    SliverPadding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: constraints.maxWidth * 0.045,
-                        vertical: 16,
-                      ),
-                      sliver: SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildCarousel(constraints),
-                            const SizedBox(height: 12),
-                            _buildCarouselIndicators(),
-                            const SizedBox(height: 32),
-                            _buildSectionTitle(
-                              'Live Analytics',
-                              Icons.insights_rounded,
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: CustomScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      slivers: [
+                        SliverToBoxAdapter(child: _buildHeader(constraints)),
+                        SliverPadding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: constraints.maxWidth * 0.045,
+                            vertical: 16,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildCarousel(constraints),
+                                const SizedBox(height: 12),
+                                _buildCarouselIndicators(),
+                                const SizedBox(height: 32),
+                                _buildSectionTitle(
+                                  'Live Analytics',
+                                  Icons.insights_rounded,
+                                ),
+                                _buildStatsRow(constraints),
+                                const SizedBox(height: 32),
+                                _buildSectionTitle(
+                                  'Quick Actions',
+                                  Icons.bolt_rounded,
+                                ),
+                                _buildQuickActionsGrid(constraints),
+                                const SizedBox(height: 32),
+                                _buildSectionTitle(
+                                  'Upcoming Consultations',
+                                  Icons.event_note_rounded,
+                                ),
+                                _buildUpcomingConsultations(),
+                                const SizedBox(height: 100),
+                              ],
                             ),
-                            _buildStatsRow(constraints),
-                            const SizedBox(height: 32),
-                            _buildSectionTitle(
-                              'Quick Actions',
-                              Icons.bolt_rounded,
-                            ),
-                            _buildQuickActionsGrid(constraints),
-                            const SizedBox(height: 32),
-                            _buildSectionTitle(
-                              'Upcoming Consultations',
-                              Icons.event_note_rounded,
-                            ),
-                            _buildUpcomingConsultations(),
-                            const SizedBox(height: 100),
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 );
               },
             ),
@@ -209,7 +214,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         children: [
           Row(
             children: [
-              if (constraints.maxWidth <= 800)
+              if (constraints.maxWidth <= 900)
                 Container(
                   width: logoWidth,
                   height: logoHeight,
@@ -237,7 +242,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                 ),
               const Spacer(),
               _buildHeaderAction(Icons.notifications_none_rounded, () {}),
-              if (constraints.maxWidth <= 800)
+              if (constraints.maxWidth <= 900)
                 _buildHeaderAction(Icons.logout_rounded, () async {
                   final nav = Navigator.of(context);
                   await _authService.signOut();
@@ -783,7 +788,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   }
 
   Widget _buildStatsRow(BoxConstraints constraints) {
-    final isWide = constraints.maxWidth > 800;
+    final isWide = constraints.maxWidth > 900;
     final content = [
       _statCard(
         'PATIENTS',
@@ -875,7 +880,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
 
   Widget _buildQuickActionsGrid(BoxConstraints constraints) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isWide = constraints.maxWidth > 800;
+    final isWide = constraints.maxWidth > 900;
     final cardSpacing = 16.0;
     final compactCardHeight = 100.0;
     final wideCardHeight = 70.0;
