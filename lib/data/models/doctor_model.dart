@@ -47,8 +47,15 @@ class DoctorModel {
 
   factory DoctorModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+
+    // Extract UID from identityString (e.g., First_Last_Age_Sex_UID)
+    String uid = data['id'] ?? doc.id;
+    if (uid.contains('_')) {
+      uid = uid.split('_').last;
+    }
+
     return DoctorModel(
-      id: doc.id,
+      id: uid,
       firstName: data['firstName'] ?? '',
       lastName: data['lastName'] ?? '',
       specialty: data['specialty'] ?? '',

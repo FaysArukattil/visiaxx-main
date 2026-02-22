@@ -33,13 +33,33 @@ class ConsultationService {
   /// Get specific doctor details
   Future<DoctorModel?> getDoctorById(String doctorId) async {
     try {
-      final doc = await _firestore
+      // 1. Try direct fetch (works if doctorId is identityString)
+      var doc = await _firestore
           .collection(doctorsCollection)
           .doc(doctorId)
           .get();
+
       if (doc.exists) {
         return DoctorModel.fromFirestore(doc);
       }
+
+      // 2. Not found? Try UID-based lookup from all_users_lookup
+      final lookupDoc = await _firestore
+          .collection('all_users_lookup')
+          .doc(doctorId)
+          .get();
+
+      if (lookupDoc.exists && lookupDoc.data() != null) {
+        final identity = lookupDoc.data()!['identityString'] as String;
+        doc = await _firestore
+            .collection(doctorsCollection)
+            .doc(identity)
+            .get();
+        if (doc.exists) {
+          return DoctorModel.fromFirestore(doc);
+        }
+      }
+
       return null;
     } catch (e) {
       print('[ConsultationService] Error fetching doctor $doctorId: $e');
