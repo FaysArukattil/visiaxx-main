@@ -9,6 +9,7 @@ import '../../../data/models/consultation_booking_model.dart';
 import '../../../core/services/consultation_service.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../core/utils/ui_utils.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
   const DoctorHomeScreen({super.key});
@@ -564,9 +565,12 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
               _buildHeaderAction(Icons.notifications_none_rounded, () {}),
               if (constraints.maxWidth <= 900)
                 _buildHeaderAction(Icons.logout_rounded, () async {
-                  final nav = Navigator.of(context);
-                  await _authService.signOut();
-                  nav.pushReplacementNamed('/login');
+                  final confirm = await UIUtils.showLogoutConfirmation(context);
+                  if (confirm == true) {
+                    final nav = Navigator.of(context);
+                    await _authService.signOut();
+                    nav.pushReplacementNamed('/login');
+                  }
                 }),
             ],
           ),

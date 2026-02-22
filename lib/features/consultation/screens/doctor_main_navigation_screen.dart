@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../core/utils/ui_utils.dart';
 import 'doctor_home_screen.dart';
 import 'doctor_patients_screen.dart';
 import 'doctor_slot_management_screen.dart';
@@ -335,9 +336,12 @@ class _DoctorMainNavigationScreenState
       color: Colors.transparent,
       child: InkWell(
         onTap: () async {
-          final nav = Navigator.of(context);
-          await _authService.signOut();
-          nav.pushReplacementNamed('/login');
+          final confirm = await UIUtils.showLogoutConfirmation(context);
+          if (confirm == true) {
+            final nav = Navigator.of(context);
+            await _authService.signOut();
+            nav.pushReplacementNamed('/login');
+          }
         },
         borderRadius: BorderRadius.circular(16),
         child: Container(

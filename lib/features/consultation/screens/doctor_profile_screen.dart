@@ -10,6 +10,7 @@ import '../../../core/services/aws_s3_storage_service.dart';
 import '../../../data/models/doctor_model.dart';
 import '../../../data/models/user_model.dart';
 import '../../../core/widgets/eye_loader.dart';
+import '../../../core/utils/ui_utils.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   const DoctorProfileScreen({super.key});
@@ -776,9 +777,14 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () => _authService.signOut().then(
-          (_) => Navigator.pushReplacementNamed(context, '/login'),
-        ),
+        onTap: () async {
+          final confirm = await UIUtils.showLogoutConfirmation(context);
+          if (confirm == true) {
+            final nav = Navigator.of(context);
+            await _authService.signOut();
+            nav.pushReplacementNamed('/login');
+          }
+        },
         child: Container(
           height: 60,
           decoration: BoxDecoration(
