@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -102,97 +103,398 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       return const Center(child: EyeLoader(size: 40));
     }
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          // Background Decorations
-          Positioned(
-            top: -100,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    context.primary.withValues(alpha: 0.08),
-                    context.primary.withValues(alpha: 0.0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 100,
-            left: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.secondary.withValues(alpha: 0.05),
-                    AppColors.secondary.withValues(alpha: 0.0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1200),
-                    child: CustomScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      slivers: [
-                        SliverToBoxAdapter(child: _buildHeader(constraints)),
-                        SliverPadding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: constraints.maxWidth * 0.045,
-                            vertical: 16,
-                          ),
-                          sliver: SliverToBoxAdapter(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildCarousel(constraints),
-                                const SizedBox(height: 12),
-                                _buildCarouselIndicators(),
-                                const SizedBox(height: 32),
-                                _buildSectionTitle(
-                                  'Live Analytics',
-                                  Icons.insights_rounded,
-                                ),
-                                _buildStatsRow(constraints),
-                                const SizedBox(height: 32),
-                                _buildSectionTitle(
-                                  'Quick Actions',
-                                  Icons.bolt_rounded,
-                                ),
-                                _buildQuickActionsGrid(constraints),
-                                const SizedBox(height: 32),
-                                _buildSectionTitle(
-                                  'Upcoming Consultations',
-                                  Icons.event_note_rounded,
-                                ),
-                                _buildUpcomingConsultations(),
-                                const SizedBox(height: 100),
-                              ],
-                            ),
-                          ),
-                        ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWeb = constraints.maxWidth > 900;
+        return Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: Stack(
+            children: [
+              // Background Decorations
+              Positioned(
+                top: -100,
+                right: -100,
+                child: Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        context.primary.withValues(alpha: 0.08),
+                        context.primary.withValues(alpha: 0.0),
                       ],
                     ),
                   ),
-                );
+                ),
+              ),
+              Positioned(
+                bottom: 100,
+                left: -50,
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        AppColors.secondary.withValues(alpha: 0.05),
+                        AppColors.secondary.withValues(alpha: 0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              SafeArea(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: isWeb
+                        ? _buildWebLayout(constraints)
+                        : _buildMobileLayout(constraints),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMobileLayout(BoxConstraints constraints) {
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        SliverToBoxAdapter(child: _buildHeader(constraints)),
+        SliverPadding(
+          padding: EdgeInsets.symmetric(
+            horizontal: constraints.maxWidth * 0.045,
+            vertical: 16,
+          ),
+          sliver: SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildCarousel(constraints),
+                const SizedBox(height: 12),
+                _buildCarouselIndicators(),
+                const SizedBox(height: 32),
+                _buildSectionTitle('Live Analytics', Icons.insights_rounded),
+                _buildStatsRow(constraints),
+                const SizedBox(height: 32),
+                _buildSectionTitle('Quick Actions', Icons.bolt_rounded),
+                _buildQuickActionsGrid(constraints),
+                const SizedBox(height: 32),
+                _buildSectionTitle(
+                  'Upcoming Consultations',
+                  Icons.event_note_rounded,
+                ),
+                _buildUpcomingConsultations(),
+                const SizedBox(height: 100),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWebLayout(BoxConstraints constraints) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Web Hero Section
+          _buildWebHero(),
+          const SizedBox(height: 40),
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left Column: Stats & Patients
+              Expanded(
+                flex: 65,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle(
+                      'Live Analytics',
+                      Icons.insights_rounded,
+                    ),
+                    _buildWebStatsGrid(),
+                    const SizedBox(height: 48),
+                    _buildSectionTitle('Patient Hub', Icons.people_rounded),
+                    _buildWebPatientHub(),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 40),
+
+              // Right Column: Tools & Analytics
+              Expanded(
+                flex: 35,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('Command Center', Icons.bolt_rounded),
+                    _buildWebActionPalette(),
+                    const SizedBox(height: 48),
+                    _buildSectionTitle(
+                      'Performance brief',
+                      Icons.analytics_rounded,
+                    ),
+                    _buildWebAnalyticsBrief(),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 60),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWebHero() {
+    return _WebGlassCard(
+      padding: const EdgeInsets.all(32),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Welcome Home,',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: context.primary.withValues(alpha: 0.7),
+                  ),
+                ),
+                Text(
+                  'Dr. ${_user?.fullName ?? ""}',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w900,
+                    color: context.onSurface,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: context.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.auto_awesome_rounded,
+                        color: context.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Your patient flow is up 12% today. Great job!',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: context.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Featured Carousel in Hero for Web
+          SizedBox(
+            width: 400,
+            child: _buildCarousel(
+              const BoxConstraints(),
+            ), // Pass empty constraints, carousel handles it
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWebStatsGrid() {
+    return Row(
+      children: [
+        Expanded(
+          child: _WebGlassCard(
+            child: _statCard(
+              'TOTAL PATIENTS',
+              _totalPatients.toString(),
+              Icons.people_rounded,
+              Colors.blue,
+            ),
+          ),
+        ),
+        const SizedBox(width: 20),
+        Expanded(
+          child: _WebGlassCard(
+            child: _statCard(
+              'TODAY SLOTS',
+              _todaysSlots.toString(),
+              Icons.schedule_rounded,
+              Colors.orange,
+            ),
+          ),
+        ),
+        const SizedBox(width: 20),
+        Expanded(
+          child: _WebGlassCard(
+            child: _statCard(
+              'COMPLETED',
+              _completedConsultations.toString(),
+              Icons.verified_rounded,
+              Colors.green,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWebPatientHub() {
+    return _WebGlassCard(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Today\'s Schedule',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: context.onSurface,
+                ),
+              ),
+              const Spacer(),
+              _buildHeaderAction(Icons.filter_list_rounded, () {}),
+              _buildHeaderAction(Icons.search_rounded, () {}),
+            ],
+          ),
+          const SizedBox(height: 24),
+          if (_upcomingBookings.isEmpty)
+            _buildUpcomingConsultations()
+          else
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _upcomingBookings.length,
+              itemBuilder: (context, index) {
+                final booking = _upcomingBookings[index];
+                return _BookingTile(booking: booking, isWeb: true);
               },
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWebActionPalette() {
+    return _WebGlassCard(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          _WebActionTile(
+            icon: Icons.pending_actions_rounded,
+            title: 'Review Requests',
+            subtitle: '${_upcomingBookings.length} pending',
+            color: Colors.orange,
+            onTap: () => Navigator.pushNamed(context, '/doctor-booking-review'),
+          ),
+          const SizedBox(height: 16),
+          _WebActionTile(
+            icon: Icons.calendar_today_rounded,
+            title: 'Manage Slots',
+            subtitle: 'Update schedule',
+            color: context.primary,
+            onTap: () => Navigator.pushNamed(context, '/doctor-slots'),
+          ),
+          const SizedBox(height: 16),
+          _WebActionTile(
+            icon: Icons.videocam_rounded,
+            title: 'Virtual Clinic',
+            subtitle: 'Start tele-health',
+            color: Colors.blue,
+            onTap: () {},
+          ),
+          const SizedBox(height: 16),
+          _WebActionTile(
+            icon: Icons.folder_shared_rounded,
+            title: 'Patient Vault',
+            subtitle: 'Medical records',
+            color: Colors.teal,
+            onTap: () {},
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWebAnalyticsBrief() {
+    return _WebGlassCard(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.trending_up_rounded,
+                  color: Colors.green,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Response Rate',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    '98% positive feedback',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const LinearProgressIndicator(
+            value: 0.98,
+            backgroundColor: Colors.transparent,
+            valueColor: AlwaysStoppedAnimation(Colors.green),
+            borderRadius: BorderRadius.all(Radius.circular(10)),
+            minHeight: 8,
           ),
         ],
       ),
@@ -667,26 +969,14 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             offset: const Offset(0, 3),
           ),
         ],
-        border: Border.all(
-          color: context.primary.withValues(alpha: 0.1),
-          width: 0.5,
-        ),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Image.asset(
           imagePath,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              color: context.primary.withValues(alpha: 0.1),
-              child: Icon(
-                Icons.person,
-                color: context.primary.withValues(alpha: 0.6),
-                size: imageWidth * 0.4,
-              ),
-            );
-          },
+          errorBuilder: (context, error, stackTrace) =>
+              Icon(Icons.person, color: context.primary, size: 20),
         ),
       ),
     );
@@ -697,101 +987,67 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     double screenWidth,
     double carouselHeight,
   ) {
-    return LayoutBuilder(
-      builder: (context, cardConstraints) {
-        final availableWidth = cardConstraints.maxWidth;
-        final availableHeight = cardConstraints.maxHeight;
-
-        return FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: SizedBox(
-            width: availableWidth,
-            height: availableHeight,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  slide['heading'] as String,
-                  style: TextStyle(
-                    color: context.primary,
-                    fontSize: (availableWidth * 0.06).clamp(16.0, 24.0),
-                    fontWeight: FontWeight.bold,
-                    height: 1.1,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: (availableHeight * 0.05).clamp(6.0, 12.0)),
-                Text(
-                  slide['content'] as String,
-                  style: TextStyle(
-                    color: context.onSurface.withValues(alpha: 0.6),
-                    fontSize: (availableWidth * 0.04).clamp(12.0, 16.0),
-                    height: 1.4,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: (availableHeight * 0.06).clamp(8.0, 16.0)),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: context.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    slide['supportText'] as String,
-                    style: TextStyle(
-                      color: context.primary,
-                      fontSize: (availableWidth * 0.035).clamp(10.0, 13.5),
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          slide['heading'] as String,
+          style: TextStyle(
+            color: context.primary,
+            fontSize: (screenWidth * 0.05).clamp(16.0, 22.0),
+            fontWeight: FontWeight.bold,
           ),
-        );
-      },
+        ),
+        const SizedBox(height: 8),
+        Text(
+          slide['content'] as String,
+          style: TextStyle(
+            color: context.onSurface.withValues(alpha: 0.7),
+            fontSize: (screenWidth * 0.032).clamp(11.0, 14.0),
+            height: 1.3,
+          ),
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          slide['supportText'] as String,
+          style: TextStyle(
+            color: context.primary.withValues(alpha: 0.6),
+            fontSize: (screenWidth * 0.028).clamp(10.0, 12.0),
+            fontWeight: FontWeight.w600,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildCarouselIndicators() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(
-          _carouselSlides.length,
-          (index) => AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            margin: const EdgeInsets.symmetric(horizontal: 3),
-            width: _currentCarouselIndex == index ? 20 : 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: _currentCarouselIndex == index
-                  ? context.primary
-                  : context.dividerColor.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(3),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: _carouselSlides.asMap().entries.map((entry) {
+        return Container(
+          width: _currentCarouselIndex == entry.key ? 20 : 6,
+          height: 6,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(3),
+            color: context.primary.withValues(
+              alpha: _currentCarouselIndex == entry.key ? 0.8 : 0.2,
             ),
           ),
-        ),
-      ),
+        );
+      }).toList(),
     );
   }
 
   Widget _buildStatsRow(BoxConstraints constraints) {
-    final isWide = constraints.maxWidth > 900;
+    final isWide = constraints.maxWidth > 600;
     final content = [
       _statCard(
-        'PATIENTS',
+        'TOTAL PATIENTS',
         _totalPatients.toString(),
         Icons.people_rounded,
         Colors.blue,
@@ -983,39 +1239,45 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
 
 class _BookingTile extends StatelessWidget {
   final ConsultationBookingModel booking;
-  const _BookingTile({required this.booking});
+  final bool isWeb;
+  const _BookingTile({required this.booking, this.isWeb = false});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: context.surface,
+        color: context.surface.withValues(alpha: isWeb ? 0.5 : 1.0),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: context.dividerColor.withValues(alpha: 0.05)),
+        border: Border.all(
+          color: isWeb
+              ? context.primary.withValues(alpha: 0.1)
+              : context.dividerColor.withValues(alpha: 0.05),
+        ),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
+          if (!isWeb)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(isWeb ? 20 : 16),
         child: Row(
           children: [
             Container(
-              width: 56,
-              height: 56,
+              width: isWeb ? 64 : 56,
+              height: isWeb ? 64 : 56,
               decoration: BoxDecoration(
                 color: context.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(isWeb ? 20 : 16),
               ),
               child: Icon(
                 Icons.person_rounded,
                 color: context.primary,
-                size: 28,
+                size: isWeb ? 32 : 28,
               ),
             ),
             const SizedBox(width: 16),
@@ -1025,9 +1287,9 @@ class _BookingTile extends StatelessWidget {
                 children: [
                   Text(
                     booking.patientName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w900,
-                      fontSize: 15,
+                      fontSize: isWeb ? 18 : 15,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1048,22 +1310,30 @@ class _BookingTile extends StatelessWidget {
                             : 'In-Person',
                         context,
                       ),
+                      if (isWeb) ...[
+                        const SizedBox(width: 8),
+                        _buildMiniInfoChip(
+                          Icons.contact_support_rounded,
+                          'Initial Consult',
+                          context,
+                        ),
+                      ],
                     ],
                   ),
                 ],
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.green.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
+              child: Text(
                 'ACTIVE',
                 style: TextStyle(
                   color: Colors.green,
-                  fontSize: 10,
+                  fontSize: isWeb ? 12 : 10,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -1354,6 +1624,171 @@ class _WideServiceCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _WebGlassCard extends StatefulWidget {
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final double blur;
+  final double borderRadius;
+
+  const _WebGlassCard({
+    required this.child,
+    this.padding,
+    this.blur = 20,
+    this.borderRadius = 24,
+  });
+
+  @override
+  State<_WebGlassCard> createState() => _WebGlassCardState();
+}
+
+class _WebGlassCardState extends State<_WebGlassCard> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedScale(
+        scale: _isHovered ? 1.01 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+            boxShadow: [
+              if (_isHovered)
+                BoxShadow(
+                  color: context.primary.withValues(alpha: 0.1),
+                  blurRadius: 30,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 10),
+                ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(
+                sigmaX: widget.blur,
+                sigmaY: widget.blur,
+              ),
+              child: Container(
+                padding: widget.padding,
+                decoration: BoxDecoration(
+                  color: context.surface.withValues(
+                    alpha: _isHovered ? 0.6 : 0.4,
+                  ),
+                  borderRadius: BorderRadius.circular(widget.borderRadius),
+                  border: Border.all(
+                    color: _isHovered
+                        ? context.primary.withValues(alpha: 0.3)
+                        : context.primary.withValues(alpha: 0.1),
+                    width: 1.5,
+                  ),
+                ),
+                child: widget.child,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WebActionTile extends StatefulWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _WebActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  State<_WebActionTile> createState() => _WebActionTileState();
+}
+
+class _WebActionTileState extends State<_WebActionTile> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: _isHovered
+                ? widget.color.withValues(alpha: 0.1)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: _isHovered
+                  ? widget.color.withValues(alpha: 0.2)
+                  : Colors.transparent,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: widget.color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(widget.icon, color: widget.color, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: _isHovered ? widget.color : context.onSurface,
+                      ),
+                    ),
+                    Text(
+                      widget.subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: _isHovered
+                    ? widget.color
+                    : context.textSecondary.withValues(alpha: 0.5),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
