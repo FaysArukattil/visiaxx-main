@@ -12,11 +12,13 @@ import '../../../core/utils/snackbar_utils.dart';
 class PatientResultsViewScreen extends StatefulWidget {
   final List<String> resultIds;
   final String patientName;
+  final String? patientId;
 
   const PatientResultsViewScreen({
     super.key,
     required this.resultIds,
     required this.patientName,
+    this.patientId,
   });
 
   @override
@@ -29,6 +31,7 @@ class _PatientResultsViewScreenState extends State<PatientResultsViewScreen> {
   final _pdfExportService = PdfExportService();
   List<TestResultModel> _results = [];
   bool _isLoading = true;
+  int _selectedResultIndex = 0;
 
   @override
   void initState() {
@@ -40,6 +43,7 @@ class _PatientResultsViewScreenState extends State<PatientResultsViewScreen> {
     setState(() => _isLoading = true);
     final results = await _testResultService.getTestResultsByIds(
       widget.resultIds,
+      userId: widget.patientId,
     );
     if (mounted) {
       setState(() {
@@ -71,69 +75,289 @@ class _PatientResultsViewScreenState extends State<PatientResultsViewScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final width = MediaQuery.of(context).size.width;
+    final isWeb = width > 900;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          // Background Decorations
-          Positioned(
-            top: -50,
-            right: -50,
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    context.primary.withValues(alpha: 0.05),
-                    context.primary.withValues(alpha: 0.0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverAppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                pinned: true,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                title: Text(
-                  '${widget.patientName}\'s Results',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: isWeb ? 1200 : 900),
+          child: Stack(
+            children: [
+              // Background Decorations
+              Positioned(
+                top: -50,
+                right: -50,
+                child: Container(
+                  width: 250,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        context.primary.withValues(alpha: 0.05),
+                        context.primary.withValues(alpha: 0.0),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              if (_isLoading)
-                const SliverFillRemaining(
-                  child: Center(child: EyeLoader(size: 40)),
-                )
-              else if (_results.isEmpty)
-                SliverFillRemaining(child: _buildEmptyState())
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.all(24),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final result = _results[index];
-                      return _buildResultCard(result, index);
-                    }, childCount: _results.length),
+
+              if (isWeb) _buildWebLayout(theme) else _buildMobileLayout(theme),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(ThemeData theme) {
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        SliverAppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          pinned: true,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            '${widget.patientName}\'s Results',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
+            ),
+          ),
+        ),
+        if (_isLoading)
+          const SliverFillRemaining(child: Center(child: EyeLoader(size: 40)))
+        else if (_results.isEmpty)
+          SliverFillRemaining(child: _buildEmptyState())
+        else
+          SliverPadding(
+            padding: const EdgeInsets.all(24),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final result = _results[index];
+                return _buildResultCard(result, index);
+              }, childCount: _results.length),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildWebLayout(ThemeData theme) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                onPressed: () => Navigator.pop(context),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${widget.patientName}\'s Diagnostic Results',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const Spacer(),
+              if (!_isLoading && _results.isNotEmpty)
+                Text(
+                  '${_results.length} total tests found',
+                  style: TextStyle(
+                    color: context.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
                   ),
                 ),
             ],
           ),
-        ],
-      ),
+        ),
+        Expanded(
+          child: _isLoading
+              ? const Center(child: EyeLoader(size: 40))
+              : _results.isEmpty
+              ? _buildEmptyState()
+              : Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Left Panel: Result Menu
+                      Expanded(
+                        flex: 4,
+                        child: ListView.builder(
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: _results.length,
+                          itemBuilder: (context, index) {
+                            final result = _results[index];
+                            final isSelected = _selectedResultIndex == index;
+                            return GestureDetector(
+                              onTap: () =>
+                                  setState(() => _selectedResultIndex = index),
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? context.primary.withValues(alpha: 0.1)
+                                      : context.surface,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? context.primary
+                                        : context.dividerColor.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    _getStatusIcon(
+                                      result.overallStatus,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            result.testType
+                                                .replaceAll('_', ' ')
+                                                .toUpperCase(),
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 13,
+                                              color: isSelected
+                                                  ? context.primary
+                                                  : context.onSurface,
+                                            ),
+                                          ),
+                                          Text(
+                                            DateFormat(
+                                              'MMM d, yyyy h:mm a',
+                                            ).format(result.timestamp),
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: context.textSecondary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (isSelected)
+                                      Icon(
+                                        Icons.arrow_forward_ios_rounded,
+                                        size: 12,
+                                        color: context.primary,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ).animate().fadeIn(
+                              duration: 300.ms,
+                              delay: (index * 30).ms,
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      // Right Panel: Detailed View
+                      Expanded(
+                        flex: 6,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: context.surface,
+                            borderRadius: BorderRadius.circular(28),
+                            border: Border.all(
+                              color: context.dividerColor.withValues(
+                                alpha: 0.1,
+                              ),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(32),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _buildDetailedHeader(
+                                  _results[_selectedResultIndex],
+                                ),
+                                const SizedBox(height: 32),
+                                _buildQuickSummary(
+                                  _results[_selectedResultIndex],
+                                  isWeb: true,
+                                ),
+                                const SizedBox(height: 32),
+                                _buildActionButton(
+                                  'DOWNLOAD PDF REPORT',
+                                  context.primary,
+                                  () => _downloadPdf(
+                                    _results[_selectedResultIndex],
+                                  ),
+                                  icon: Icons.picture_as_pdf_rounded,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailedHeader(TestResultModel result) {
+    return Row(
+      children: [
+        _getStatusIcon(result.overallStatus),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                result.testType.replaceAll('_', ' ').toUpperCase(),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 22,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              Text(
+                'Completed on ${DateFormat('MMMM d, yyyy • h:mm a').format(result.timestamp)}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: context.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -204,9 +428,9 @@ class _PatientResultsViewScreenState extends State<PatientResultsViewScreen> {
         .slideY(begin: 0.05);
   }
 
-  Widget _buildQuickSummary(TestResultModel result) {
+  Widget _buildQuickSummary(TestResultModel result, {bool isWeb = false}) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isWeb ? 24 : 20),
       decoration: BoxDecoration(
         color: context.primary.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(20),
@@ -324,7 +548,7 @@ class _PatientResultsViewScreenState extends State<PatientResultsViewScreen> {
     );
   }
 
-  Widget _getStatusIcon(TestStatus status) {
+  Widget _getStatusIcon(TestStatus status, {double size = 24}) {
     Color color;
     IconData icon;
     switch (status) {
@@ -347,7 +571,7 @@ class _PatientResultsViewScreenState extends State<PatientResultsViewScreen> {
         color: color.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
-      child: Icon(icon, color: color, size: 24),
+      child: Icon(icon, color: color, size: size),
     );
   }
 

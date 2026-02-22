@@ -391,6 +391,7 @@ class _DoctorSlotManagementScreenState
                             builder: (context) => PatientResultsViewScreen(
                               resultIds: booking.attachedResultIds,
                               patientName: booking.patientName,
+                              patientId: booking.patientId,
                             ),
                           ),
                         );

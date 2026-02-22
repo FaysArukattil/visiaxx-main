@@ -1,5 +1,6 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import '../utils/app_logger.dart';
 import '../../data/models/consultation_booking_model.dart';
 
 class VideoCallService {
@@ -13,6 +14,9 @@ class VideoCallService {
     'iceServers': [
       {'urls': 'stun:stun.l.google.com:19302'},
       {'urls': 'stun:stun1.l.google.com:19302'},
+      {'urls': 'stun:stun2.l.google.com:19302'},
+      {'urls': 'stun:stun3.l.google.com:19302'},
+      {'urls': 'stun:stun4.l.google.com:19302'},
     ],
   };
 
@@ -148,9 +152,27 @@ class VideoCallService {
 
   /// Clean up
   Future<void> dispose(String bookingId) async {
-    await _localStream?.dispose();
-    await _remoteStream?.dispose();
-    await _peerConnection?.close();
+    try {
+      await _localStream?.dispose();
+      _localStream = null;
+      await _remoteStream?.dispose();
+      _remoteStream = null;
+      await _peerConnection?.close();
+      _peerConnection = null;
+      // Note: We don't always remove the room immediately to allow re-joins
+      // We'll let the 'status' change or a manual cleanup handle it.
+      await _db.ref('video_calls/$bookingId/status').set('ended');
+    } catch (e) {
+      AppLogger.log(
+        'Video call error: $e. Path: video_calls/$bookingId',
+        tag: 'VideoCallService',
+        isError: true,
+      );
+    }
+  }
+
+  /// Manually remove call data from Firebase
+  Future<void> clearCallData(String bookingId) async {
     await _db.ref('video_calls/$bookingId').remove();
   }
 }

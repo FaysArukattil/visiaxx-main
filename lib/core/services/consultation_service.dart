@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import '../../data/models/doctor_model.dart';
 import '../../data/models/user_model.dart';
@@ -7,6 +9,7 @@ import '../../data/models/time_slot_model.dart';
 
 class ConsultationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Collection names
   static const String doctorsCollection = 'Doctors';
@@ -33,7 +36,7 @@ class ConsultationService {
   /// Get specific doctor details
   Future<DoctorModel?> getDoctorById(String doctorId) async {
     try {
-      // 1. Try direct fetch (works if doctorId is identityString)
+      // 1. Try UID-based lookup first (this is the new standard)
       var doc = await _firestore
           .collection(doctorsCollection)
           .doc(doctorId)
@@ -43,7 +46,8 @@ class ConsultationService {
         return DoctorModel.fromFirestore(doc);
       }
 
-      // 2. Not found? Try UID-based lookup from all_users_lookup
+      // 2. Not found or old ID? Try lookup from all_users_lookup
+      // Note: doctorId might be an identityString or a UID
       final lookupDoc = await _firestore
           .collection('all_users_lookup')
           .doc(doctorId)
@@ -58,6 +62,15 @@ class ConsultationService {
         if (doc.exists) {
           return DoctorModel.fromFirestore(doc);
         }
+      }
+
+      // 3. Last ditch: If doctorId contains '_', it's an identityString itself
+      if (doctorId.contains('_')) {
+        doc = await _firestore
+            .collection(doctorsCollection)
+            .doc(doctorId)
+            .get();
+        if (doc.exists) return DoctorModel.fromFirestore(doc);
       }
 
       return null;
@@ -84,10 +97,17 @@ class ConsultationService {
   /// Create or update doctor profile (uses set+merge so first-time saves work)
   Future<bool> createOrUpdateDoctorProfile(DoctorModel doctor) async {
     try {
+      // Always use the UID as the document ID for the new standard
       await _firestore
           .collection(doctorsCollection)
           .doc(doctor.id)
           .set(doctor.toFirestore(), SetOptions(merge: true));
+
+      // Cleanup: If the ID stored in all_users_lookup is different (identityString),
+      // we don't necessarily delete the old doc here to avoid breaking old bookings
+      // that might still reference it via identityString, but we've now ensured
+      // the UID doc is the source of truth for profile data (like photoUrl).
+
       return true;
     } catch (e) {
       print('[ConsultationService] Error create/update doctor profile: $e');
@@ -106,13 +126,24 @@ class ConsultationService {
 
   /// Stream of all doctors for real-time browse on user side
   Stream<List<DoctorModel>> getAllDoctorsStream() {
-    return _firestore
-        .collection(doctorsCollection)
-        .snapshots()
-        .map(
-          (snap) =>
-              snap.docs.map((doc) => DoctorModel.fromFirestore(doc)).toList(),
-        );
+    return _firestore.collection(doctorsCollection).snapshots().map((snap) {
+      final doctorsMap = <String, DoctorModel>{};
+
+      for (var doc in snap.docs) {
+        final doctor = DoctorModel.fromFirestore(doc);
+        final uid = doctor.id;
+
+        // Deduplication: Prefer UID-indexed documents over identityString ones
+        // UID-indexed documents have doc.id == uid (no underscores)
+        final isUidIndexed = !doc.id.contains('_');
+
+        if (!doctorsMap.containsKey(uid) || isUidIndexed) {
+          doctorsMap[uid] = doctor;
+        }
+      }
+
+      return doctorsMap.values.toList();
+    });
   }
 
   // --- Slot Operations ---
@@ -396,6 +427,67 @@ class ConsultationService {
     }
   }
 
+  /// Auto-expire available slots that have passed their time.
+  /// This keeps the booking screen clean from past unavailable times.
+  Future<int> autoCancelPassedAvailableSlots(String doctorId) async {
+    try {
+      final now = DateTime.now();
+      final dateKey =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+      // We mainly care about today's slots that have passed
+      final querySnapshot = await _firestore
+          .collection(slotsCollection)
+          .doc(doctorId)
+          .collection(dateKey)
+          .where('status', isEqualTo: SlotStatus.available.toString())
+          .get();
+
+      int cancelledCount = 0;
+      final batch = _firestore.batch();
+
+      for (final doc in querySnapshot.docs) {
+        final data = doc.data();
+        final startTimeStr = data['startTime'] as String; // e.g., "10:00"
+
+        try {
+          final timeParts = startTimeStr.split(':');
+          final hour = int.parse(timeParts[0]);
+          final minute = int.parse(timeParts[1]);
+
+          final slotStartTime = DateTime(
+            now.year,
+            now.month,
+            now.day,
+            hour,
+            minute,
+          );
+
+          if (slotStartTime.isBefore(now)) {
+            batch.update(doc.reference, {
+              'status': SlotStatus.blocked.toString(),
+              'updatedAt': Timestamp.now(),
+            });
+            cancelledCount++;
+          }
+        } catch (e) {
+          debugPrint('[ConsultationService] Error parsing slot time: $e');
+        }
+      }
+
+      if (cancelledCount > 0) {
+        await batch.commit();
+        debugPrint(
+          '[ConsultationService] Auto-cancelled $cancelledCount passed slots for $dateKey',
+        );
+      }
+      return cancelledCount;
+    } catch (e) {
+      debugPrint('[ConsultationService] Error auto-cancelling slots: $e');
+      return 0;
+    }
+  }
+
   /// Real-time stream of bookings for a doctor
   Stream<List<ConsultationBookingModel>> getDoctorBookingsStream(
     String doctorId,
@@ -565,6 +657,68 @@ class ConsultationService {
       return true;
     } catch (e) {
       print('[ConsultationService] Error deleting booking: $e');
+      return false;
+    }
+  }
+
+  /// Rate a doctor after a completed consultation
+  Future<bool> rateDoctor({
+    required String bookingId,
+    required String doctorId,
+    required double rating,
+    String? review,
+  }) async {
+    try {
+      final docRef = _firestore.collection(doctorsCollection).doc(doctorId);
+      final bookingRef = _firestore
+          .collection(bookingsCollection)
+          .doc(bookingId);
+      final user = _auth.currentUser;
+
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        if (!snapshot.exists) return;
+
+        final data = snapshot.data()!;
+        final double currentRating = (data['rating'] ?? 0.0).toDouble();
+        final int currentReviewCount = data['reviewCount'] ?? 0;
+
+        final int newReviewCount = currentReviewCount + 1;
+        final double newRating =
+            ((currentRating * currentReviewCount) + rating) / newReviewCount;
+
+        // Update doctor rating
+        transaction.update(docRef, {
+          'rating': newRating,
+          'reviewCount': newReviewCount,
+          'updatedAt': Timestamp.now(),
+        });
+
+        // Update booking as rated
+        transaction.update(bookingRef, {
+          'isRated': true,
+          'userRating': rating,
+          'userReview': review,
+          'updatedAt': Timestamp.now(),
+        });
+
+        // Save individual review if provided or always save as a record
+        final reviewRef = _firestore.collection('DoctorReviews').doc();
+        transaction.set(reviewRef, {
+          'doctorId': doctorId,
+          'bookingId': bookingId,
+          'userId': user?.uid,
+          'userName': user?.displayName ?? 'Patient',
+          'rating': rating,
+          'reviewText': review ?? '',
+          'timestamp': Timestamp.now(),
+        });
+      });
+
+      debugPrint('[ConsultationService] Doctor $doctorId rated: $rating');
+      return true;
+    } catch (e) {
+      debugPrint('[ConsultationService] Error rating doctor: $e');
       return false;
     }
   }

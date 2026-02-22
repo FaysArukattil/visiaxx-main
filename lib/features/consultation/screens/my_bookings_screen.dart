@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/snackbar_utils.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/consultation_service.dart';
 import '../../../data/models/consultation_booking_model.dart';
+import '../widgets/consultation_rating_bottom_sheet.dart';
 import 'patient_video_call_screen.dart';
 
 class MyBookingsScreen extends StatefulWidget {
@@ -286,9 +288,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
         await _loadBookings();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to cancel booking: $e')),
-          );
+          SnackbarUtils.showError(context, 'Failed to cancel booking: $e');
         }
         setState(() => _isLoading = false);
       }
@@ -340,12 +340,27 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
         await _loadBookings();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete booking: $e')),
-          );
+          SnackbarUtils.showError(context, 'Failed to delete booking: $e');
         }
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  Future<void> _showRatingDialog(ConsultationBookingModel booking) async {
+    final success = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ConsultationRatingBottomSheet(
+        bookingId: booking.id,
+        doctorId: booking.doctorId,
+        doctorName: booking.doctorName,
+      ),
+    );
+
+    if (success == true) {
+      _loadBookings();
     }
   }
 }
@@ -602,6 +617,42 @@ class _BookingListTile extends StatelessWidget {
                           ),
                         ],
                       ),
+                    ),
+                  ),
+                ),
+              if (booking.status == BookingStatus.completed && !booking.isRated)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final state = context
+                          .findAncestorStateOfType<_MyBookingsScreenState>();
+                      state?._showRatingDialog(booking);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber.withValues(alpha: 0.1),
+                      foregroundColor: Colors.amber.shade900,
+                      minimumSize: const Size(double.infinity, 48),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.star_rounded, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'RATE CONSULTATION',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

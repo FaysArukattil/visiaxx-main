@@ -4,8 +4,11 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/extensions/theme_extension.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import '../../../data/models/consultation_booking_model.dart';
+import '../../../data/models/test_result_model.dart';
 import '../../../core/services/video_call_service.dart';
+import '../../../core/services/test_result_service.dart';
 import '../../../core/services/consultation_service.dart';
+import '../../../core/utils/snackbar_utils.dart';
 import 'patient_results_view_screen.dart';
 
 class DoctorVideoCallScreen extends StatefulWidget {
@@ -30,6 +33,12 @@ class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
 
   final TextEditingController _notesController = TextEditingController();
   final TextEditingController _diagnosisController = TextEditingController();
+
+  // State for in-place result viewing
+  String? _selectedResultId;
+  TestResultModel? _selectedResult;
+  bool _isLoadingResult = false;
+  final _testResultService = TestResultService();
 
   @override
   void initState() {
@@ -198,6 +207,10 @@ class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
   }
 
   Widget _buildPatientDataPanel() {
+    if (_selectedResultId != null) {
+      return _buildDetailedResultPanel();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -229,6 +242,22 @@ class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
                 Icons.medical_services_outlined,
                 'Type',
                 widget.booking.type.name.toUpperCase(),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _endCall(),
+                  icon: const Icon(Icons.check_circle_outline, size: 18),
+                  label: const Text('END & FINALIZE'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -263,6 +292,180 @@ class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
     );
   }
 
+  Widget _buildDetailedResultPanel() {
+    return Column(
+      children: [
+        AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, size: 20),
+            onPressed: () => setState(() {
+              _selectedResultId = null;
+              _selectedResult = null;
+            }),
+          ),
+          title: const Text(
+            'Test Result Detail',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+        Expanded(
+          child: _isLoadingResult
+              ? const Center(child: CircularProgressIndicator())
+              : _selectedResult == null
+              ? const Center(child: Text('Failed to load result'))
+              : ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    _buildResultDetailHeader(_selectedResult!),
+                    const SizedBox(height: 20),
+                    _buildResultDetailSummary(_selectedResult!),
+                    const SizedBox(height: 24),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PatientResultsViewScreen(
+                              resultIds: [_selectedResultId!],
+                              patientName: widget.booking.patientName,
+                              patientId: widget.booking.patientId,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.fullscreen, size: 18),
+                      label: const Text('View Full Screen'),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: context.primary),
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResultDetailHeader(TestResultModel result) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            result.testType.replaceAll('_', ' ').toUpperCase(),
+            style: TextStyle(
+              color: context.primary,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            DateFormat('MMMM dd, yyyy').format(result.timestamp),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            result.profileName,
+            style: TextStyle(color: context.textSecondary, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResultDetailSummary(TestResultModel result) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'OVERALL STATUS',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textTertiary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: _getStatusColor(result.overallStatus).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            result.overallStatus.label.toUpperCase(),
+            style: TextStyle(
+              color: _getStatusColor(result.overallStatus),
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          'QUICK SUMMARY',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textTertiary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildSummaryItem(
+          'Right Eye',
+          result.visualAcuityRight?.snellenScore ?? 'N/A',
+        ),
+        _buildSummaryItem(
+          'Left Eye',
+          result.visualAcuityLeft?.snellenScore ?? 'N/A',
+        ),
+        if (result.colorVision != null)
+          _buildSummaryItem('Color Vision', result.colorVision!.status),
+        if (result.recommendation.isNotEmpty)
+          _buildSummaryItem('Rec.', result.recommendation),
+      ],
+    );
+  }
+
+  Widget _buildSummaryItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.circle, size: 6, color: AppColors.textTertiary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '$label: $value',
+              style: const TextStyle(height: 1.4, fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getStatusColor(TestStatus status) {
+    switch (status) {
+      case TestStatus.normal:
+        return Colors.green;
+      case TestStatus.review:
+        return Colors.orange;
+      case TestStatus.urgent:
+        return Colors.red;
+    }
+  }
+
   Widget _buildResultTile(String id) {
     return Card(
       elevation: 0,
@@ -277,16 +480,29 @@ class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         ),
         trailing: Icon(Icons.launch, size: 16, color: context.primary),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PatientResultsViewScreen(
-                resultIds: [id],
-                patientName: widget.booking.patientName,
-              ),
-            ),
-          );
+        onTap: () async {
+          setState(() {
+            _selectedResultId = id;
+            _isLoadingResult = true;
+          });
+
+          try {
+            final result = await _testResultService.getTestResultById(
+              widget.booking.patientId,
+              id,
+            );
+            setState(() {
+              _selectedResult = result;
+              _isLoadingResult = false;
+            });
+          } catch (e) {
+            setState(() {
+              _isLoadingResult = false;
+            });
+            if (mounted) {
+              SnackbarUtils.showError(context, 'Error loading result: $e');
+            }
+          }
         },
       ),
     );
@@ -444,20 +660,45 @@ class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
       ),
       actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
       actions: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () => _finalizeConsultation(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+        Column(
+          children: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => _finalizeConsultation(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Save & Close Portal'),
               ),
             ),
-            child: const Text('Save & Close Portal'),
-          ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  _initWebRTC(); // Restart WebRTC
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: context.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: BorderSide(
+                    color: context.primary.withValues(alpha: 0.5),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Restart / Resume Session'),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -465,9 +706,7 @@ class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
 
   Future<void> _finalizeConsultation() async {
     if (_diagnosisController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter a diagnosis')));
+      SnackbarUtils.showError(context, 'Please enter a diagnosis');
       return;
     }
 

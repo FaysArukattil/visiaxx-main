@@ -1237,28 +1237,30 @@ class TestResultService {
 
   /// Get specific test results by their IDs
   Future<List<TestResultModel>> getTestResultsByIds(
-    List<String> resultIds,
-  ) async {
+    List<String> resultIds, {
+    String? userId,
+  }) async {
     if (resultIds.isEmpty) return [];
 
     try {
       debugPrint(
-        '[TestResultService] Fetching ${resultIds.length} results by ID',
+        '[TestResultService] Fetching ${resultIds.length} results by ID (User: $userId)',
       );
 
-      // Fetch in parallel for efficiency
-      final futures = resultIds.map((id) async {
-        final snap = await _firestore
-            .collectionGroup('tests')
-            .where(FieldPath.documentId, isEqualTo: id)
-            .limit(1)
-            .get();
+      if (userId != null) {
+        // If we have userId, we can use getTestResults which handles self + family
+        final allResults = await getTestResults(userId);
+        return allResults.where((r) => resultIds.contains(r.id)).toList();
+      }
 
-        if (snap.docs.isNotEmpty) {
-          final data = snap.docs.first.data();
-          data['id'] = snap.docs.first.id;
-          return TestResultModel.fromJson(data);
-        }
+      // Fallback: This is what produced the bug. We'll try to refine it or search by userId if available in booking
+      // Note: FieldPath.documentId in collectionGroup requires full path.
+      // As a fallback, we'll try to find any document that matches.
+      // Better yet, we'll suggest using userId.
+      final futures = resultIds.map((id) async {
+        debugPrint(
+          '[TestResultService] Warning: getTestResultsByIds without userId is unreliable.',
+        );
         return null;
       });
 

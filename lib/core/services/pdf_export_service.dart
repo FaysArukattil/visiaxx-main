@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+﻿import 'dart:io' as io;
 import 'package:flutter/foundation.dart';
 import 'dart:math' as math;
 import 'package:pdf/pdf.dart';
@@ -6,6 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:printing/printing.dart';
 import 'file_manager_service.dart';
 
 import '../../data/models/test_result_model.dart';
@@ -46,7 +47,16 @@ class PdfExportService {
         '[PdfExportService] ✅ PDF generated (${pdfBytes.length} bytes)',
       );
 
-      // Save to Downloads folder
+      // Save/Share based on platform
+      if (kIsWeb) {
+        debugPrint(
+          '[PdfExportService] 🌐 Web platform: Triggering download...',
+        );
+        await Printing.sharePdf(bytes: pdfBytes, filename: filename);
+        return 'downloaded';
+      }
+
+      // Mobile/Desktop platforms: Save to Downloads folder
       final savedPath = await _saveToDownloads(
         pdfBytes,
         filename,
@@ -58,7 +68,9 @@ class PdfExportService {
     } catch (e) {
       debugPrint('[PdfExportService] ❌ Error generating PDF: $e');
 
-      // Fallback: Save to app documents directory
+      if (kIsWeb) throw Exception('Web PDF generation failed: $e');
+
+      // Fallback: Save to app documents directory (non-web)
       try {
         final appDir = await getApplicationDocumentsDirectory();
         final name = result.profileName.replaceAll(
@@ -71,7 +83,7 @@ class PdfExportService {
         final filename = 'Visiaxx_${name}_${age}_${dateStr}_$timeStr.pdf';
         final fallbackPath = '${appDir.path}/$filename';
 
-        final file = File(fallbackPath);
+        final file = io.File(fallbackPath);
         final pdf = await _buildPdfDocument(result);
         await file.writeAsBytes(await pdf.save());
 
@@ -92,6 +104,8 @@ class PdfExportService {
     String subFolder = 'Single_Reports',
   }) async {
     try {
+      if (kIsWeb) return 'web_blocked';
+
       // Use FileManagerService to get the correct download directory for the platform
       final baseDir = await FileManagerService.getDownloadDirectory();
 
@@ -102,13 +116,13 @@ class PdfExportService {
         '',
       );
       final targetPath = '${baseDir.path}/Visiaxx_Reports/$normalizedSubFolder';
-      final targetDir = Directory(targetPath);
+      final targetDir = io.Directory(targetPath);
 
       if (!await targetDir.exists()) {
         await targetDir.create(recursive: true);
       }
 
-      final file = File('${targetDir.path}/$filename');
+      final file = io.File('${targetDir.path}/$filename');
       await file.writeAsBytes(bytes);
       debugPrint('[PdfExportService] ✅ Saved to: ${file.path}');
       return file.path;
@@ -123,7 +137,7 @@ class PdfExportService {
   /// Fallback: Save to app-specific directory
   Future<String> _saveToAppDirectory(Uint8List bytes, String filename) async {
     final appDir = await getApplicationDocumentsDirectory();
-    final file = File('${appDir.path}/$filename');
+    final file = io.File('${appDir.path}/$filename');
     await file.writeAsBytes(bytes);
     debugPrint('[PdfExportService] ✅ Saved to app directory: ${file.path}');
     return file.path;
@@ -2403,13 +2417,13 @@ class PdfExportService {
           }
         } catch (e) {
           debugPrint(
-            '[PdfExportService] Œ Error fetching URL from localPath: $e',
+            '[PdfExportService] Error fetching URL from localPath: $e',
           );
         }
       } else {
         // It's a local file path
         try {
-          final file = File(localPath);
+          final file = io.File(localPath);
           if (await file.exists()) {
             final bytes = await file.readAsBytes();
             debugPrint(
@@ -2446,7 +2460,7 @@ class PdfExportService {
               localPath.isNotEmpty &&
               !localPath.startsWith('http')) {
             try {
-              final file = File(localPath);
+              final file = io.File(localPath);
               final parentDir = file.parent;
               if (!await parentDir.exists()) {
                 await parentDir.create(recursive: true);

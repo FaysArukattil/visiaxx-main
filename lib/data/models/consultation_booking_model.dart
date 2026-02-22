@@ -30,6 +30,7 @@ class ConsultationBookingModel {
   final String? exactAddress;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool isRated;
 
   ConsultationBookingModel({
     required this.id,
@@ -57,6 +58,7 @@ class ConsultationBookingModel {
     this.doctorPhotoUrl,
     required this.createdAt,
     required this.updatedAt,
+    this.isRated = false,
   });
 
   factory ConsultationBookingModel.fromFirestore(DocumentSnapshot doc) {
@@ -93,6 +95,7 @@ class ConsultationBookingModel {
       familyMemberId: data['familyMemberId'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      isRated: data['isRated'] ?? false,
     );
   }
 
@@ -122,6 +125,7 @@ class ConsultationBookingModel {
       'familyMemberId': familyMemberId,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'isRated': isRated,
     };
   }
 
@@ -151,6 +155,7 @@ class ConsultationBookingModel {
     String? exactAddress,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isRated,
   }) {
     return ConsultationBookingModel(
       id: id ?? this.id,
@@ -178,6 +183,7 @@ class ConsultationBookingModel {
       exactAddress: exactAddress ?? this.exactAddress,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isRated: isRated ?? this.isRated,
     );
   }
 }

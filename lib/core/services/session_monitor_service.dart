@@ -1,12 +1,14 @@
 ﻿import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 import 'data_cleanup_service.dart';
+import 'auth_service.dart';
+import '../utils/app_logger.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// Session data structure for Firebase Realtime Database
 class SessionData {
@@ -101,15 +103,18 @@ class SessionMonitorService with WidgetsBindingObserver {
   }) async {
     // GUARD: Ensure authenticated
     if (FirebaseAuth.instance.currentUser == null) {
-      debugPrint(
-        '[SessionMonitor] 🚫 Cannot create session: No authenticated user.',
+      AppLogger.log(
+        'Cannot create session: No authenticated user.',
+        tag: 'SessionMonitor',
+        isError: true,
       );
       return SessionCreationResult(error: 'User not authenticated');
     }
 
     try {
-      debugPrint(
-        '[SessionMonitor] Creating session for: $identityString (Practitioner: $isPractitioner)',
+      AppLogger.log(
+        'Creating session for: $identityString (Practitioner: $isPractitioner)',
+        tag: 'SessionMonitor',
       );
 
       final sessionId = _generateSessionId();
@@ -135,8 +140,9 @@ class SessionMonitorService with WidgetsBindingObserver {
       // Using .set() on the user's identity path with the new session ID as the only child
       // effectively clears other sessions in one atomic operation.
       if (!isPractitioner) {
-        debugPrint(
-          '[SessionMonitor] Regular user login, setting session (clearing others)...',
+        AppLogger.log(
+          'Regular user login, setting session (clearing others)...',
+          tag: 'SessionMonitor',
         );
         await _database.ref('active_sessions/$identityString').set({
           sessionId: sessionData.toMap(),
@@ -167,16 +173,25 @@ class SessionMonitorService with WidgetsBindingObserver {
       // Double-verify local storage to prevent race condition on instant restart
       final verifyId = prefs.getString(_sessionIdKey);
       if (verifyId != sessionId) {
-        debugPrint('[SessionMonitor] 🚨 RE-WRITING SESSION ID to storage...');
+        AppLogger.log(
+          'RE-WRITING SESSION ID to storage...',
+          tag: 'SessionMonitor',
+          isError: true,
+        );
         await prefs.setString(_sessionIdKey, sessionId);
       }
 
-      debugPrint(
-        '[SessionMonitor] â€¦ Session created: $sessionId under $identityString',
+      AppLogger.log(
+        'Session created: $sessionId under $identityString',
+        tag: 'SessionMonitor',
       );
       return SessionCreationResult(sessionId: sessionId);
     } catch (e) {
-      debugPrint('[SessionMonitor] Å’ Failed to create session: $e');
+      AppLogger.log(
+        'Session monitoring error: $e. Path: active_sessions/$identityString',
+        tag: 'SessionMonitor',
+        isError: true,
+      );
       return SessionCreationResult(error: 'Failed to create session: $e');
     }
   }
@@ -186,8 +201,10 @@ class SessionMonitorService with WidgetsBindingObserver {
   Future<SessionCheckResult> checkExistingSession(String identityString) async {
     // GUARD: Ensure authenticated
     if (FirebaseAuth.instance.currentUser == null) {
-      debugPrint(
-        '[SessionMonitor] 🚫 Cannot check session: No authenticated user.',
+      AppLogger.log(
+        'Cannot check session: No authenticated user.',
+        tag: 'SessionMonitor',
+        isError: true,
       );
       return SessionCheckResult(exists: false, isOurSession: false);
     }
@@ -206,7 +223,7 @@ class SessionMonitorService with WidgetsBindingObserver {
 
       // NEW: Early exit for empty sessions map
       if (sessionsMap.isEmpty) {
-        debugPrint('[SessionMonitor] Sessions map is empty - safe');
+        AppLogger.log('Sessions map is empty - safe', tag: 'SessionMonitor');
         return SessionCheckResult(exists: false, isOurSession: false);
       }
 
@@ -227,8 +244,9 @@ class SessionMonitorService with WidgetsBindingObserver {
             _currentSessionId = await secure.read(key: _sessionIdKey);
             if (_currentSessionId != null) {
               await prefs.setString(_sessionIdKey, _currentSessionId!);
-              debugPrint(
-                '[SessionMonitor] Migrated sessionId from SecureStorage',
+              AppLogger.log(
+                'Migrated sessionId from SecureStorage',
+                tag: 'SessionMonitor',
               );
             }
           } catch (_) {}
@@ -238,7 +256,10 @@ class SessionMonitorService with WidgetsBindingObserver {
 
       // NEW: Early exit if our own session ID exists in the map
       if (storedSessionId != null && sessionsMap.containsKey(storedSessionId)) {
-        debugPrint('[SessionMonitor] Our session ID found in DB keys - safe');
+        AppLogger.log(
+          'Our session ID found in DB keys - safe',
+          tag: 'SessionMonitor',
+        );
         return SessionCheckResult(exists: true, isOurSession: true);
       }
 
@@ -251,7 +272,10 @@ class SessionMonitorService with WidgetsBindingObserver {
         // Ownership Check
         if (storedSessionId != null &&
             sessionData.sessionId == storedSessionId) {
-          debugPrint('[SessionMonitor] Our session ID found in data - safe');
+          AppLogger.log(
+            'Our session ID found in data - safe',
+            tag: 'SessionMonitor',
+          );
           return SessionCheckResult(exists: true, isOurSession: true);
         }
 
@@ -270,8 +294,10 @@ class SessionMonitorService with WidgetsBindingObserver {
       }
 
       if (hasActiveOtherSession) {
-        debugPrint(
-          '[SessionMonitor] 🚫 Conflict: foreign active session found',
+        AppLogger.log(
+          'Conflict: foreign active session found',
+          tag: 'SessionMonitor',
+          isError: true,
         );
         return SessionCheckResult(
           exists: true,
@@ -283,7 +309,11 @@ class SessionMonitorService with WidgetsBindingObserver {
 
       return SessionCheckResult(exists: false);
     } catch (e) {
-      debugPrint('[SessionMonitor] Å’ Failed to check session: $e');
+      AppLogger.log(
+        'Session removal error: $e. Path: active_sessions/${AuthService().cachedUser?.identityString}/$_currentSessionId',
+        tag: 'SessionMonitor',
+        isError: true,
+      );
       return SessionCheckResult(exists: false, error: e.toString());
     }
   }
@@ -297,12 +327,16 @@ class SessionMonitorService with WidgetsBindingObserver {
     _currentContext = context;
     _isPractitioner = isPractitioner;
     if (_isMonitoring) {
-      debugPrint('[SessionMonitor] Already monitoring, updating context');
+      AppLogger.log(
+        'Already monitoring, updating context',
+        tag: 'SessionMonitor',
+      );
       return;
     }
 
-    debugPrint(
-      '[SessionMonitor] â€ â€ž Monitoring session for: $identityString',
+    AppLogger.log(
+      'Monitoring session for: $identityString',
+      tag: 'SessionMonitor',
     );
     _isMonitoring = true;
 
@@ -315,7 +349,11 @@ class SessionMonitorService with WidgetsBindingObserver {
         }
       },
       onError: (error) {
-        debugPrint('[SessionMonitor] Å’ Stream error: $error');
+        AppLogger.log(
+          'Stream error: $error',
+          tag: 'SessionMonitor',
+          isError: true,
+        );
       },
     );
 
@@ -328,7 +366,10 @@ class SessionMonitorService with WidgetsBindingObserver {
     ) {
       final isConnected = event.snapshot.value == true;
       if (isConnected && _isMonitoring) {
-        debugPrint('[SessionMonitor] Å’ Connection restored, re-verifying...');
+        AppLogger.log(
+          'Connection restored, re-verifying...',
+          tag: 'SessionMonitor',
+        );
         _verifyCurrentSession();
       }
     });
@@ -414,14 +455,20 @@ class SessionMonitorService with WidgetsBindingObserver {
       }
 
       if (conflictDetected && conflictingSession != null) {
-        debugPrint(
-          '[SessionMonitor] âš  Session conflict detected for regular user!',
+        AppLogger.log(
+          'Session conflict detected for regular user!',
+          tag: 'SessionMonitor',
+          isError: true,
         );
         if (!context.mounted) return;
         await _handleSessionConflict(context, conflictingSession);
       }
     } catch (e) {
-      debugPrint('[SessionMonitor] âš  Error handling session change: $e');
+      AppLogger.log(
+        'Session cleaning error: $e. Path: active_sessions/${AuthService().cachedUser?.identityString}',
+        tag: 'SessionMonitor',
+        isError: true,
+      );
     }
   }
 

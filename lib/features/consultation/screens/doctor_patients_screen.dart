@@ -83,63 +83,60 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
           ),
 
           SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return CustomScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  slivers: [
-                    SliverAppBar(
-                      backgroundColor: Colors.transparent,
-                      elevation: 0,
-                      pinned: true,
-                      centerTitle: false,
-                      title: Text(
-                        'My Patients',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: (constraints.maxWidth * 0.045).clamp(
-                            16.0,
-                            40.0,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 900),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return CustomScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      slivers: [
+                        SliverAppBar(
+                          backgroundColor: Colors.transparent,
+                          elevation: 0,
+                          pinned: true,
+                          centerTitle: false,
+                          title: Text(
+                            'Patient Records',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                            ),
                           ),
                         ),
-                        child: _buildSearchBar(),
-                      ),
-                    ),
-                    if (_isLoading)
-                      const SliverFillRemaining(
-                        child: Center(child: EyeLoader(size: 40)),
-                      )
-                    else if (_filteredPatients.isEmpty)
-                      SliverFillRemaining(child: _buildEmptyState())
-                    else
-                      SliverPadding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: (constraints.maxWidth * 0.045).clamp(
-                            16.0,
-                            40.0,
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: _buildSearchBar(),
                           ),
-                          vertical: 24,
                         ),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate((
-                            context,
-                            index,
-                          ) {
-                            final patient = _filteredPatients[index];
-                            return _buildPatientCard(patient);
-                          }, childCount: _filteredPatients.length),
-                        ),
-                      ),
-                  ],
-                );
-              },
+                        if (_isLoading)
+                          const SliverFillRemaining(
+                            child: Center(child: EyeLoader(size: 40)),
+                          )
+                        else if (_filteredPatients.isEmpty)
+                          SliverFillRemaining(child: _buildEmptyState())
+                        else
+                          SliverPadding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 24,
+                            ),
+                            sliver: SliverList(
+                              delegate: SliverChildBuilderDelegate((
+                                context,
+                                index,
+                              ) {
+                                final patient = _filteredPatients[index];
+                                return _buildPatientCard(patient);
+                              }, childCount: _filteredPatients.length),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
             ),
           ),
         ],
@@ -337,6 +334,7 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
             builder: (context) => PatientResultsViewScreen(
               resultIds: resultIds,
               patientName: patient.fullName,
+              patientId: patient.identityString,
             ),
           ),
         );

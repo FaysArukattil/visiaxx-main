@@ -12,6 +12,7 @@ import '../../../core/services/consultation_service.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/utils/ui_utils.dart';
+import 'virtual_clinic_screen.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
   const DoctorHomeScreen({super.key});
@@ -89,8 +90,11 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     final user = _user ?? await _authService.getCurrentUserProfile();
 
     if (user != null) {
-      debugPrint('[DoctorHomeScreen] ⏳ Auto-expiring bookings...');
-      await _consultationService.autoExpireBookings(user.id);
+      debugPrint('[DoctorHomeScreen] ⏳ Auto-expiring bookings and slots...');
+      await Future.wait([
+        _consultationService.autoExpireBookings(user.id),
+        _consultationService.autoCancelPassedAvailableSlots(user.id),
+      ]);
 
       debugPrint('[DoctorHomeScreen] ⏳ Fetching patients and slots...');
       final results =
@@ -552,15 +556,25 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             title: 'Virtual Clinic',
             subtitle: 'Start tele-health',
             color: Colors.blue,
-            onTap: () {},
+            onTap: () {
+              if (_doctor != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        VirtualClinicScreen(doctorId: _doctor!.id),
+                  ),
+                );
+              }
+            },
           ),
           const SizedBox(height: 16),
           _WebActionTile(
             icon: Icons.folder_shared_rounded,
-            title: 'Patient Vault',
-            subtitle: 'Medical records',
+            title: 'Patient Records',
+            subtitle: 'Consultation history',
             color: Colors.teal,
-            onTap: () {},
+            onTap: () => Navigator.pushNamed(context, '/doctor-patients'),
           ),
         ],
       ),
@@ -822,95 +836,149 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   }
 
   Widget _buildPendingRequestsList() {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _pendingBookings.length,
-      itemBuilder: (context, index) {
-        final booking = _pendingBookings[index];
-        return GestureDetector(
-          onTap: () => Navigator.pushNamed(context, '/doctor-booking-review'),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: context.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.orange.withValues(alpha: 0.2),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.orange.withValues(alpha: 0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(
-                    Icons.person_rounded,
-                    color: Colors.orange,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        booking.patientName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14,
-                        ),
+    return Column(
+      children: [
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _pendingBookings.length,
+          itemBuilder: (context, index) {
+            final booking = _pendingBookings[index];
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: GestureDetector(
+                  onTap: () =>
+                      Navigator.pushNamed(context, '/doctor-booking-review'),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          context.surface,
+                          context.surface.withValues(alpha: 0.95),
+                        ],
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${booking.timeSlot} · ${booking.type == ConsultationType.online ? 'Online' : 'In-Person'}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: context.textSecondary,
-                        ),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: Colors.orange.withValues(alpha: 0.3),
+                        width: 1.5,
                       ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text(
-                    'REVIEW',
-                    style: TextStyle(
-                      color: Colors.orange,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.5,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.orange.withValues(alpha: 0.1),
+                          blurRadius: 15,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(
+                            Icons.person_rounded,
+                            color: Colors.orange,
+                            size: 28,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                booking.patientName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 16,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.schedule_rounded,
+                                    size: 12,
+                                    color: context.textSecondary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    booking.timeSlot,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: context.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Icon(
+                                    booking.type == ConsultationType.online
+                                        ? Icons.videocam_rounded
+                                        : Icons.home_rounded,
+                                    size: 12,
+                                    color: context.textSecondary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    booking.type == ConsultationType.online
+                                        ? 'Online'
+                                        : 'In-Person',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: context.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.orange,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.orange.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const Text(
+                            'REVIEW',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-        );
-      },
+              ),
+            ).animate().fadeIn(duration: 400.ms).slideX(begin: 0.1, end: 0);
+          },
+        ),
+      ],
     );
   }
 
@@ -1436,15 +1504,25 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             icon: Icons.videocam_rounded,
             title: 'Tele-Health Consultation',
             subtitle: 'Start a video session',
-            onTap: () {},
+            onTap: () {
+              if (_doctor != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        VirtualClinicScreen(doctorId: _doctor!.id),
+                  ),
+                );
+              }
+            },
             height: wideCardHeight,
             screenWidth: screenWidth,
           ),
           _WideServiceCard(
             icon: Icons.storage_rounded,
-            title: 'Patient Vault',
-            subtitle: 'Access patient records',
-            onTap: () {},
+            title: 'Patient Records',
+            subtitle: 'Consultation history',
+            onTap: () => Navigator.pushNamed(context, '/doctor-patients'),
             height: wideCardHeight,
             screenWidth: screenWidth,
           ),
@@ -1485,16 +1563,26 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
           icon: Icons.videocam_rounded,
           title: 'Tele-Health Consultation',
           subtitle: 'Start a video session',
-          onTap: () {},
+          onTap: () {
+            if (_doctor != null) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      VirtualClinicScreen(doctorId: _doctor!.id),
+                ),
+              );
+            }
+          },
           height: wideCardHeight,
           screenWidth: screenWidth,
         ),
         SizedBox(height: cardSpacing),
         _WideServiceCard(
           icon: Icons.storage_rounded,
-          title: 'Patient Vault',
-          subtitle: 'Access patient records',
-          onTap: () {},
+          title: 'Patient Records',
+          subtitle: 'Consultation history',
+          onTap: () => Navigator.pushNamed(context, '/doctor-patients'),
           height: wideCardHeight,
           screenWidth: screenWidth,
         ),

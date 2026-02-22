@@ -100,17 +100,9 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
     ConsultationBookingModel booking,
     BookingStatus newStatus,
   ) async {
-    String? zoomLink;
-    if (newStatus == BookingStatus.confirmed &&
-        booking.type == ConsultationType.online) {
-      zoomLink = await _showLinkDialog();
-      if (zoomLink == null) return; // Cancelled dialog
-    }
-
     final success = await _consultationService.updateBookingStatus(
       booking.id,
       newStatus,
-      zoomLink: zoomLink,
     );
 
     if (success) {
@@ -124,160 +116,107 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
     }
   }
 
-  Future<String?> _showLinkDialog() async {
-    final controller = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: context.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text(
-          'Add Meeting Link',
-          style: TextStyle(fontWeight: FontWeight.w900, color: context.primary),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Paste your Zoom or Google Meet link for this session.',
-              style: TextStyle(fontSize: 12, color: context.textSecondary),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-              decoration: InputDecoration(
-                hintText: 'https://meet.google.com/...',
-                filled: true,
-                fillColor: context.surface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: context.dividerColor.withValues(alpha: 0.1),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: context.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.primary,
-              foregroundColor: AppColors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          // Background Decorations
-          Positioned(
-            top: -100,
-            left: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    context.primary.withValues(alpha: 0.08),
-                    context.primary.withValues(alpha: 0.0),
-                  ],
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: Stack(
+            children: [
+              // Background Decorations
+              Positioned(
+                top: -100,
+                left: -100,
+                child: Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        context.primary.withValues(alpha: 0.08),
+                        context.primary.withValues(alpha: 0.0),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
 
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverAppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                pinned: true,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                title: Text(
-                  'Review Requests',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(48),
-                  child: TabBar(
-                    controller: _tabController,
-                    isScrollable: true,
-                    labelStyle: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 12,
-                      letterSpacing: 0.5,
+              CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  SliverAppBar(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    pinned: true,
+                    leading: IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 20,
+                      ),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
+                    title: Text(
+                      'Review Requests',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                      ),
                     ),
-                    labelColor: context.primary,
-                    unselectedLabelColor: context.textSecondary,
-                    indicatorColor: context.primary,
-                    indicatorSize: TabBarIndicatorSize.label,
-                    tabs: _tabs.map((t) {
-                      final count = _allBookings
-                          .where(
-                            (b) => b.status == _tabStatuses[_tabs.indexOf(t)],
-                          )
-                          .length;
-                      return Tab(text: '$t ($count)');
-                    }).toList(),
+                    bottom: PreferredSize(
+                      preferredSize: const Size.fromHeight(48),
+                      child: TabBar(
+                        controller: _tabController,
+                        isScrollable: true,
+                        labelStyle: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                          letterSpacing: 0.5,
+                        ),
+                        unselectedLabelStyle: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                        labelColor: context.primary,
+                        unselectedLabelColor: context.textSecondary,
+                        indicatorColor: context.primary,
+                        indicatorSize: TabBarIndicatorSize.label,
+                        tabs: _tabs.map((t) {
+                          final count = _allBookings
+                              .where(
+                                (b) =>
+                                    b.status == _tabStatuses[_tabs.indexOf(t)],
+                              )
+                              .length;
+                          return Tab(text: '$t ($count)');
+                        }).toList(),
+                      ),
+                    ),
                   ),
-                ),
+                  if (_isLoading)
+                    const SliverFillRemaining(
+                      child: Center(child: EyeLoader(size: 40)),
+                    )
+                  else if (_filteredBookings.isEmpty)
+                    SliverFillRemaining(child: _buildEmptyState())
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.all(24),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final booking = _filteredBookings[index];
+                          return _buildRequestCard(booking);
+                        }, childCount: _filteredBookings.length),
+                      ),
+                    ),
+                ],
               ),
-              if (_isLoading)
-                const SliverFillRemaining(
-                  child: Center(child: EyeLoader(size: 40)),
-                )
-              else if (_filteredBookings.isEmpty)
-                SliverFillRemaining(child: _buildEmptyState())
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.all(24),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final booking = _filteredBookings[index];
-                      return _buildRequestCard(booking);
-                    }, childCount: _filteredBookings.length),
-                  ),
-                ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -439,6 +378,7 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
                         builder: (context) => PatientResultsViewScreen(
                           resultIds: booking.attachedResultIds,
                           patientName: booking.patientName,
+                          patientId: booking.patientId,
                         ),
                       ),
                     );
@@ -622,18 +562,21 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
     String label,
     Color color,
     bool isPrimary,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, {
+    double? width,
+  }) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          height: 54,
+          width: width,
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: isPrimary ? color : Colors.transparent,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
             border: isPrimary
                 ? null
                 : Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
@@ -652,8 +595,8 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
             style: TextStyle(
               color: isPrimary ? AppColors.white : color,
               fontWeight: FontWeight.w900,
-              fontSize: 14,
-              letterSpacing: 1.2,
+              fontSize: 13,
+              letterSpacing: 1.1,
             ),
           ),
         ),
@@ -693,7 +636,13 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
             style: TextStyle(color: context.textSecondary),
           ),
           const SizedBox(height: 32),
-          _buildActionButton('REFRESH', context.primary, true, _loadRequests),
+          _buildActionButton(
+            'REFRESH',
+            context.primary,
+            true,
+            _loadRequests,
+            width: 160.0,
+          ),
         ],
       ).animate().fadeIn(duration: 600.ms).scale(delay: 200.ms),
     );
