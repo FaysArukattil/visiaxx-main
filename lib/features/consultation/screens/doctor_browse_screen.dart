@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -24,39 +25,63 @@ class _DoctorBrowseScreenState extends State<DoctorBrowseScreen> {
   double? _latitude;
   double? _longitude;
   String? _exactAddress;
+  StreamSubscription? _doctorsSubscription;
+  bool _argsInitialized = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final args =
-        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    _consultationType = args?['type'];
-    _latitude = args?['latitude'];
-    _longitude = args?['longitude'];
-    _exactAddress = args?['exactAddress'];
-    _loadDoctors();
+    if (!_argsInitialized) {
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      _consultationType = args?['type'];
+      _latitude = args?['latitude'];
+      _longitude = args?['longitude'];
+      _exactAddress = args?['exactAddress'];
+      _argsInitialized = true;
+      _subscribeToDoctors();
+    }
   }
 
-  Future<void> _loadDoctors() async {
-    setState(() => _isLoading = true);
-    final doctors = await _consultationService.getAllDoctors();
+  @override
+  void dispose() {
+    _doctorsSubscription?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
 
-    // Filter by availability for the selected type (online/inPerson)
-    final filtered = _consultationType == null
-        ? doctors
-        : doctors
-              .where(
-                (d) => d.availableServices.contains(
-                  _consultationType == 'online' ? 'Online' : 'In-Person',
-                ),
-              )
-              .toList();
+  void _subscribeToDoctors() {
+    _doctorsSubscription?.cancel();
+    _doctorsSubscription = _consultationService.getAllDoctorsStream().listen(
+      (doctors) {
+        // Filter by availability for the selected type (online/inPerson)
+        final filtered = _consultationType == null
+            ? doctors
+            : doctors
+                  .where(
+                    (d) => d.availableServices.contains(
+                      _consultationType == 'online' ? 'Online' : 'In-Person',
+                    ),
+                  )
+                  .toList();
 
-    setState(() {
-      _allDoctors = filtered;
-      _filteredDoctors = filtered;
-      _isLoading = false;
-    });
+        if (mounted) {
+          setState(() {
+            _allDoctors = filtered;
+            _filterDoctors(_searchController.text);
+            _isLoading = false;
+          });
+        }
+      },
+      onError: (_) {
+        if (mounted) setState(() => _isLoading = false);
+      },
+    );
+  }
+
+  Future<void> _refreshDoctors() async {
+    // Pull-to-refresh: re-subscribe
+    _subscribeToDoctors();
   }
 
   void _filterDoctors(String query) {
@@ -99,7 +124,7 @@ class _DoctorBrowseScreenState extends State<DoctorBrowseScreen> {
 
                 SafeArea(
                   child: RefreshIndicator(
-                    onRefresh: _loadDoctors,
+                    onRefresh: _refreshDoctors,
                     color: context.primary,
                     child: CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),

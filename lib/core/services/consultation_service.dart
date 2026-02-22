@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import '../../data/models/doctor_model.dart';
 import '../../data/models/user_model.dart';
 import '../../data/models/consultation_booking_model.dart';
@@ -58,6 +59,40 @@ class ConsultationService {
       print('[ConsultationService] Error updating doctor profile: $e');
       return false;
     }
+  }
+
+  /// Create or update doctor profile (uses set+merge so first-time saves work)
+  Future<bool> createOrUpdateDoctorProfile(DoctorModel doctor) async {
+    try {
+      await _firestore
+          .collection(doctorsCollection)
+          .doc(doctor.id)
+          .set(doctor.toFirestore(), SetOptions(merge: true));
+      return true;
+    } catch (e) {
+      print('[ConsultationService] Error create/update doctor profile: $e');
+      return false;
+    }
+  }
+
+  /// Stream of a single doctor profile for real-time updates on user side
+  Stream<DoctorModel?> getDoctorProfileStream(String doctorId) {
+    return _firestore
+        .collection(doctorsCollection)
+        .doc(doctorId)
+        .snapshots()
+        .map((snap) => snap.exists ? DoctorModel.fromFirestore(snap) : null);
+  }
+
+  /// Stream of all doctors for real-time browse on user side
+  Stream<List<DoctorModel>> getAllDoctorsStream() {
+    return _firestore
+        .collection(doctorsCollection)
+        .snapshots()
+        .map(
+          (snap) =>
+              snap.docs.map((doc) => DoctorModel.fromFirestore(doc)).toList(),
+        );
   }
 
   // --- Slot Operations ---
@@ -209,6 +244,7 @@ class ConsultationService {
   }
 
   /// Update booking status (confirm/reject/cancel)
+  /// When cancelling, also releases the associated time slot.
   Future<bool> updateBookingStatus(
     String bookingId,
     BookingStatus newStatus, {
@@ -216,7 +252,7 @@ class ConsultationService {
     String? zoomLink,
   }) async {
     try {
-      final updates = {
+      final updates = <String, dynamic>{
         'status': newStatus.toString(),
         'updatedAt': Timestamp.now(),
       };
@@ -228,11 +264,133 @@ class ConsultationService {
           .collection(bookingsCollection)
           .doc(bookingId)
           .update(updates);
+
+      // Release the time slot when booking is cancelled/rejected
+      if (newStatus == BookingStatus.cancelled) {
+        final bookingSnap = await _firestore
+            .collection(bookingsCollection)
+            .doc(bookingId)
+            .get();
+        if (bookingSnap.exists) {
+          final data = bookingSnap.data()!;
+          final doctorId = data['doctorId'] as String;
+          final dateTime = (data['dateTime'] as Timestamp).toDate();
+          final timeSlot = data['timeSlot'] as String;
+          await releaseSlot(doctorId, dateTime, timeSlot);
+        }
+      }
+
       return true;
     } catch (e) {
       print('[ConsultationService] Error updating booking status: $e');
       return false;
     }
+  }
+
+  /// Release a time slot back to available when a booking is cancelled
+  Future<void> releaseSlot(
+    String doctorId,
+    DateTime date,
+    String timeSlot,
+  ) async {
+    try {
+      final dateKey =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+      final querySnapshot = await _firestore
+          .collection(slotsCollection)
+          .doc(doctorId)
+          .collection(dateKey)
+          .where('startTime', isEqualTo: timeSlot)
+          .get();
+
+      for (final doc in querySnapshot.docs) {
+        await doc.reference.update({
+          'status': SlotStatus.available.toString(),
+          'bookingId': FieldValue.delete(),
+        });
+      }
+      print('[ConsultationService] Slot released: $timeSlot on $dateKey');
+    } catch (e) {
+      print('[ConsultationService] Error releasing slot: $e');
+    }
+  }
+
+  /// Auto-expire bookings that are still 'requested' past their time slot.
+  /// Call this on doctor dashboard load to keep data clean.
+  Future<int> autoExpireBookings(String doctorId) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(bookingsCollection)
+          .where('doctorId', isEqualTo: doctorId)
+          .where('status', isEqualTo: BookingStatus.requested.toString())
+          .get();
+
+      int expiredCount = 0;
+      final now = DateTime.now();
+      final batch = _firestore.batch();
+
+      for (final doc in querySnapshot.docs) {
+        final data = doc.data();
+        final dateTime = (data['dateTime'] as Timestamp).toDate();
+        final timeSlotStr = data['timeSlot'] as String;
+
+        // Parse the time slot to get the actual start time
+        DateTime slotDateTime;
+        try {
+          final parsed = DateFormat('h:mm a').parse(timeSlotStr);
+          slotDateTime = DateTime(
+            dateTime.year,
+            dateTime.month,
+            dateTime.day,
+            parsed.hour,
+            parsed.minute,
+          );
+        } catch (_) {
+          // If time parsing fails, use the date only
+          slotDateTime = dateTime;
+        }
+
+        // If the slot start time has passed, auto-cancel
+        if (slotDateTime.isBefore(now)) {
+          batch.update(doc.reference, {
+            'status': BookingStatus.cancelled.toString(),
+            'doctorNotes': 'Auto-cancelled: not accepted before time slot',
+            'updatedAt': Timestamp.now(),
+          });
+
+          // Release the slot too
+          await releaseSlot(doctorId, dateTime, timeSlotStr);
+          expiredCount++;
+        }
+      }
+
+      if (expiredCount > 0) {
+        await batch.commit();
+        print('[ConsultationService] Auto-expired $expiredCount bookings');
+      }
+      return expiredCount;
+    } catch (e) {
+      print('[ConsultationService] Error auto-expiring bookings: $e');
+      return 0;
+    }
+  }
+
+  /// Real-time stream of bookings for a doctor
+  Stream<List<ConsultationBookingModel>> getDoctorBookingsStream(
+    String doctorId,
+  ) {
+    return _firestore
+        .collection(bookingsCollection)
+        .where('doctorId', isEqualTo: doctorId)
+        .snapshots()
+        .map((snap) {
+          final list = snap.docs
+              .map((doc) => ConsultationBookingModel.fromFirestore(doc))
+              .toList();
+          list.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+          return list;
+        });
   }
 
   /// Create a new time slot

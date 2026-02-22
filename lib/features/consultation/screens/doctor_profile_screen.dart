@@ -109,7 +109,19 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       if (mounted) {
         setState(() {
           _user = user;
-          _doctor = doctor;
+          // If no Doctors doc exists yet, create a default from user profile
+          _doctor =
+              doctor ??
+              DoctorModel(
+                id: user.id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                specialty: '',
+                degree: '',
+                experienceYears: 0,
+                photoUrl: user.photoUrl,
+                location: '',
+              );
           _firstNameController.text = _user?.firstName ?? '';
           _lastNameController.text = _user?.lastName ?? '';
           _bioController.text = _doctor?.bio ?? '';
@@ -128,7 +140,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
-    if (_user == null || _doctor == null) return;
+    if (_user == null) return;
 
     setState(() => _isSaving = true);
 
@@ -148,22 +160,32 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       }
 
       final experienceYears =
-          int.tryParse(_expController.text) ?? _doctor!.experienceYears;
+          int.tryParse(_expController.text) ?? _doctor?.experienceYears ?? 0;
       final firstName = _firstNameController.text.trim();
       final lastName = _lastNameController.text.trim();
 
-      // 2. Update Professional Profile (DoctorModel)
-      final updatedDoctor = _doctor!.copyWith(
-        firstName: firstName,
-        lastName: lastName,
-        bio: _bioController.text.trim(),
-        experienceYears: experienceYears,
-        specialty: _specialtyController.text.trim(),
-        degree: _degreeController.text.trim(),
-        photoUrl: photoUrl,
-      );
+      // 2. Update Professional Profile (DoctorModel) — uses set+merge
+      final updatedDoctor =
+          (_doctor ??
+                  DoctorModel(
+                    id: _user!.id,
+                    firstName: firstName,
+                    lastName: lastName,
+                    specialty: '',
+                    degree: '',
+                    experienceYears: 0,
+                  ))
+              .copyWith(
+                firstName: firstName,
+                lastName: lastName,
+                bio: _bioController.text.trim(),
+                experienceYears: experienceYears,
+                specialty: _specialtyController.text.trim(),
+                degree: _degreeController.text.trim(),
+                photoUrl: photoUrl,
+              );
 
-      final docSuccess = await _consultationService.updateDoctorProfile(
+      final docSuccess = await _consultationService.createOrUpdateDoctorProfile(
         updatedDoctor,
       );
 

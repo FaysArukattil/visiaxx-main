@@ -29,6 +29,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   int _totalPatients = 0;
   int _todaysSlots = 0;
   int _completedConsultations = 0;
+  int _pendingRequests = 0;
   List<ConsultationBookingModel> _upcomingBookings = [];
 
   final List<Map<String, dynamic>> _carouselSlides = [
@@ -79,6 +80,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     final user = _user ?? await _authService.getCurrentUserProfile();
 
     if (user != null) {
+      // Auto-expire past-due pending bookings first
+      await _consultationService.autoExpireBookings(user.id);
+
       // Parallel fetch for better performance
       final results = await Future.wait([
         _consultationService.getDoctorPatients(user.id),
@@ -99,6 +103,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
           _todaysSlots = todaySlots.length;
           _completedConsultations = bookings
               .where((b) => b.status == BookingStatus.completed)
+              .length;
+          _pendingRequests = bookings
+              .where((b) => b.status == BookingStatus.requested)
               .length;
           _upcomingBookings = bookings
               .where((b) => b.status == BookingStatus.confirmed)
@@ -472,7 +479,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
           _WebActionTile(
             icon: Icons.pending_actions_rounded,
             title: 'Review Requests',
-            subtitle: '${_upcomingBookings.length} pending',
+            subtitle: '$_pendingRequests pending',
             color: Colors.orange,
             onTap: () => Navigator.pushNamed(context, '/doctor-booking-review'),
           ),

@@ -36,11 +36,16 @@ class _DoctorSlotManagementScreenState
     setState(() => _isLoading = true);
     final uid = _authService.currentUserId;
     if (uid != null) {
-      await _consultationService.getAllSlotsForDate(uid, _selectedDate);
+      // Auto-expire past-due pending bookings
+      await _consultationService.autoExpireBookings(uid);
+
       final bookings = await _consultationService.getDoctorBookings(uid);
       if (mounted) {
         setState(() {
-          _bookings = bookings;
+          // Only show bookings for the selected date
+          _bookings = bookings
+              .where((b) => DateUtils.isSameDay(b.dateTime, _selectedDate))
+              .toList();
           _isLoading = false;
         });
       }

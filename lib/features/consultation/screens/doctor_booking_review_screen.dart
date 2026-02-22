@@ -18,30 +18,67 @@ class DoctorBookingReviewScreen extends StatefulWidget {
       _DoctorBookingReviewScreenState();
 }
 
-class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen> {
+class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
+    with SingleTickerProviderStateMixin {
   final _consultationService = ConsultationService();
   final _authService = AuthService();
-  List<ConsultationBookingModel> _requests = [];
+  List<ConsultationBookingModel> _allBookings = [];
+  List<ConsultationBookingModel> _filteredBookings = [];
   bool _isLoading = true;
+  late TabController _tabController;
+
+  static const _tabs = ['Pending', 'Confirmed', 'Completed', 'Cancelled'];
+  static const _tabStatuses = [
+    BookingStatus.requested,
+    BookingStatus.confirmed,
+    BookingStatus.completed,
+    BookingStatus.cancelled,
+  ];
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController.addListener(_onTabChanged);
     _loadRequests();
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_onTabChanged);
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _onTabChanged() {
+    if (!_tabController.indexIsChanging) {
+      _filterBookings();
+    }
+  }
+
+  void _filterBookings() {
+    final status = _tabStatuses[_tabController.index];
+    setState(() {
+      _filteredBookings = _allBookings
+          .where((b) => b.status == status)
+          .toList();
+    });
   }
 
   Future<void> _loadRequests() async {
     setState(() => _isLoading = true);
     final uid = _authService.currentUserId;
     if (uid != null) {
+      // Auto-expire old pending bookings first
+      await _consultationService.autoExpireBookings(uid);
+
       final allBookings = await _consultationService.getDoctorBookings(uid);
       if (mounted) {
         setState(() {
-          _requests = allBookings
-              .where((b) => b.status == BookingStatus.requested)
-              .toList();
+          _allBookings = allBookings;
           _isLoading = false;
         });
+        _filterBookings();
       }
     }
   }
@@ -180,21 +217,49 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen> {
                     letterSpacing: -0.5,
                   ),
                 ),
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(48),
+                  child: TabBar(
+                    controller: _tabController,
+                    isScrollable: true,
+                    labelStyle: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                      letterSpacing: 0.5,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                    labelColor: context.primary,
+                    unselectedLabelColor: context.textSecondary,
+                    indicatorColor: context.primary,
+                    indicatorSize: TabBarIndicatorSize.label,
+                    tabs: _tabs.map((t) {
+                      final count = _allBookings
+                          .where(
+                            (b) => b.status == _tabStatuses[_tabs.indexOf(t)],
+                          )
+                          .length;
+                      return Tab(text: '$t ($count)');
+                    }).toList(),
+                  ),
+                ),
               ),
               if (_isLoading)
                 const SliverFillRemaining(
                   child: Center(child: EyeLoader(size: 40)),
                 )
-              else if (_requests.isEmpty)
+              else if (_filteredBookings.isEmpty)
                 SliverFillRemaining(child: _buildEmptyState())
               else
                 SliverPadding(
                   padding: const EdgeInsets.all(24),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate((context, index) {
-                      final booking = _requests[index];
+                      final booking = _filteredBookings[index];
                       return _buildRequestCard(booking);
-                    }, childCount: _requests.length),
+                    }, childCount: _filteredBookings.length),
                   ),
                 ),
             ],
@@ -267,7 +332,10 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen> {
                     ],
                   ),
                 ),
-                _buildStatusBadge('PENDING', Colors.orange),
+                _buildStatusBadge(
+                  _getStatusLabel(booking.status),
+                  _getStatusColor(booking.status),
+                ),
               ],
             ),
           ),
@@ -366,31 +434,80 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen> {
               ),
             ),
 
-          // Actions
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildActionButton(
-                    'REJECT',
-                    AppColors.error,
-                    false,
-                    () => _updateStatus(booking, BookingStatus.cancelled),
+          // Actions — only for pending bookings
+          if (booking.status == BookingStatus.requested)
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildActionButton(
+                      'REJECT',
+                      AppColors.error,
+                      false,
+                      () => _updateStatus(booking, BookingStatus.cancelled),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildActionButton(
-                    'CONFIRM',
-                    Colors.green,
-                    true,
-                    () => _updateStatus(booking, BookingStatus.confirmed),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildActionButton(
+                      'CONFIRM',
+                      Colors.green,
+                      true,
+                      () => _updateStatus(booking, BookingStatus.confirmed),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+
+          // Show info for other statuses
+          if (booking.status == BookingStatus.confirmed &&
+              booking.zoomLink != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Row(
+                children: [
+                  Icon(Icons.videocam_rounded, size: 16, color: Colors.green),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Meeting link set',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          if (booking.status == BookingStatus.cancelled &&
+              booking.doctorNotes != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline_rounded,
+                    size: 16,
+                    color: context.textSecondary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      booking.doctorNotes!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, curve: Curves.easeOut);
@@ -456,6 +573,36 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen> {
         ),
       ),
     );
+  }
+
+  String _getStatusLabel(BookingStatus status) {
+    switch (status) {
+      case BookingStatus.requested:
+        return 'PENDING';
+      case BookingStatus.confirmed:
+        return 'CONFIRMED';
+      case BookingStatus.completed:
+        return 'COMPLETED';
+      case BookingStatus.cancelled:
+        return 'CANCELLED';
+      case BookingStatus.noShow:
+        return 'NO SHOW';
+    }
+  }
+
+  Color _getStatusColor(BookingStatus status) {
+    switch (status) {
+      case BookingStatus.requested:
+        return Colors.orange;
+      case BookingStatus.confirmed:
+        return Colors.green;
+      case BookingStatus.completed:
+        return context.primary;
+      case BookingStatus.cancelled:
+        return AppColors.error;
+      case BookingStatus.noShow:
+        return Colors.grey;
+    }
   }
 
   Widget _buildActionButton(
