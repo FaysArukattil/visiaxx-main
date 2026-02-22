@@ -305,7 +305,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Your patient flow is up 12% today. Great job!',
+                        'Visiaxx Doctor Portal',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
