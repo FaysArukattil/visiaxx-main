@@ -10,6 +10,10 @@ import '../../../core/services/test_result_service.dart';
 import '../../../core/services/consultation_service.dart';
 import '../../../core/utils/snackbar_utils.dart';
 import 'patient_results_view_screen.dart';
+import '../../../core/services/pip_service.dart';
+import '../../../core/services/pdf_export_service.dart';
+import 'package:printing/printing.dart';
+import 'package:pdf/pdf.dart';
 
 class DoctorVideoCallScreen extends StatefulWidget {
   final ConsultationBookingModel booking;
@@ -21,8 +25,6 @@ class DoctorVideoCallScreen extends StatefulWidget {
 }
 
 class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
-  final _localRenderer = RTCVideoRenderer();
-  final _remoteRenderer = RTCVideoRenderer();
   final _videoCallService = VideoCallService();
   final _consultationService = ConsultationService();
 
@@ -39,6 +41,11 @@ class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
   TestResultModel? _selectedResult;
   bool _isLoadingResult = false;
   final _testResultService = TestResultService();
+  final _pdfExportService = PdfExportService();
+
+  // Camera devices
+  List<MediaDeviceInfo> _videoDevices = [];
+  String? _selectedDeviceId;
 
   @override
   void initState() {
@@ -47,30 +54,49 @@ class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
   }
 
   Future<void> _initWebRTC() async {
-    await _localRenderer.initialize();
-    await _remoteRenderer.initialize();
+    await _videoCallService.initializeRenderers();
+
+    // Check if already active
+    if (_videoCallService.localRenderer.srcObject != null && _isConnected)
+      return;
+
+    // 0. Get available cameras
+    _videoDevices = await _videoCallService.getVideoDevices();
+    if (_videoDevices.isNotEmpty && _selectedDeviceId == null) {
+      // Try to find a non "Link to Windows" camera or just take first
+      _selectedDeviceId = _videoDevices
+          .firstWhere(
+            (d) => !d.label.toLowerCase().contains('link to windows'),
+            orElse: () => _videoDevices.first,
+          )
+          .deviceId;
+    }
 
     // 1. Get local stream
-    final stream = await _videoCallService.getLocalStream();
-    setState(() => _localRenderer.srcObject = stream);
+    final stream = await _videoCallService.getLocalStream(
+      deviceId: _selectedDeviceId,
+    );
+    setState(() => _videoCallService.localRenderer.srcObject = stream);
 
     // 2. Start signaling
     await _videoCallService.startCall(widget.booking.id);
 
     // 3. Listen for remote stream
     _videoCallService.onRemoteStream((remoteStream) {
-      setState(() {
-        _remoteRenderer.srcObject = remoteStream;
-        _isConnected = true;
-      });
+      if (mounted) {
+        setState(() {
+          _videoCallService.remoteRenderer.srcObject = remoteStream;
+          _isConnected = true;
+        });
+      }
     });
   }
 
   @override
   void dispose() {
-    _localRenderer.dispose();
-    _remoteRenderer.dispose();
-    _videoCallService.dispose(widget.booking.id);
+    if (!PipService().isActive) {
+      _videoCallService.dispose(widget.booking.id);
+    }
     _notesController.dispose();
     _diagnosisController.dispose();
     super.dispose();
@@ -78,64 +104,117 @@ class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // Main Video Layout
-          Row(
-            children: [
-              // Patient Video / Main Area
-              Expanded(flex: 3, child: _buildMainVideoArea()),
-              // Side Panel (Patient Data)
-              if (_showDataOverlay && MediaQuery.of(context).size.width > 800)
-                Container(
-                  width: 350,
-                  color: context.surface,
-                  child: _buildPatientDataPanel(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handleBackPress();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          children: [
+            // Main Video Layout
+            Row(
+              children: [
+                // Patient Video / Main Area
+                Expanded(
+                  flex:
+                      _showDataOverlay &&
+                          MediaQuery.of(context).size.width > 800
+                      ? 5
+                      : 1,
+                  child: _buildMainVideoArea(),
                 ),
-            ],
-          ),
+                // Side Panel (Patient Data)
+                if (_showDataOverlay && MediaQuery.of(context).size.width > 800)
+                  Expanded(
+                    flex: 5,
+                    child: Container(
+                      color: context.surface,
+                      child: _buildPatientDataPanel(),
+                    ),
+                  ),
+              ],
+            ),
 
-          // Mobile Data Overlay (Bottom Sheet toggle or Floating)
-          if (MediaQuery.of(context).size.width <= 800)
+            // Mobile Data Overlay (Bottom Sheet toggle or Floating)
+            if (MediaQuery.of(context).size.width <= 800)
+              Positioned(
+                top: 40,
+                right: 20,
+                child: FloatingActionButton.small(
+                  onPressed: () => _showMobileDataDialog(),
+                  child: const Icon(Icons.description),
+                ),
+              ),
+
+            // Call Controls (Bottom Center)
             Positioned(
-              top: 40,
-              right: 20,
-              child: FloatingActionButton.small(
-                onPressed: () => _showMobileDataDialog(),
-                child: const Icon(Icons.description),
+              bottom: 30,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth:
+                          _showDataOverlay &&
+                              MediaQuery.of(context).size.width > 800
+                          ? MediaQuery.of(context).size.width * 0.5
+                          : MediaQuery.of(context).size.width,
+                    ),
+                    child: _buildCallControls(),
+                  ),
+                ],
               ),
             ),
 
-          // Call Controls (Bottom Center)
-          Positioned(
-            bottom: 30,
-            left: 0,
-            right: _showDataOverlay && MediaQuery.of(context).size.width > 800
-                ? 350
-                : 0,
-            child: _buildCallControls(),
-          ),
-
-          // Side Panel Toggle (Web)
-          if (MediaQuery.of(context).size.width > 800)
-            Positioned(
-              top: 20,
-              right: _showDataOverlay ? 360 : 20,
-              child: FloatingActionButton.small(
-                onPressed: () =>
-                    setState(() => _showDataOverlay = !_showDataOverlay),
-                backgroundColor: context.surface,
-                child: Icon(
-                  _showDataOverlay ? Icons.chevron_right : Icons.chevron_left,
-                  color: context.primary,
+            // Side Panel Toggle (Web)
+            if (MediaQuery.of(context).size.width > 800)
+              Positioned(
+                top: 20,
+                right: _showDataOverlay
+                    ? MediaQuery.of(context).size.width * 0.5 - 20
+                    : 20,
+                child: FloatingActionButton.small(
+                  onPressed: () =>
+                      setState(() => _showDataOverlay = !_showDataOverlay),
+                  backgroundColor: context.surface,
+                  child: Icon(
+                    _showDataOverlay ? Icons.chevron_right : Icons.chevron_left,
+                    color: context.primary,
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  void _handleBackPress() {
+    if (_isConnected) {
+      PipService().show(
+        context: context,
+        localRenderer: _videoCallService.localRenderer,
+        remoteRenderer: _videoCallService.remoteRenderer,
+        onRestore: () {
+          // If the user navigates back via PiP restore
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) =>
+                  DoctorVideoCallScreen(booking: widget.booking),
+            ),
+          );
+        },
+        onEnd: () => _endCall(),
+      );
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   Widget _buildMainVideoArea() {
@@ -146,7 +225,7 @@ class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
           color: Colors.black,
           child: _isConnected
               ? RTCVideoView(
-                  _remoteRenderer,
+                  _videoCallService.remoteRenderer,
                   objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
                 )
               : Center(
@@ -179,27 +258,71 @@ class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
         Positioned(
           top: 40,
           left: 20,
-          child: Container(
-            width: 120,
-            height: 180,
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white24, width: 2),
-            ),
-            child: _isVideoOff
-                ? const Center(
-                    child: Icon(Icons.videocam_off, color: Colors.white24),
-                  )
-                : ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: RTCVideoView(
-                      _localRenderer,
-                      mirror: true,
-                      objectFit:
-                          RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 120,
+                height: 180,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white24, width: 2),
+                ),
+                child: _isVideoOff
+                    ? const Center(
+                        child: Icon(Icons.videocam_off, color: Colors.white24),
+                      )
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: RTCVideoView(
+                          _videoCallService.localRenderer,
+                          mirror: true,
+                          objectFit:
+                              RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                        ),
+                      ),
+              ),
+              if (_videoDevices.length > 1)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButton<String>(
+                      value: _selectedDeviceId,
+                      dropdownColor: Colors.black87,
+                      underline: const SizedBox(),
+                      icon: const Icon(
+                        Icons.videocam,
+                        color: Colors.white70,
+                        size: 16,
+                      ),
+                      items: _videoDevices.map((device) {
+                        return DropdownMenuItem<String>(
+                          value: device.deviceId,
+                          child: Text(
+                            device.label.length > 15
+                                ? '${device.label.substring(0, 12)}...'
+                                : device.label,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        setState(() => _selectedDeviceId = val);
+                        _initWebRTC(); // Re-init with new camera
+                      },
                     ),
                   ),
+                ),
+            ],
           ),
         ),
       ],
@@ -305,165 +428,48 @@ class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
               _selectedResult = null;
             }),
           ),
-          title: const Text(
-            'Test Result Detail',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          title: Text(
+            _selectedResult?.testType.replaceAll('_', ' ').toUpperCase() ??
+                'Result Detail',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
+          actions: [
+            if (_selectedResult != null)
+              IconButton(
+                icon: const Icon(Icons.fullscreen),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PatientResultsViewScreen(
+                        resultIds: [_selectedResultId!],
+                        patientName: widget.booking.patientName,
+                        patientId: widget.booking.patientId,
+                      ),
+                    ),
+                  );
+                },
+              ),
+          ],
         ),
         Expanded(
           child: _isLoadingResult
               ? const Center(child: CircularProgressIndicator())
               : _selectedResult == null
               ? const Center(child: Text('Failed to load result'))
-              : ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    _buildResultDetailHeader(_selectedResult!),
-                    const SizedBox(height: 20),
-                    _buildResultDetailSummary(_selectedResult!),
-                    const SizedBox(height: 24),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PatientResultsViewScreen(
-                              resultIds: [_selectedResultId!],
-                              patientName: widget.booking.patientName,
-                              patientId: widget.booking.patientId,
-                            ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.fullscreen, size: 18),
-                      label: const Text('View Full Screen'),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: context.primary),
-                      ),
-                    ),
-                  ],
+              : PdfPreview(
+                  build: (format) =>
+                      _pdfExportService.generatePdfBytes(_selectedResult!),
+                  allowPrinting: false,
+                  allowSharing: false,
+                  canChangePageFormat: false,
+                  canChangeOrientation: false,
+                  canDebug: false,
+                  initialPageFormat: PdfPageFormat.a4,
                 ),
         ),
       ],
     );
-  }
-
-  Widget _buildResultDetailHeader(TestResultModel result) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            result.testType.replaceAll('_', ' ').toUpperCase(),
-            style: TextStyle(
-              color: context.primary,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            DateFormat('MMMM dd, yyyy').format(result.timestamp),
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            result.profileName,
-            style: TextStyle(color: context.textSecondary, fontSize: 13),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResultDetailSummary(TestResultModel result) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'OVERALL STATUS',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textTertiary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: _getStatusColor(result.overallStatus).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            result.overallStatus.label.toUpperCase(),
-            style: TextStyle(
-              color: _getStatusColor(result.overallStatus),
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-        const Text(
-          'QUICK SUMMARY',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textTertiary,
-          ),
-        ),
-        const SizedBox(height: 12),
-        _buildSummaryItem(
-          'Right Eye',
-          result.visualAcuityRight?.snellenScore ?? 'N/A',
-        ),
-        _buildSummaryItem(
-          'Left Eye',
-          result.visualAcuityLeft?.snellenScore ?? 'N/A',
-        ),
-        if (result.colorVision != null)
-          _buildSummaryItem('Color Vision', result.colorVision!.status),
-        if (result.recommendation.isNotEmpty)
-          _buildSummaryItem('Rec.', result.recommendation),
-      ],
-    );
-  }
-
-  Widget _buildSummaryItem(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.circle, size: 6, color: AppColors.textTertiary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '$label: $value',
-              style: const TextStyle(height: 1.4, fontSize: 13),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getStatusColor(TestStatus status) {
-    switch (status) {
-      case TestStatus.normal:
-        return Colors.green;
-      case TestStatus.review:
-        return Colors.orange;
-      case TestStatus.urgent:
-        return Colors.red;
-    }
   }
 
   Widget _buildResultTile(String id) {
