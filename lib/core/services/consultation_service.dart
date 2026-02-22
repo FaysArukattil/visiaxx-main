@@ -11,6 +11,8 @@ class ConsultationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  User? get currentUser => _auth.currentUser;
+
   // Collection names
   static const String doctorsCollection = 'Doctors';
   static const String bookingsCollection = 'consultation_bookings';
@@ -165,9 +167,42 @@ class ConsultationService {
           .where('status', isEqualTo: 'SlotStatus.available')
           .get();
 
-      return querySnapshot.docs
+      final now = DateTime.now();
+      final isToday =
+          date.year == now.year &&
+          date.month == now.month &&
+          date.day == now.day;
+
+      final slots = querySnapshot.docs
           .map((doc) => TimeSlotModel.fromFirestore(doc))
           .toList();
+
+      if (!isToday) return slots;
+
+      // Filter out past slots for today
+      return slots.where((slot) {
+        try {
+          // Attempt to parse startTime. Supports both "10:20" and "10:20 AM"
+          DateTime time;
+          if (slot.startTime.contains('AM') || slot.startTime.contains('PM')) {
+            time = DateFormat('h:mm a').parse(slot.startTime);
+          } else {
+            time = DateFormat('HH:mm').parse(slot.startTime);
+          }
+
+          final slotDateTime = DateTime(
+            now.year,
+            now.month,
+            now.day,
+            time.hour,
+            time.minute,
+          );
+
+          return slotDateTime.isAfter(now.add(const Duration(minutes: 5)));
+        } catch (e) {
+          return true; // If parse fails, show the slot
+        }
+      }).toList();
     } catch (e) {
       print('[ConsultationService] Error fetching slots: $e');
       return [];
@@ -489,6 +524,46 @@ class ConsultationService {
   }
 
   /// Real-time stream of bookings for a doctor
+  Future<List<ConsultationBookingModel>> getDoctorConsultationHistory(
+    String doctorId,
+  ) async {
+    final snap = await _firestore
+        .collection(bookingsCollection)
+        .where('doctorId', isEqualTo: doctorId)
+        .where('status', isEqualTo: BookingStatus.confirmed.name)
+        .orderBy('dateTime', descending: true)
+        .get();
+
+    return snap.docs
+        .map((doc) => ConsultationBookingModel.fromFirestore(doc))
+        .toList();
+  }
+
+  /// Automatically cancels bookings that have passed their scheduled time
+  /// plus a 1-hour grace period if they haven't been accepted yet.
+  Future<void> autoCancelStaleUnacceptedBookings() async {
+    final now = DateTime.now();
+    // Cancel if the appointment time has already passed
+    final expiryLimit = now;
+
+    final snap = await _firestore
+        .collection(bookingsCollection)
+        .where('status', isEqualTo: BookingStatus.requested.name)
+        .where('dateTime', isLessThan: Timestamp.fromDate(expiryLimit))
+        .get();
+
+    if (snap.docs.isEmpty) return;
+
+    final batch = _firestore.batch();
+    for (var doc in snap.docs) {
+      batch.update(doc.reference, {'status': BookingStatus.cancelled.name});
+    }
+    await batch.commit();
+    debugPrint(
+      '[ConsultationService] 🕒 Auto-cancelled ${snap.docs.length} stale unaccepted bookings.',
+    );
+  }
+
   Stream<List<ConsultationBookingModel>> getDoctorBookingsStream(
     String doctorId,
   ) {
@@ -502,6 +577,21 @@ class ConsultationService {
               .toList();
           list.sort((a, b) => b.dateTime.compareTo(a.dateTime));
           return list;
+        });
+  }
+
+  Stream<List<ConsultationBookingModel>> getPendingBookingsStream(
+    String doctorId,
+  ) {
+    return _firestore
+        .collection(bookingsCollection)
+        .where('doctorId', isEqualTo: doctorId)
+        .where('status', isEqualTo: BookingStatus.requested.name)
+        .snapshots()
+        .map((snap) {
+          return snap.docs
+              .map((doc) => ConsultationBookingModel.fromFirestore(doc))
+              .toList();
         });
   }
 

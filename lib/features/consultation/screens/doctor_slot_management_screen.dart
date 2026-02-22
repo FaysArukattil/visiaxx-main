@@ -232,18 +232,32 @@ class _DoctorSlotManagementScreenState
     ConsultationBookingModel? booking,
     int index,
   ) {
+    final slotTime = DateFormat('h:mm a').parse(time);
+    final fullSlotDateTime = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      slotTime.hour,
+      slotTime.minute,
+    );
+    final isPast = fullSlotDateTime.isBefore(DateTime.now());
+    final isAvailable = booking == null && !isPast;
+    final isLocked = booking == null && isPast;
     final statusColor = booking != null
         ? _getStatusColor(booking.status)
         : Colors.green;
-    final isAvailable = booking == null;
 
     return Container(
           decoration: BoxDecoration(
-            color: context.surface,
+            color: isLocked
+                ? context.surface.withValues(alpha: 0.5)
+                : context.surface,
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
               color: isAvailable
                   ? context.dividerColor.withValues(alpha: 0.05)
+                  : isLocked
+                  ? context.dividerColor.withValues(alpha: 0.1)
                   : statusColor.withValues(alpha: 0.2),
               width: isAvailable ? 1 : 2,
             ),
@@ -286,8 +300,10 @@ class _DoctorSlotManagementScreenState
                     _buildStatusBadge(
                       isAvailable
                           ? 'AVAILABLE'
-                          : booking.status.name.toUpperCase(),
-                      statusColor,
+                          : isLocked
+                          ? 'EXPIRED'
+                          : booking?.status.name.toUpperCase() ?? '',
+                      isLocked ? Colors.grey : statusColor,
                     ),
                   ],
                 ),
@@ -400,7 +416,9 @@ class _DoctorSlotManagementScreenState
                     ),
                 ] else
                   Text(
-                    'No current appointments scheduled for this time slot.',
+                    isLocked
+                        ? 'This time slot has passed and is no longer available for booking.'
+                        : 'No current appointments scheduled for this time slot.',
                     style: TextStyle(
                       fontSize: 11,
                       color: context.textSecondary,

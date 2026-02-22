@@ -499,6 +499,7 @@ class AuthService {
       }
 
       // 1. Check IN-MEMORY cache (Instant)
+      // Only return cache if it matches the requested UID
       if (_cachedUser != null && _cachedUser!.id == uid) {
         debugPrint('[AuthService] Returning in-memory cached user');
         unawaited(_refreshUserDataInBackground(uid));
@@ -539,9 +540,13 @@ class AuthService {
           .get(const GetOptions(source: Source.serverAndCache));
       if (doc.exists && doc.data() != null) {
         final user = UserModel.fromMap(doc.data()!, doc.id);
-        _cachedUser = user;
-        // Save to cache
-        await LocalStorageService().saveUserProfile(user);
+
+        // ONLY update _cachedUser if it's the CURRENTLY LOGGED IN user
+        if (uid == _auth.currentUser?.uid) {
+          _cachedUser = user;
+          await LocalStorageService().saveUserProfile(user);
+        }
+
         return user;
       }
       return null;

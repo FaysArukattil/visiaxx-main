@@ -121,118 +121,208 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900),
-          child: Stack(
-            children: [
-              // Background Decorations
-              Positioned(
-                top: -100,
-                left: -100,
-                child: Container(
-                  width: 300,
-                  height: 300,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        context.primary.withValues(alpha: 0.08),
-                        context.primary.withValues(alpha: 0.0),
-                      ],
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: Stack(
+        children: [
+          // Background Decorations
+          Positioned(
+            top: -100,
+            left: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    context.primary.withValues(alpha: 0.08),
+                    context.primary.withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 120,
+                floating: false,
+                pinned: true,
+                stretch: true,
+                backgroundColor: theme.scaffoldBackgroundColor,
+                surfaceTintColor: Colors.transparent,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                flexibleSpace: FlexibleSpaceBar(
+                  centerTitle: false,
+                  titlePadding: const EdgeInsets.only(left: 56, bottom: 62),
+                  title: Text(
+                    'Review Requests',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                      color: context.onSurface,
+                    ),
+                  ),
+                  background: Stack(
+                    children: [
+                      Positioned(
+                        right: 20,
+                        top: 40,
+                        child: Icon(
+                          Icons.request_quote_rounded,
+                          size: 80,
+                          color: context.primary.withValues(alpha: 0.05),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(56),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: context.dividerColor.withValues(alpha: 0.1),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      isScrollable: true,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                        letterSpacing: 0.3,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                      labelColor: context.primary,
+                      unselectedLabelColor: context.textSecondary,
+                      indicatorColor: context.primary,
+                      indicatorWeight: 3,
+                      indicatorSize: TabBarIndicatorSize.label,
+                      dividerColor: Colors.transparent,
+                      tabs: _tabs.map((t) {
+                        final index = _tabs.indexOf(t);
+                        final count = _allBookings
+                            .where((b) => b.status == _tabStatuses[index])
+                            .length;
+
+                        return Tab(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(t),
+                              if (count > 0) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        _tabStatuses[index] ==
+                                            BookingStatus.requested
+                                        ? AppColors.error
+                                        : context.primary.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    count.toString(),
+                                    style: TextStyle(
+                                      color:
+                                          _tabStatuses[index] ==
+                                              BookingStatus.requested
+                                          ? Colors.white
+                                          : context.primary,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ),
               ),
-
-              CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  SliverAppBar(
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    pinned: true,
-                    leading: IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 20,
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    title: Text(
-                      'Review Requests',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    bottom: PreferredSize(
-                      preferredSize: const Size.fromHeight(48),
-                      child: TabBar(
-                        controller: _tabController,
-                        isScrollable: true,
-                        labelStyle: const TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 12,
-                          letterSpacing: 0.5,
+              if (_isLoading)
+                const SliverFillRemaining(
+                  child: Center(child: EyeLoader(size: 40)),
+                )
+              else if (_filteredBookings.isEmpty)
+                SliverFillRemaining(child: _buildEmptyState())
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.all(24),
+                  sliver: MediaQuery.of(context).size.width > 900
+                      ? SliverGrid(
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount:
+                                    MediaQuery.of(context).size.width > 1600
+                                    ? 3
+                                    : 2,
+                                crossAxisSpacing: 24,
+                                mainAxisSpacing: 24,
+                                mainAxisExtent: 420,
+                              ),
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final booking = _filteredBookings[index];
+                            return _buildRequestCard(booking, isGrid: true);
+                          }, childCount: _filteredBookings.length),
+                        )
+                      : SliverList(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final booking = _filteredBookings[index];
+                            return _buildRequestCard(booking);
+                          }, childCount: _filteredBookings.length),
                         ),
-                        unselectedLabelStyle: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                        labelColor: context.primary,
-                        unselectedLabelColor: context.textSecondary,
-                        indicatorColor: context.primary,
-                        indicatorSize: TabBarIndicatorSize.label,
-                        tabs: _tabs.map((t) {
-                          final count = _allBookings
-                              .where(
-                                (b) =>
-                                    b.status == _tabStatuses[_tabs.indexOf(t)],
-                              )
-                              .length;
-                          return Tab(text: '$t ($count)');
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-                  if (_isLoading)
-                    const SliverFillRemaining(
-                      child: Center(child: EyeLoader(size: 40)),
-                    )
-                  else if (_filteredBookings.isEmpty)
-                    SliverFillRemaining(child: _buildEmptyState())
-                  else
-                    SliverPadding(
-                      padding: const EdgeInsets.all(24),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate((context, index) {
-                          final booking = _filteredBookings[index];
-                          return _buildRequestCard(booking);
-                        }, childCount: _filteredBookings.length),
-                      ),
-                    ),
-                ],
-              ),
+                ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildRequestCard(ConsultationBookingModel booking) {
+  Widget _buildRequestCard(
+    ConsultationBookingModel booking, {
+    bool isGrid = false,
+  }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 24),
+      margin: isGrid ? EdgeInsets.zero : const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
         color: context.surface,
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: context.dividerColor.withValues(alpha: 0.05)),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: context.dividerColor.withValues(alpha: 0.08)),
         boxShadow: [
           BoxShadow(
-            color: context.primary.withValues(alpha: 0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -241,23 +331,23 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
         children: [
           // Header Section
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
                 Container(
-                  width: 60,
-                  height: 60,
+                  width: 52,
+                  height: 52,
                   decoration: BoxDecoration(
                     color: context.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(
                     Icons.person_rounded,
                     color: context.primary,
-                    size: 30,
+                    size: 28,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,17 +356,17 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
                         booking.patientName,
                         style: const TextStyle(
                           fontWeight: FontWeight.w900,
-                          fontSize: 17,
+                          fontSize: 16,
                           letterSpacing: -0.2,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         booking.type == ConsultationType.online
                             ? 'Online Consultation'
                             : 'In-Person Visit',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: context.textSecondary,
                         ),
@@ -294,9 +384,9 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
 
           // Info Grid
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: context.primary.withValues(alpha: 0.025),
+              color: context.primary.withValues(alpha: 0.02),
               border: Border.symmetric(
                 horizontal: BorderSide(
                   color: context.dividerColor.withValues(alpha: 0.05),
@@ -309,20 +399,18 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
                   children: [
                     _infoItem(
                       Icons.calendar_today_rounded,
-                      DateFormat('MMM d, yyyy').format(booking.dateTime),
+                      DateFormat('MMM d').format(booking.dateTime),
                     ),
-                    const SizedBox(width: 24),
                     _infoItem(Icons.access_time_rounded, booking.timeSlot),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Row(
                   children: [
                     _infoItem(
                       Icons.cake_rounded,
-                      '${booking.patientAge ?? "--"} years',
+                      '${booking.patientAge ?? "--"} yrs',
                     ),
-                    const SizedBox(width: 24),
                     _infoItem(
                       Icons.wc_rounded,
                       booking.patientGender ?? 'Unknown',
@@ -331,7 +419,7 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
                 ),
                 if (booking.type == ConsultationType.inPerson &&
                     booking.exactAddress != null) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   _infoItem(
                     Icons.location_on_rounded,
                     booking.exactAddress!,
@@ -345,52 +433,65 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
           // Results Preview
           if (booking.attachedResultIds.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: context.primary.withValues(alpha: 0.08),
-                      shape: BoxShape.circle,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PatientResultsViewScreen(
+                        resultIds: booking.attachedResultIds,
+                        patientName: booking.patientName,
+                        patientId: booking.patientId,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.description_rounded,
-                      size: 16,
-                      color: context.primary,
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: context.primary.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: context.primary.withValues(alpha: 0.1),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      '${booking.attachedResultIds.length} Medical Reports Attached',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.description_rounded,
+                        size: 18,
                         color: context.primary,
                       ),
-                    ),
-                  ),
-                  _buildTextButton('VIEW ALL', () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PatientResultsViewScreen(
-                          resultIds: booking.attachedResultIds,
-                          patientName: booking.patientName,
-                          patientId: booking.patientId,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '${booking.attachedResultIds.length} Reports Attached',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: context.primary,
+                          ),
                         ),
                       ),
-                    );
-                  }),
-                ],
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 12,
+                        color: context.primary,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
 
-          // Actions — only for pending bookings
+          const Spacer(),
+
+          // Actions
           if (booking.status == BookingStatus.requested)
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
                   Expanded(
@@ -401,7 +502,7 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
                       () => _updateStatus(booking, BookingStatus.cancelled),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: _buildActionButton(
                       'CONFIRM',
@@ -414,56 +515,33 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
               ),
             ),
 
-          // Show info for other statuses
-          if (booking.status == BookingStatus.confirmed &&
-              booking.zoomLink != null)
+          if (booking.status == BookingStatus.confirmed)
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: Row(
-                children: [
-                  Icon(Icons.videocam_rounded, size: 16, color: Colors.green),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Meeting link set',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: _buildActionButton('JOIN CALL', Colors.blue, true, () {
+                // Navigate to call if it's today
+                Navigator.pushNamed(
+                  context,
+                  '/doctor-video-call',
+                  arguments: booking,
+                );
+              }),
             ),
 
           if (booking.status == BookingStatus.cancelled &&
               booking.doctorNotes != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    size: 16,
-                    color: context.textSecondary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      booking.doctorNotes!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.textSecondary,
-                      ),
-                    ),
-                  ),
-                ],
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Text(
+                booking.doctorNotes!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 11, color: context.textSecondary),
               ),
             ),
         ],
       ),
-    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, curve: Curves.easeOut);
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05, curve: Curves.easeOut);
   }
 
   Widget _infoItem(IconData icon, String label, {bool isLong = false}) {
@@ -505,24 +583,6 @@ class _DoctorBookingReviewScreenState extends State<DoctorBookingReviewScreen>
           fontSize: 9,
           fontWeight: FontWeight.w900,
           letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextButton(String label, VoidCallback onTap) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w900,
-            color: context.primary,
-            letterSpacing: 1,
-          ),
         ),
       ),
     );

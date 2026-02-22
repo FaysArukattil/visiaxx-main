@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
+import 'data/models/consultation_booking_model.dart';
 import 'package:visiaxx/core/services/notification_service.dart';
 import 'package:visiaxx/core/widgets/eye_loader.dart';
 import 'package:visiaxx/core/widgets/network_indicator_widget.dart';
@@ -22,6 +23,7 @@ import 'features/auth/screens/forgot_password_screen.dart';
 import 'features/home/screens/home_screen.dart';
 import 'features/home/screens/help_center_screen.dart';
 import 'features/home/screens/support_chat_screen.dart';
+import 'features/consultation/screens/doctor_patient_records_screen.dart';
 import 'features/consultation/screens/consultation_type_screen.dart';
 import 'features/consultation/screens/in_person_location_screen.dart';
 import 'features/consultation/screens/doctor_browse_screen.dart';
@@ -34,6 +36,8 @@ import 'features/consultation/screens/my_bookings_screen.dart';
 import 'features/consultation/screens/doctor_main_navigation_screen.dart';
 import 'features/consultation/screens/doctor_slot_management_screen.dart';
 import 'features/consultation/screens/doctor_booking_review_screen.dart';
+import 'features/consultation/screens/doctor_video_call_screen.dart';
+import 'features/consultation/screens/patient_video_call_screen.dart';
 import 'features/quick_vision_test/screens/profile_selection_screen.dart';
 import 'features/quick_vision_test/screens/questionnaire_screen.dart';
 import 'features/quick_vision_test/screens/test_instructions_screen.dart';
@@ -409,6 +413,20 @@ class _VisiaxAppState extends State<VisiaxApp> with WidgetsBindingObserver {
               '/doctor-slots': (context) => const DoctorSlotManagementScreen(),
               '/doctor-booking-review': (context) =>
                   const DoctorBookingReviewScreen(),
+              '/doctor-patient-records': (context) =>
+                  const DoctorPatientRecordsScreen(),
+              '/doctor-video-call': (context) {
+                final booking =
+                    ModalRoute.of(context)?.settings.arguments
+                        as ConsultationBookingModel;
+                return DoctorVideoCallScreen(booking: booking);
+              },
+              '/patient-video-call': (context) {
+                final booking =
+                    ModalRoute.of(context)?.settings.arguments
+                        as ConsultationBookingModel;
+                return PatientVideoCallScreen(booking: booking);
+              },
             },
           );
         },

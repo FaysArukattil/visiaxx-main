@@ -47,4 +47,24 @@ class TimeSlotModel {
       'bookingId': bookingId,
     };
   }
+
+  TimeSlotModel copyWith({
+    String? id,
+    String? doctorId,
+    DateTime? date,
+    String? startTime,
+    String? endTime,
+    SlotStatus? status,
+    String? bookingId,
+  }) {
+    return TimeSlotModel(
+      id: id ?? this.id,
+      doctorId: doctorId ?? this.doctorId,
+      date: date ?? this.date,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      status: status ?? this.status,
+      bookingId: bookingId ?? this.bookingId,
+    );
+  }
 }

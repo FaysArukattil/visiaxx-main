@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:visiaxx/data/models/user_model.dart';
@@ -35,6 +36,8 @@ class _DoctorMainNavigationScreenState
   UserModel? _user;
   DoctorModel? _doctor;
   bool _isLoading = true;
+  int _pendingCount = 0;
+  StreamSubscription? _pendingSubscription;
 
   @override
   void initState() {
@@ -64,6 +67,7 @@ class _DoctorMainNavigationScreenState
             _doctor = doctor; // Set _doctor
             _isLoading = false;
           });
+          _startPendingSubscription(user.id);
         }
       } else {
         if (mounted) {
@@ -76,9 +80,23 @@ class _DoctorMainNavigationScreenState
     }
   }
 
+  void _startPendingSubscription(String userId) {
+    _pendingSubscription?.cancel();
+    _pendingSubscription = _consultationService
+        .getPendingBookingsStream(userId)
+        .listen((bookings) {
+          if (mounted) {
+            setState(() {
+              _pendingCount = bookings.length;
+            });
+          }
+        });
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
+    _pendingSubscription?.cancel();
     super.dispose();
   }
 
@@ -188,6 +206,7 @@ class _DoctorMainNavigationScreenState
                             0,
                             Icons.dashboard_rounded,
                             'Dashboard',
+                            badgeCount: _pendingCount,
                           ),
                           _buildWebNavItem(1, Icons.people_rounded, 'Patients'),
                           _buildWebNavItem(
@@ -252,6 +271,7 @@ class _DoctorMainNavigationScreenState
     IconData icon,
     String label, {
     bool isProfile = false,
+    int badgeCount = 0,
   }) {
     final isSelected = _currentIndex == index;
     final primaryColor = context.primary;
@@ -321,12 +341,30 @@ class _DoctorMainNavigationScreenState
                         : null,
                   )
                 else
-                  Icon(
-                    icon,
-                    size: 24,
-                    color: isSelected
-                        ? primaryColor
-                        : context.onSurface.withValues(alpha: 0.45),
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(
+                        icon,
+                        size: 24,
+                        color: isSelected
+                            ? primaryColor
+                            : context.onSurface.withValues(alpha: 0.45),
+                      ),
+                      if (!isProfile && badgeCount > 0)
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: AppColors.error,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 const SizedBox(width: 16),
                 Text(
@@ -523,6 +561,7 @@ class _DoctorMainNavigationScreenState
                               icon: Icons.dashboard_rounded,
                               index: 0,
                               itemWidth: itemWidth,
+                              badgeCount: _pendingCount,
                             ),
                             _buildNavIcon(
                               icon: Icons.people_rounded,
@@ -559,6 +598,7 @@ class _DoctorMainNavigationScreenState
     required int index,
     required double itemWidth,
     bool isProfile = false,
+    int badgeCount = 0,
   }) {
     final isSelected = (_currentIndex == index);
     final primaryColor = context.primary;
@@ -627,12 +667,34 @@ class _DoctorMainNavigationScreenState
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Icon(
-                      icon,
-                      size: 26,
-                      color: isSelected
-                          ? primaryColor
-                          : onSurfaceColor.withValues(alpha: 0.4),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          icon,
+                          size: 26,
+                          color: isSelected
+                              ? primaryColor
+                              : onSurfaceColor.withValues(alpha: 0.4),
+                        ),
+                        if (badgeCount > 0)
+                          Positioned(
+                            right: -2,
+                            top: -2,
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: AppColors.error,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: context.surface,
+                                  width: 1.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
           ),

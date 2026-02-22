@@ -1084,24 +1084,34 @@ class TestResultService {
           .doc(resultId)
           .get();
 
-      // If not found, it might be in a nested family member collection
+      // If not found, search in Practitioner patients (broad search)
       if (!doc.exists) {
         debugPrint(
-          '[TestResultService] Result $resultId not in main tests, searching members...',
+          '[TestResultService] Result $resultId not in main tests, trying collectionGroup search...',
         );
-        final familyMemberService = FamilyMemberService();
-        final members = await familyMemberService.getFamilyMembers(userId);
+        final groupQuery = await _firestore
+            .collectionGroup('tests')
+            .where('id', isEqualTo: resultId)
+            .get();
 
-        for (final member in members) {
-          doc = await _firestore
-              .collection(_identifiedResultsCollection)
-              .doc(identity)
-              .collection('members')
-              .doc(member.id)
-              .collection('tests')
-              .doc(resultId)
-              .get();
-          if (doc.exists) break;
+        if (groupQuery.docs.isNotEmpty) {
+          doc = groupQuery.docs.first;
+        } else {
+          // Fallback searching member collections manually
+          final familyMemberService = FamilyMemberService();
+          final members = await familyMemberService.getFamilyMembers(userId);
+
+          for (final member in members) {
+            doc = await _firestore
+                .collection(_identifiedResultsCollection)
+                .doc(identity)
+                .collection('members')
+                .doc(member.id)
+                .collection('tests')
+                .doc(resultId)
+                .get();
+            if (doc.exists) break;
+          }
         }
       }
 

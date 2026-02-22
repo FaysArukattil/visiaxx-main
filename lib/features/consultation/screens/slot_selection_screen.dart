@@ -77,13 +77,41 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
 
     final generatedSlots = _generateDailySlots(_selectedDate);
 
+    final now = DateTime.now();
+    final isToday = DateUtils.isSameDay(_selectedDate, now);
+
     final finalSlots = generatedSlots.map((gen) {
+      // 1. Check if booked/blocked/completed in Firebase
       final booked = bookedSlots
           .where((b) => b.startTime == gen.startTime)
           .firstOrNull;
       if (booked != null) {
         return booked;
       }
+
+      // 2. AUTO-LOCK: Check if slot time has already passed (if today)
+      if (isToday) {
+        try {
+          // Parse "h:mm a" (e.g. "10:20 AM")
+          final time = DateFormat('h:mm a').parse(gen.startTime);
+          final slotDateTime = DateTime(
+            now.year,
+            now.month,
+            now.day,
+            time.hour,
+            time.minute,
+          );
+
+          // Add a small 5-minute buffer so people can't book a slot
+          // that starts in 1 minute
+          if (slotDateTime.isBefore(now.add(const Duration(minutes: 5)))) {
+            return gen.copyWith(status: SlotStatus.blocked);
+          }
+        } catch (e) {
+          debugPrint('Error parsing slot time: $e');
+        }
+      }
+
       return gen;
     }).toList();
 

@@ -12,6 +12,7 @@ import '../../../core/services/consultation_service.dart';
 import '../../../core/extensions/theme_extension.dart';
 import '../../../core/widgets/eye_loader.dart';
 import '../../../core/utils/ui_utils.dart';
+import 'package:intl/intl.dart';
 import 'virtual_clinic_screen.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
@@ -31,7 +32,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   int _totalPatients = 0;
   int _todaysSlots = 0;
   int _completedConsultations = 0;
-  int _pendingRequests = 0;
   List<ConsultationBookingModel> _upcomingBookings = [];
   List<ConsultationBookingModel> _pendingBookings = [];
   StreamSubscription<List<ConsultationBookingModel>>? _bookingsSubscription;
@@ -138,9 +138,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                 _completedConsultations = bookings
                     .where((b) => b.status == BookingStatus.completed)
                     .length;
-                _pendingRequests = bookings
-                    .where((b) => b.status == BookingStatus.requested)
-                    .length;
                 _pendingBookings = bookings
                     .where((b) => b.status == BookingStatus.requested)
                     .take(5)
@@ -150,6 +147,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                     .take(5)
                     .toList();
               });
+
+              // Trigger auto-cancellation of stale unaccepted bookings in the background
+              _consultationService.autoCancelStaleUnacceptedBookings();
             }
           });
     } else {
@@ -254,20 +254,18 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                 const SizedBox(height: 32),
                 _buildSectionTitle('Quick Actions', Icons.bolt_rounded),
                 _buildQuickActionsGrid(constraints),
-                if (_pendingBookings.isNotEmpty) ...[
-                  const SizedBox(height: 32),
-                  _buildSectionTitle(
-                    'Pending Requests ($_pendingRequests)',
-                    Icons.pending_actions_rounded,
-                  ),
-                  _buildPendingRequestsList(),
-                ],
                 const SizedBox(height: 32),
                 _buildSectionTitle(
                   'Upcoming Consultations',
-                  Icons.event_note_rounded,
+                  Icons.schedule_rounded,
                 ),
-                _buildUpcomingConsultations(),
+                _buildUpcomingConsultations(constraints),
+                const SizedBox(height: 32),
+                _buildSectionTitle(
+                  'Pending Requests',
+                  Icons.pending_actions_rounded,
+                ),
+                _buildPendingRequestsList(constraints),
                 const SizedBox(height: 100),
               ],
             ),
@@ -303,14 +301,17 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                     ),
                     _buildWebStatsGrid(),
                     const SizedBox(height: 48),
-                    _buildSectionTitle('Patient Hub', Icons.people_rounded),
-                    _buildWebPatientHub(),
+                    _buildSectionTitle(
+                      'Upcoming Consultations',
+                      Icons.event_available_rounded,
+                    ),
+                    _buildUpcomingConsultations(constraints),
                   ],
                 ),
               ),
               const SizedBox(width: 40),
 
-              // Right Column: Tools & Analytics
+              // Right Column: Command Center & Brief
               Expanded(
                 flex: 35,
                 child: Column(
@@ -318,6 +319,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                   children: [
                     _buildSectionTitle('Command Center', Icons.bolt_rounded),
                     _buildWebActionPalette(),
+                    const SizedBox(height: 48),
+                    _buildSubSectionTitle('NEEDS APPROVAL'),
+                    _buildPendingRequestsList(constraints),
                     const SizedBox(height: 48),
                     _buildSectionTitle(
                       'Performance brief',
@@ -491,96 +495,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
-  Widget _buildWebPatientHub() {
-    return _WebGlassCard(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                'Today\'s Schedule',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: context.onSurface,
-                ),
-              ),
-              const Spacer(),
-              _buildHeaderAction(Icons.filter_list_rounded, () {}),
-              _buildHeaderAction(Icons.search_rounded, () {}),
-            ],
-          ),
-          const SizedBox(height: 24),
-          if (_upcomingBookings.isEmpty)
-            _buildUpcomingConsultations()
-          else
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _upcomingBookings.length,
-              itemBuilder: (context, index) {
-                final booking = _upcomingBookings[index];
-                return _BookingTile(booking: booking, isWeb: true);
-              },
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWebActionPalette() {
-    return _WebGlassCard(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          _WebActionTile(
-            icon: Icons.pending_actions_rounded,
-            title: 'Review Requests',
-            subtitle: '$_pendingRequests pending',
-            color: Colors.orange,
-            onTap: () => Navigator.pushNamed(context, '/doctor-booking-review'),
-          ),
-          const SizedBox(height: 16),
-          _WebActionTile(
-            icon: Icons.calendar_today_rounded,
-            title: 'Manage Slots',
-            subtitle: 'Update schedule',
-            color: context.primary,
-            onTap: () => Navigator.pushNamed(context, '/doctor-slots'),
-          ),
-          const SizedBox(height: 16),
-          _WebActionTile(
-            icon: Icons.videocam_rounded,
-            title: 'Virtual Clinic',
-            subtitle: 'Start tele-health',
-            color: Colors.blue,
-            onTap: () {
-              if (_doctor != null) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        VirtualClinicScreen(doctorId: _doctor!.id),
-                  ),
-                );
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-          _WebActionTile(
-            icon: Icons.folder_shared_rounded,
-            title: 'Patient Records',
-            subtitle: 'Consultation history',
-            color: Colors.teal,
-            onTap: () => Navigator.pushNamed(context, '/doctor-patients'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildWebAnalyticsBrief() {
     return _WebGlassCard(
       padding: const EdgeInsets.all(24),
@@ -726,7 +640,11 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                   ),
                 ),
               ),
-              _buildHeaderAction(Icons.notifications_none_rounded, () {}),
+              _buildHeaderAction(
+                Icons.notifications_none_rounded,
+                () {},
+                badgeCount: _pendingBookings.length,
+              ),
               if (constraints.maxWidth <= 900)
                 _buildHeaderAction(Icons.logout_rounded, () async {
                   final confirm = await UIUtils.showLogoutConfirmation(context);
@@ -795,7 +713,11 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
-  Widget _buildHeaderAction(IconData icon, VoidCallback onTap) {
+  Widget _buildHeaderAction(
+    IconData icon,
+    VoidCallback onTap, {
+    int badgeCount = 0,
+  }) {
     return Container(
       margin: const EdgeInsets.only(left: 8),
       decoration: BoxDecoration(
@@ -803,9 +725,35 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         shape: BoxShape.circle,
         border: Border.all(color: context.dividerColor.withValues(alpha: 0.05)),
       ),
-      child: IconButton(
-        icon: Icon(icon, size: 20, color: context.onSurface),
-        onPressed: onTap,
+      child: Stack(
+        children: [
+          IconButton(
+            icon: Icon(icon, size: 20, color: context.onSurface),
+            onPressed: onTap,
+          ),
+          if (badgeCount > 0)
+            Positioned(
+              right: 8,
+              top: 8,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: AppColors.error,
+                  shape: BoxShape.circle,
+                ),
+                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                child: Text(
+                  badgeCount > 9 ? '9+' : badgeCount.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -835,193 +783,22 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
-  Widget _buildPendingRequestsList() {
-    return Column(
-      children: [
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _pendingBookings.length,
-          itemBuilder: (context, index) {
-            final booking = _pendingBookings[index];
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 800),
-                child: GestureDetector(
-                  onTap: () =>
-                      Navigator.pushNamed(context, '/doctor-booking-review'),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          context.surface,
-                          context.surface.withValues(alpha: 0.95),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: Colors.orange.withValues(alpha: 0.3),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.orange.withValues(alpha: 0.1),
-                          blurRadius: 15,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Icon(
-                            Icons.person_rounded,
-                            color: Colors.orange,
-                            size: 28,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                booking.patientName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 16,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.schedule_rounded,
-                                    size: 12,
-                                    color: context.textSecondary,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    booking.timeSlot,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: context.textSecondary,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Icon(
-                                    booking.type == ConsultationType.online
-                                        ? Icons.videocam_rounded
-                                        : Icons.home_rounded,
-                                    size: 12,
-                                    color: context.textSecondary,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    booking.type == ConsultationType.online
-                                        ? 'Online'
-                                        : 'In-Person',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: context.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.orange,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.orange.withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: const Text(
-                            'REVIEW',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ).animate().fadeIn(duration: 400.ms).slideX(begin: 0.1, end: 0);
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildUpcomingConsultations() {
+  Widget _buildUpcomingConsultations(BoxConstraints constraints) {
     if (_upcomingBookings.isEmpty) {
       return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(40),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: context.surface,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: context.dividerColor.withValues(alpha: 0.05),
           ),
         ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: context.primary.withValues(alpha: 0.05),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.event_available_rounded,
-                size: 40,
-                color: context.primary.withValues(alpha: 0.5),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No Consultations Today',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: context.onSurface,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Your schedule is clear for now.',
-              style: TextStyle(fontSize: 12, color: context.textSecondary),
-            ),
-          ],
+        child: Center(
+          child: Text(
+            'No upcoming consultations',
+            style: TextStyle(color: context.textSecondary, fontSize: 13),
+          ),
         ),
       );
     }
@@ -1031,9 +808,85 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _upcomingBookings.length,
       itemBuilder: (context, index) {
-        final booking = _upcomingBookings[index];
-        return _BookingTile(booking: booking);
+        return _BookingTile(
+          booking: _upcomingBookings[index],
+          isPending: false,
+        );
       },
+    );
+  }
+
+  Widget _buildPendingRequestsList(BoxConstraints constraints) {
+    if (_pendingBookings.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: context.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: context.dividerColor.withValues(alpha: 0.05),
+          ),
+        ),
+        child: Center(
+          child: Text(
+            'No pending requests',
+            style: TextStyle(color: context.textSecondary, fontSize: 13),
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _pendingBookings.length,
+      itemBuilder: (context, index) {
+        return _BookingTile(booking: _pendingBookings[index], isPending: true);
+      },
+    );
+  }
+
+  Widget _buildWebActionPalette() {
+    return Column(
+      children: [
+        _WebActionTile(
+          icon: Icons.calendar_month_rounded,
+          title: 'Schedule management',
+          subtitle: 'Update your availability',
+          color: Colors.blue,
+          onTap: () => Navigator.pushNamed(context, '/doctor-slots'),
+        ),
+        _WebActionTile(
+          icon: Icons.checklist_rounded,
+          title: 'Consultation requests',
+          subtitle: 'Review incoming requests',
+          color: Colors.orange,
+          badgeCount: _pendingBookings.length,
+          onTap: () => Navigator.pushNamed(context, '/doctor-booking-review'),
+        ),
+        _WebActionTile(
+          icon: Icons.medical_services_rounded,
+          title: 'Patient records',
+          subtitle: 'Access patient history',
+          color: Colors.green,
+          onTap: () => Navigator.pushNamed(context, '/doctor-patient-records'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, left: 4),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+          color: context.textSecondary,
+          letterSpacing: 1.2,
+        ),
+      ),
     );
   }
 
@@ -1491,6 +1344,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             onTap: () => Navigator.pushNamed(context, '/doctor-booking-review'),
             height: compactCardHeight,
             screenWidth: screenWidth,
+            badgeCount: _pendingBookings.length,
           ),
           _CompactServiceCard(
             icon: Icons.calendar_view_day_rounded,
@@ -1499,6 +1353,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             onTap: () => Navigator.pushNamed(context, '/doctor-slots'),
             height: compactCardHeight,
             screenWidth: screenWidth,
+            badgeCount: 0,
           ),
           _WideServiceCard(
             icon: Icons.videocam_rounded,
@@ -1517,14 +1372,17 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             },
             height: wideCardHeight,
             screenWidth: screenWidth,
+            badgeCount: 0,
           ),
           _WideServiceCard(
             icon: Icons.storage_rounded,
             title: 'Patient Records',
             subtitle: 'Consultation history',
-            onTap: () => Navigator.pushNamed(context, '/doctor-patients'),
+            onTap: () =>
+                Navigator.pushNamed(context, '/doctor-patient-records'),
             height: wideCardHeight,
             screenWidth: screenWidth,
+            badgeCount: 0,
           ),
         ],
       );
@@ -1543,6 +1401,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                     Navigator.pushNamed(context, '/doctor-booking-review'),
                 height: compactCardHeight,
                 screenWidth: screenWidth,
+                badgeCount: _pendingBookings.length,
               ),
             ),
             SizedBox(width: cardSpacing),
@@ -1554,6 +1413,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                 onTap: () => Navigator.pushNamed(context, '/doctor-slots'),
                 height: compactCardHeight,
                 screenWidth: screenWidth,
+                badgeCount: 0,
               ),
             ),
           ],
@@ -1591,131 +1451,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   }
 }
 
-class _BookingTile extends StatelessWidget {
-  final ConsultationBookingModel booking;
-  final bool isWeb;
-  const _BookingTile({required this.booking, this.isWeb = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: context.surface.withValues(alpha: isWeb ? 0.5 : 1.0),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isWeb
-              ? context.primary.withValues(alpha: 0.1)
-              : context.dividerColor.withValues(alpha: 0.05),
-        ),
-        boxShadow: [
-          if (!isWeb)
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(isWeb ? 20 : 16),
-        child: Row(
-          children: [
-            Container(
-              width: isWeb ? 64 : 56,
-              height: isWeb ? 64 : 56,
-              decoration: BoxDecoration(
-                color: context.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(isWeb ? 20 : 16),
-              ),
-              child: Icon(
-                Icons.person_rounded,
-                color: context.primary,
-                size: isWeb ? 32 : 28,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    booking.patientName,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: isWeb ? 18 : 15,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      _buildMiniInfoChip(
-                        Icons.schedule_rounded,
-                        booking.timeSlot,
-                        context,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildMiniInfoChip(
-                        booking.type == ConsultationType.online
-                            ? Icons.videocam_rounded
-                            : Icons.home_rounded,
-                        booking.type == ConsultationType.online
-                            ? 'Online'
-                            : 'In-Person',
-                        context,
-                      ),
-                      if (isWeb) ...[
-                        const SizedBox(width: 8),
-                        _buildMiniInfoChip(
-                          Icons.contact_support_rounded,
-                          'Initial Consult',
-                          context,
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                'ACTIVE',
-                style: TextStyle(
-                  color: Colors.green,
-                  fontSize: isWeb ? 12 : 10,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMiniInfoChip(IconData icon, String text, BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 10, color: context.textSecondary),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: context.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _CompactServiceCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -1724,6 +1459,8 @@ class _CompactServiceCard extends StatelessWidget {
   final double height;
   final double screenWidth;
 
+  final int? badgeCount;
+
   const _CompactServiceCard({
     required this.icon,
     required this.title,
@@ -1731,6 +1468,7 @@ class _CompactServiceCard extends StatelessWidget {
     required this.onTap,
     required this.height,
     required this.screenWidth,
+    this.badgeCount,
   });
 
   @override
@@ -1774,57 +1512,95 @@ class _CompactServiceCard extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Container(
-                constraints: BoxConstraints(minHeight: height),
-                padding: EdgeInsets.all(cardPadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (height > 60) ...[
-                      Container(
-                        width: iconSize + 14,
-                        height: iconSize + 14,
-                        decoration: BoxDecoration(
-                          color: context.scaffoldBackground,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(icon, color: activeColor, size: iconSize),
-                      ),
-                      SizedBox(height: cardPadding * 0.8),
-                    ],
-                    Column(
+              child: Stack(
+                children: [
+                  Container(
+                    constraints: BoxConstraints(minHeight: height),
+                    padding: EdgeInsets.all(cardPadding),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: titleFontSize,
-                            color: activeColor,
-                            height: 1.1,
-                            letterSpacing: -0.2,
+                        if (height > 60) ...[
+                          Container(
+                            width: iconSize + 14,
+                            height: iconSize + 14,
+                            decoration: BoxDecoration(
+                              color: context.scaffoldBackground,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              icon,
+                              color: activeColor,
+                              size: iconSize,
+                            ),
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: subtitleFontSize,
-                            color: context.textSecondary,
-                            height: 1.1,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          SizedBox(height: cardPadding * 0.8),
+                        ],
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              title,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: titleFontSize,
+                                color: activeColor,
+                                height: 1.1,
+                                letterSpacing: -0.2,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              subtitle,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: subtitleFontSize,
+                                color: context.textSecondary,
+                                height: 1.1,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  if (badgeCount != null && badgeCount! > 0)
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.error,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.error.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          badgeCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
@@ -1842,6 +1618,8 @@ class _WideServiceCard extends StatelessWidget {
   final double height;
   final double screenWidth;
 
+  final int? badgeCount;
+
   const _WideServiceCard({
     required this.icon,
     required this.title,
@@ -1849,6 +1627,7 @@ class _WideServiceCard extends StatelessWidget {
     required this.onTap,
     required this.height,
     required this.screenWidth,
+    this.badgeCount,
   });
 
   @override
@@ -1896,83 +1675,114 @@ class _WideServiceCard extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Container(
-                constraints: BoxConstraints(minHeight: height),
-                padding: EdgeInsets.symmetric(
-                  horizontal: (cardConstraints.maxWidth * 0.04).clamp(
-                    12.0,
-                    18.0,
-                  ),
-                  vertical: 12,
-                ),
-                child: Row(
-                  children: [
-                    if (height > 40) ...[
-                      Container(
-                        width: iconSize + 14,
-                        height: iconSize + 14,
-                        decoration: BoxDecoration(
-                          color: context.scaffoldBackground,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(icon, color: activeColor, size: iconSize),
+              child: Stack(
+                children: [
+                  Container(
+                    constraints: BoxConstraints(minHeight: height),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: (cardConstraints.maxWidth * 0.04).clamp(
+                        12.0,
+                        18.0,
                       ),
-                      SizedBox(
-                        width: (cardConstraints.maxWidth * 0.03).clamp(
-                          8.0,
-                          14.0,
-                        ),
-                      ),
-                    ],
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            title,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: titleFontSize,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: [
+                        if (height > 40) ...[
+                          Container(
+                            width: iconSize + 14,
+                            height: iconSize + 14,
+                            decoration: BoxDecoration(
+                              color: context.scaffoldBackground,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              icon,
                               color: activeColor,
-                              letterSpacing: -0.3,
-                              height: 1.2,
+                              size: iconSize,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            subtitle,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: subtitleFontSize,
-                              color: context.textSecondary,
-                              height: 1.2,
+                          SizedBox(
+                            width: (cardConstraints.maxWidth * 0.03).clamp(
+                              8.0,
+                              14.0,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: context.primary.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.arrow_forward_rounded,
-                        size: (cardConstraints.maxWidth * 0.038).clamp(
-                          16.0,
-                          20.0,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                title,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: titleFontSize,
+                                  color: activeColor,
+                                  letterSpacing: -0.3,
+                                  height: 1.2,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                subtitle,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: subtitleFontSize,
+                                  color: context.textSecondary,
+                                  height: 1.2,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
                         ),
-                        color: context.primary,
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: context.primary.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.arrow_forward_rounded,
+                            size: (cardConstraints.maxWidth * 0.038).clamp(
+                              16.0,
+                              20.0,
+                            ),
+                            color: context.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (badgeCount != null && badgeCount! > 0)
+                    Positioned(
+                      top: 10,
+                      right: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.error,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          badgeCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                ],
               ),
             ),
           ),
@@ -2052,6 +1862,7 @@ class _WebActionTile extends StatefulWidget {
   final String subtitle;
   final Color color;
   final VoidCallback onTap;
+  final int? badgeCount;
 
   const _WebActionTile({
     required this.icon,
@@ -2059,6 +1870,7 @@ class _WebActionTile extends StatefulWidget {
     required this.subtitle,
     required this.color,
     required this.onTap,
+    this.badgeCount,
   });
 
   @override
@@ -2097,7 +1909,37 @@ class _WebActionTileState extends State<_WebActionTile> {
                   color: widget.color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(widget.icon, color: widget.color, size: 24),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(widget.icon, color: widget.color, size: 24),
+                    if (widget.badgeCount != null && widget.badgeCount! > 0)
+                      Positioned(
+                        top: -8,
+                        right: -8,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 18,
+                            minHeight: 18,
+                          ),
+                          child: Text(
+                            widget.badgeCount!.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -2132,6 +1974,114 @@ class _WebActionTileState extends State<_WebActionTile> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BookingTile extends StatelessWidget {
+  final ConsultationBookingModel booking;
+  final bool isPending;
+
+  const _BookingTile({required this.booking, required this.isPending});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: context.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.dividerColor.withValues(alpha: 0.05)),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: context.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(Icons.person_rounded, color: context.primary),
+        ),
+        title: Text(
+          booking.patientName,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          '${booking.timeSlot} • ${DateFormat('MMM d, yyyy').format(booking.dateTime)}',
+          style: TextStyle(color: context.textSecondary, fontSize: 12),
+        ),
+        trailing: isPending
+            ? IconButton(
+                icon: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                onPressed: () =>
+                    Navigator.pushNamed(context, '/doctor-booking-review'),
+              )
+            : _ActionButton(
+                label: 'START CONFERENCE',
+                icon: Icons.videocam_rounded,
+                color: Colors.blue,
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    '/doctor-video-call',
+                    arguments: booking,
+                  );
+                },
+              ),
       ),
     );
   }

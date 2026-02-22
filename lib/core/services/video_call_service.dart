@@ -38,7 +38,45 @@ class VideoCallService {
   /// Get available video devices
   Future<List<MediaDeviceInfo>> getVideoDevices() async {
     final devices = await navigator.mediaDevices.enumerateDevices();
-    return devices.where((d) => d.kind == 'videoinput').toList();
+    final videoDevices = devices
+        .where((device) => device.kind == 'videoinput')
+        .toList();
+
+    // FILTER: Automatically exclude virtual cameras that cause issues
+    final filteredDevices = videoDevices.where((device) {
+      final label = device.label.toLowerCase();
+      return !label.contains('link to windows') &&
+          !label.contains('phone link') &&
+          !label.contains('virtual camera') &&
+          !label.contains('obs camera') &&
+          !label.contains('iriun') &&
+          !label.contains('droidcam') &&
+          !label.contains('epoccam') &&
+          !label.contains('splitcam') &&
+          !label.contains('manycam') &&
+          !label.contains('mobile camera');
+    }).toList();
+
+    // Priority sorting: Put known integrated or hardware cameras first
+    filteredDevices.sort((a, b) {
+      final labelA = a.label.toLowerCase();
+      final labelB = b.label.toLowerCase();
+
+      bool isHardA =
+          labelA.contains('integrated') ||
+          labelA.contains('webcam') ||
+          labelA.contains('camera');
+      bool isHardB =
+          labelB.contains('integrated') ||
+          labelB.contains('webcam') ||
+          labelB.contains('camera');
+
+      if (isHardA && !isHardB) return -1;
+      if (!isHardA && isHardB) return 1;
+      return 0;
+    });
+
+    return filteredDevices.isNotEmpty ? filteredDevices : videoDevices;
   }
 
   /// Initialize the local media stream (camera/mic)

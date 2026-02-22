@@ -60,16 +60,10 @@ class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
     if (_videoCallService.localRenderer.srcObject != null && _isConnected)
       return;
 
-    // 0. Get available cameras
+    // 0. Get available cameras (already filtered in service)
     _videoDevices = await _videoCallService.getVideoDevices();
     if (_videoDevices.isNotEmpty && _selectedDeviceId == null) {
-      // Try to find a non "Link to Windows" camera or just take first
-      _selectedDeviceId = _videoDevices
-          .firstWhere(
-            (d) => !d.label.toLowerCase().contains('link to windows'),
-            orElse: () => _videoDevices.first,
-          )
-          .deviceId;
+      _selectedDeviceId = _videoDevices.first.deviceId;
     }
 
     // 1. Get local stream
@@ -196,22 +190,50 @@ class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
 
   void _handleBackPress() {
     if (_isConnected) {
-      PipService().show(
+      showDialog(
         context: context,
-        localRenderer: _videoCallService.localRenderer,
-        remoteRenderer: _videoCallService.remoteRenderer,
-        onRestore: () {
-          // If the user navigates back via PiP restore
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) =>
-                  DoctorVideoCallScreen(booking: widget.booking),
+        builder: (context) => AlertDialog(
+          title: const Text('Consultation in Progress'),
+          content: const Text(
+            'Do you want to minimize the call or quit entirely?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Resume'),
             ),
-          );
-        },
-        onEnd: () => _endCall(),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                PipService().show(
+                  context: this.context,
+                  localRenderer: _videoCallService.localRenderer,
+                  remoteRenderer: _videoCallService.remoteRenderer,
+                  onRestore: () {
+                    Navigator.of(this.context).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            DoctorVideoCallScreen(booking: widget.booking),
+                      ),
+                    );
+                  },
+                  onEnd: () => _endCall(),
+                );
+                Navigator.of(this.context).popUntil((route) => route.isFirst);
+              },
+              child: const Text('Minimize (PiP)'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _endCall();
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Quit Call'),
+            ),
+          ],
+        ),
       );
-      Navigator.of(context).popUntil((route) => route.isFirst);
     } else {
       Navigator.of(context).pop();
     }
@@ -466,6 +488,10 @@ class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
                   canChangeOrientation: false,
                   canDebug: false,
                   initialPageFormat: PdfPageFormat.a4,
+                  maxPageWidth: 800,
+                  loadingWidget: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
                 ),
         ),
       ],
@@ -612,101 +638,136 @@ class _DoctorVideoCallScreenState extends State<DoctorVideoCallScreen> {
   }
 
   Widget _buildPostConsultationPopup() {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      title: Column(
-        children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: Colors.green.withValues(alpha: 0.1),
-            child: const Icon(
-              Icons.check_circle,
-              color: Colors.green,
-              size: 40,
-            ),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: context.surface,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          const Text('Session Completed', textAlign: TextAlign.center),
-        ],
-      ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Please provide the final diagnosis and notes for the patient.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textTertiary),
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: _diagnosisController,
-              decoration: InputDecoration(
-                labelText: 'Final Diagnosis',
-                hintText: 'e.g. Mild Myopia',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.green,
+                  size: 40,
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _notesController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                labelText: 'Doctor Notes',
-                hintText: 'Prescription or advice...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+              const SizedBox(height: 20),
+              Text(
+                'Session Completed',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                'Please provide the final diagnosis and notes for the patient history.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: context.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: _diagnosisController,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+                decoration: InputDecoration(
+                  labelText: 'Final Diagnosis',
+                  hintText: 'e.g. Mild Myopia',
+                  prefixIcon: const Icon(Icons.assignment_rounded),
+                  filled: true,
+                  fillColor: context.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: context.dividerColor.withValues(alpha: 0.1),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _notesController,
+                maxLines: 3,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+                decoration: InputDecoration(
+                  labelText: 'Doctor Notes',
+                  hintText: 'Prescription or advice...',
+                  prefixIcon: const Icon(Icons.note_alt_rounded),
+                  filled: true,
+                  fillColor: context.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: context.dividerColor.withValues(alpha: 0.1),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => _finalizeConsultation(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'SAVE & COMPLETE PORTAL',
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _initWebRTC();
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: context.textSecondary,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text(
+                    'RE-JOIN SESSION',
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-      actions: [
-        Column(
-          children: [
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => _finalizeConsultation(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Save & Close Portal'),
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  _initWebRTC(); // Restart WebRTC
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: context.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: BorderSide(
-                    color: context.primary.withValues(alpha: 0.5),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Restart / Resume Session'),
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 
