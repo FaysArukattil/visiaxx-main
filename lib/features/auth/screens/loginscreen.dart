@@ -297,7 +297,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24.0,
-                        vertical: 32,
+                        vertical: 16,
                       ),
                       child: Form(
                         key: _formKey,
@@ -306,9 +306,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             _buildBranding(isLandscape: false),
-                            const SizedBox(height: 48),
+                            const SizedBox(height: 24),
                             _buildLoginForm(isLandscape: false),
-                            const SizedBox(height: 32),
+                            const SizedBox(height: 24),
                             _buildSignUpToggle(),
                           ],
                         ),
@@ -329,15 +329,15 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       children: [
         Container(
-          width: isLandscape ? 100 : 85,
-          height: isLandscape ? 100 : 85,
+          width: isLandscape ? 100 : 70,
+          height: isLandscape ? 100 : 70,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [context.primary, context.primary.withValues(alpha: 0.7)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(isLandscape ? 28 : 24),
+            borderRadius: BorderRadius.circular(isLandscape ? 28 : 20),
             boxShadow: [
               BoxShadow(
                 color: context.primary.withValues(alpha: 0.3),
@@ -347,7 +347,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(isLandscape ? 28 : 24),
+            borderRadius: BorderRadius.circular(isLandscape ? 28 : 20),
             child: Image.asset(
               'assets/images/icons/app_icon.png',
               fit: BoxFit.cover,
@@ -358,7 +358,7 @@ class _LoginScreenState extends State<LoginScreen> {
           duration: 500.ms,
           curve: Curves.easeOutBack,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
         Text(
           'Visiaxx',
           style:
@@ -537,7 +537,10 @@ class _LoginScreenState extends State<LoginScreen> {
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.2,
+            ),
             decoration: InputDecoration(
               labelText: 'Email Address',
               prefixIcon: const Icon(Icons.alternate_email_rounded),
@@ -559,7 +562,10 @@ class _LoginScreenState extends State<LoginScreen> {
             obscureText: !_isPasswordVisible,
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => _handleLogin(),
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.2,
+            ),
             decoration: InputDecoration(
               labelText: 'Password',
               prefixIcon: const Icon(Icons.lock_outline_rounded),
